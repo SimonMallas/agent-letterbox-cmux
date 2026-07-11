@@ -1,0 +1,4 @@
+# agent<TAB>stable cmux title substring
+# Add more than one row for an agent with multiple known title markers.
+planner	planner
+reviewer	reviewer
