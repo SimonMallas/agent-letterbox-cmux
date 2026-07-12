@@ -1,0 +1,4 @@
+# Example LETTERBOX_TMUX_PATTERNS file (tab-separated)
+# agent<TAB>tmux-session-or-window
+hermes	hermes
+pi	pi-work
