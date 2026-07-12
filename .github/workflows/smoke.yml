@@ -25,3 +25,4 @@ jobs:
           bash tests/cmux-doorbell-safety.sh
           bash tests/test_desktop_adapter.sh
           bash tests/webhook_e2e_harness.sh
+          python3 tests/test_skill_prompt.py
