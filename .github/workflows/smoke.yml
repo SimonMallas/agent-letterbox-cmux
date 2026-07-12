@@ -20,4 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run isolated smoke test
-        run: bash tests/smoke.sh
+        run: |
+          bash tests/smoke.sh
+          bash tests/cmux-doorbell-safety.sh
+          bash tests/test_desktop_adapter.sh
