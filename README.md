@@ -14,12 +14,15 @@ Agent Letterbox is a small, filesystem-first protocol for independent coding-age
 Confirm the helper and protocol rules work on your machine:
 
 ```bash
-chmod +x bin/letterbox adapters/*.sh tests/smoke.sh
+chmod +x bin/letterbox adapters/*.sh tests/*.sh
 ./tests/smoke.sh
 # expect: smoke test: PASS
+
+./tests/webhook_e2e_harness.sh
+# expect: webhook e2e harness: PASS
 ```
 
-That script creates a temporary letterbox, sends a delegate, replies (publish then archive), rejects an undelivered `done`, and checks advisory lock contention. The same command runs in CI on **Ubuntu** and **macOS** (see [`.github/workflows/smoke.yml`](.github/workflows/smoke.yml)).
+`smoke.sh` covers core send/reply/archive and locks. `webhook_e2e_harness.sh` proves **webhook-bridge completion is judged only by on-disk Letterbox ACK/result + processed original**—not model prose (covers the hallucinated-completion failure). See [docs/webhook-e2e-proof.md](docs/webhook-e2e-proof.md). Both run in CI on **Ubuntu** and **macOS** (see [`.github/workflows/smoke.yml`](.github/workflows/smoke.yml)).
 
 ## Five-minute round trip
 
