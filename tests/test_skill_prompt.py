@@ -19,10 +19,15 @@ def test_skill_has_valid_frontmatter_and_rules():
     assert "letterbox reply <id> <ack|nack|result> <slug>" in content
 
     # Rule 3
+    assert "priority: now" in content
+    assert "append `--now`" in content
+    assert "Do not escalate `next` or `whenever`" in content
+
+    # Rule 4
     assert "Re-run check after every reply" in content
     assert "proves replied + archived" in content
 
-    # Rule 4
+    # Rule 5
     assert "explicitly report failure" in content
     assert "blocker" in content.lower()
 
