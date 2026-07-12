@@ -25,9 +25,7 @@ done < "$patterns_file"
 
 [[ -n "$target" ]] || { echo "tmux doorbell deferred: no live tmux target for $to" >&2; exit 0; }
 
-if [[ "${LETTERBOX_TMUX_SUBMIT:-0}" == 1 ]]; then
-  tmux display-message -t "$target" "$line" 2>/dev/null || true
-  printf 'tmux doorbell submitted to %s on %s\n' "$to" "$target"
-else
-  printf 'tmux notification prepared for %s; set LETTERBOX_TMUX_SUBMIT=1 to send\n' "$to"
-fi
+# Notification only (display-message alerts the human in the session).
+# This adapter signals visibility only — it does not prove the agent checked its inbox.
+tmux display-message -t "$target" "$line" 2>/dev/null || true
+printf 'tmux notification sent to %s on %s\n' "$to" "$target"
