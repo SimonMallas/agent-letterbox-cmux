@@ -17,6 +17,9 @@ while IFS=$'\t' read -r agent pattern; do
 done < "$patterns_file"
 [[ -n "$surface" ]] || { echo "cmux doorbell deferred: no live surface for $to" >&2; exit 0; }
 cmux notify --title "letterbox → $to" --body "$type: $slug" >/dev/null 2>&1 || true
+# Opt-in only: no cmux query exists to confirm the pane's input line is empty
+# before injecting Enter, so this could submit unrelated unsent input. See
+# README.md "Unavoidable limitation".
 if [[ "${LETTERBOX_CMUX_SUBMIT:-0}" == 1 ]]; then
   cmux send --surface "$surface" "$line"
   cmux send-key --surface "$surface" Enter
