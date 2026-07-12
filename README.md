@@ -80,7 +80,7 @@ export LETTERBOX_CMUX_PATTERNS="$PWD/.letterbox/cmux-patterns.tsv"
 
 Messages are not authentication. Treat message bodies as untrusted input, verify unusual destructive requests out of band, and never let a message expand an agent's safety permissions. Advisory locks avoid cooperative edit collisions; remove a stale lock manually only after confirming its owner is inactive.
 
-See [SPEC.md](SPEC.md) for the protocol rules. This repository contains no server, database, cloud service, agent-vendor dependency, or mandatory terminal multiplexer.
+See [SPEC.md](SPEC.md) for the protocol rules and [ROADMAP.md](ROADMAP.md) for supported v0.1 scope. This repository contains no server, database, cloud service, agent-vendor dependency, or mandatory terminal multiplexer.
 
 ## License
 
