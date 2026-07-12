@@ -4,12 +4,26 @@
 
 Agent Letterbox is a small, filesystem-first protocol for independent coding-agent sessions. A message is a durable Markdown file in the recipient's inbox. A doorbell is an optional adapter that tells a live agent to check sooner; it never carries task content.
 
-## Five-minute round trip
+## Requirements
 
-Requires Bash and standard macOS/Linux userland.
+- **Bash** and standard **macOS/Linux** userland (`date`, `mktemp`, `od`, `find`, `ln`)
+- No server, package registry, language runtime, or terminal multiplexer required for the core CLI
+
+## Verify (first thing)
+
+Confirm the helper and protocol rules work on your machine:
 
 ```bash
 chmod +x bin/letterbox adapters/*.sh tests/smoke.sh
+./tests/smoke.sh
+# expect: smoke test: PASS
+```
+
+That script creates a temporary letterbox, sends a delegate, replies (publish then archive), rejects an undelivered `done`, and checks advisory lock contention. The same command runs in CI on **Ubuntu** and **macOS** (see [`.github/workflows/smoke.yml`](.github/workflows/smoke.yml)).
+
+## Five-minute round trip
+
+```bash
 export PATH="$PWD/bin:$PATH"
 export LETTERBOX_DIR="$PWD/.letterbox"
 
@@ -19,22 +33,20 @@ letterbox init planner reviewer
 printf '%s\n' 'Review src/auth.ts and report correctness findings.' |
   LETTERBOX_AGENT=planner letterbox send reviewer delegate auth-review --ack
 
-# Reviewer reads it, replies durably to planner, then archives the original.
+# Reviewer lists durable inbox messages (each file name embeds the message id).
 LETTERBOX_AGENT=reviewer letterbox check
+# Copy the id: line from the message frontmatter, e.g.
+#   id: 2026-07-12T110000-planner-delegate-auth-review-a1b2c3d4
+# Or use the full path / basename under $LETTERBOX_DIR/reviewer/inbox/*.md
+
 printf '%s\n' 'Accepted. I will review the authentication flow.' |
-  LETTERBOX_AGENT=reviewer letterbox reply <message-id> ack accept-auth-review
+  LETTERBOX_AGENT=reviewer letterbox reply <message-id-or-inbox-path> ack accept-auth-review
 
 # Planner receives the acknowledgement.
 LETTERBOX_AGENT=planner letterbox check
 ```
 
-`letterbox reply` is the normal reply-first operation: it publishes the reply to the original sender's inbox **before** archiving the inbound message. `letterbox done` exists only for an already-delivered manually authored reply and verifies its location and frontmatter before archiving.
-
-Run the isolated verification:
-
-```bash
-./tests/smoke.sh
-```
+`letterbox reply` is the normal reply-first operation: it publishes the reply to the original sender's inbox **before** archiving the inbound message. `letterbox done` exists only for an already-delivered manually authored reply and verifies its location and frontmatter before archiving. **Archiving is not delivery**—if you skip `reply`/`send` into the peer inbox, the peer never sees your answer.
 
 ## Doorbells: make live coordination immediate
 
