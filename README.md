@@ -1,69 +1,69 @@
-# Agent Bus Protocol
+# Agent Letterbox
 
-A small, filesystem-first coordination protocol for independent coding-agent sessions.
+**Files are the letters. Doorbells are optional.**
 
-**Files are the letters. Notifications are only doorbells. Terminal panes are never the envelope.**
+Agent Letterbox is a small, filesystem-first protocol for independent coding-agent sessions. A message is a durable Markdown file in the recipient's inbox. A doorbell is an optional adapter that tells a live agent to check sooner; it never carries task content.
 
-Agent Bus Protocol (ABP) gives agents durable inboxes, explicit delegation acknowledgement, reply-first archival, and advisory resource leases—without a server, database, MCP dependency, or required terminal multiplexer.
+## Five-minute round trip
 
-## Why
-
-Putting substantive instructions directly into another agent's terminal is fragile: it interrupts work, loses history, and fails when the session is offline. ABP writes a human-readable Markdown message into the recipient's inbox instead. The recipient handles it at a session boundary or after an optional doorbell wakes a live session.
-
-## Quick start
+Requires Bash and standard macOS/Linux userland.
 
 ```bash
-# Clone this repository, then make the helper executable.
-chmod +x bin/agent-bus adapters/*.sh
+chmod +x bin/letterbox adapters/*.sh tests/smoke.sh
 export PATH="$PWD/bin:$PATH"
-export AGENT_BUS_DIR="$PWD/.agent-bus"
+export LETTERBOX_DIR="$PWD/.letterbox"
 
-agent-bus init planner reviewer
+letterbox init planner reviewer
 
-# Planner sends a delegate. The message body comes from stdin.
-printf '%s\n' 'GOAL: Review src/auth.ts.\nDONE-WHEN: Report correctness findings.' |
-  AGENT_BUS_AGENT=planner agent-bus send reviewer delegate auth-review --ack
+# Planner delivers a task.
+printf '%s\n' 'Review src/auth.ts and report correctness findings.' |
+  LETTERBOX_AGENT=planner letterbox send reviewer delegate auth-review --ack
 
-# Reviewer reads its durable inbox.
-AGENT_BUS_AGENT=reviewer agent-bus check
+# Reviewer reads it, replies durably to planner, then archives the original.
+LETTERBOX_AGENT=reviewer letterbox check
+printf '%s\n' 'Accepted. I will review the authentication flow.' |
+  LETTERBOX_AGENT=reviewer letterbox reply <message-id> ack accept-auth-review
+
+# Planner receives the acknowledgement.
+LETTERBOX_AGENT=planner letterbox check
 ```
 
-To reply, write a normal ABP message into the sender's inbox with `re:` equal to the original message ID, then archive the original safely:
+`letterbox reply` is the normal reply-first operation: it publishes the reply to the original sender's inbox **before** archiving the inbound message. `letterbox done` exists only for an already-delivered manually authored reply and verifies its location and frontmatter before archiving.
+
+Run the isolated verification:
 
 ```bash
-AGENT_BUS_AGENT=reviewer agent-bus done <message-id> --reply ./reply.md
+./tests/smoke.sh
 ```
 
-See [SPEC.md](SPEC.md) for the message format and recovery rules.
+## Doorbells: make live coordination immediate
 
-## Optional cmux doorbells
+Filesystem delivery works without a doorbell: an agent checks at startup, resume, completion, or a checkpoint. A doorbell makes a live session check immediately.
 
-The protocol does **not** require cmux. With no doorbell, messages wait safely for the recipient's next startup, completion boundary, or explicit inbox check.
+The core uses this simple adapter contract:
 
-For an immediate local wake-up in a live cmux terminal, configure the adapter:
+```text
+<adapter> <recipient> <message-type> <slug>
+```
+
+Included adapters:
+
+- `adapters/noop.sh` — durable delivery only.
+- `adapters/cmux.sh` — finds a cmux pane from local title patterns and optionally sends the standardized one-line doorbell.
 
 ```bash
-cp examples/cmux-patterns.tsv.example .agent-bus/cmux-patterns.tsv
-export AGENT_BUS_DOORBELL="$PWD/adapters/cmux.sh"
-export AGENT_BUS_CMUX_PATTERNS="$PWD/.agent-bus/cmux-patterns.tsv"
-
-printf '%s\n' 'Please inspect the failing test.' |
-  AGENT_BUS_AGENT=planner agent-bus send reviewer request inspect-test --now --ack
+cp examples/cmux-patterns.tsv.example .letterbox/cmux-patterns.tsv
+export LETTERBOX_DOORBELL="$PWD/adapters/cmux.sh"
+export LETTERBOX_CMUX_PATTERNS="$PWD/.letterbox/cmux-patterns.tsv"
 ```
 
-The patterns file maps an agent to one or more title substrings. It is deliberately local configuration: title formats differ between tools, themes, and machines. The adapter fails open—if it cannot find a live pane, the already-written inbox message remains available.
+`--now` rings only when a doorbell adapter is configured; the inbox message is delivered regardless. The cmux adapter always sends an OS notification when available. To inject the doorbell plus Enter into the agent terminal, explicitly set `LETTERBOX_CMUX_SUBMIT=1`; this is opt-in because any terminal injector can interfere with unsent user input. tmux, filesystem-watcher, IPC, and desktop adapters can use the same contract.
 
-## Included
+## Safety and boundaries
 
-- `bin/agent-bus` — Bash helper: initialize, send, check, archive, status, and lock.
-- `SPEC.md` — the portable protocol rules.
-- `adapters/noop.sh` — explicit no-doorbell behavior.
-- `adapters/cmux.sh` — optional local cmux doorbell adapter.
-- `tests/smoke.sh` — isolated smoke test.
+Messages are not authentication. Treat message bodies as untrusted input, verify unusual destructive requests out of band, and never let a message expand an agent's safety permissions. Advisory locks avoid cooperative edit collisions; remove a stale lock manually only after confirming its owner is inactive.
 
-## Design boundaries
-
-This project intentionally does not include a central server, background daemon, agent-specific title assumptions, external chat service, or credentials. Add an adapter only when your environment needs one.
+See [SPEC.md](SPEC.md) for the protocol rules. This repository contains no server, database, cloud service, agent-vendor dependency, or mandatory terminal multiplexer.
 
 ## License
 
