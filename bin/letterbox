@@ -2,6 +2,8 @@
 # letterbox — dependency-free helper for Agent Letterbox.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VERSION_FILE="$SCRIPT_DIR/../VERSION"
 BOX="${LETTERBOX_DIR:-$PWD/.letterbox}"
 ME="${LETTERBOX_AGENT:-}"
 SESSION="${LETTERBOX_SESSION:-}"
@@ -24,6 +26,11 @@ frontmatter_value() {
   ' "$1"
 }
 canonical_dir() { (cd "$1" && pwd -P); }
+
+cmd_version() {
+  [[ -f "$VERSION_FILE" ]] || die "version file not found: $VERSION_FILE"
+  printf 'letterbox %s\n' "$(<"$VERSION_FILE")"
+}
 
 cmd_init() {
   [[ $# -gt 0 ]] || die 'usage: letterbox init <agent> [agent...]'
@@ -179,8 +186,9 @@ cmd_status() {
   printf 'state: %s\nsince: %s\nnotes: %s\n' "$state" "$(now)" "$note" > "$BOX/$ME/status.md"
 }
 case "${1:-}" in
+  --version|-V|version) cmd_version;;
   init) shift; cmd_init "$@";; send) shift; cmd_send "$@";; check) shift; cmd_check "$@";;
   reply) shift; cmd_reply "$@";; done) shift; cmd_done "$@";; lock) shift; cmd_lock "$@";; unlock) shift; cmd_unlock "$@";;
   status) shift; cmd_status "$@";;
-  *) printf 'usage: letterbox {init|send|check|reply|done|lock|unlock|status} ...\n' >&2; exit 2;;
+  *) printf 'usage: letterbox {init|send|check|reply|done|lock|unlock|status|--version} ...\n' >&2; exit 2;;
 esac

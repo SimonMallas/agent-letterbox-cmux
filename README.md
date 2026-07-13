@@ -23,6 +23,12 @@ Public `v0.1.0` should wait until private dogfooding of terminal round-trips is 
 - **Bash** and standard **macOS/Linux** userland (`date`, `mktemp`, `od`, `find`, `ln`)
 - No server, package registry, language runtime, or terminal multiplexer required for the core CLI
 
+Check the helper version with:
+
+```bash
+letterbox --version
+```
+
 ## Verify (first thing)
 
 Confirm the helper and protocol rules work on your machine:
@@ -78,7 +84,9 @@ The core uses this simple adapter contract:
 Included adapters:
 
 - `adapters/noop.sh` — durable delivery only.
-- `adapters/cmux.sh` — finds a cmux pane from local title patterns and optionally sends the standardized one-line doorbell.
+- `adapters/cmux.sh` — finds a live terminal from local title patterns and can submit the standardized one-line doorbell with explicit opt-in.
+- `adapters/tmux.sh` — notification-only tmux visibility adapter.
+- `adapters/desktop.sh` — macOS notification/activation visibility adapter; it does not start an agent turn.
 
 ```bash
 cp examples/cmux-patterns.tsv.example .letterbox/cmux-patterns.tsv
@@ -86,7 +94,7 @@ export LETTERBOX_DOORBELL="$PWD/adapters/cmux.sh"
 export LETTERBOX_CMUX_PATTERNS="$PWD/.letterbox/cmux-patterns.tsv"
 ```
 
-`--now` rings only when a doorbell adapter is configured; the inbox message is delivered regardless. The cmux adapter always sends an OS notification when available. To inject the doorbell plus Enter into the agent terminal, explicitly set `LETTERBOX_CMUX_SUBMIT=1`; this is opt-in because any terminal injector can interfere with unsent user input. tmux, filesystem-watcher, IPC, and desktop adapters can use the same contract.
+`--now` rings only when a doorbell adapter is configured; the inbox message is delivered regardless. The cmux adapter discovers surfaces using `cmux tree --all`, so live terminal agents may be in another cmux workspace. It always sends an OS notification when available. To inject the doorbell plus Enter into the agent terminal, explicitly set `LETTERBOX_CMUX_SUBMIT=1`; this is opt-in because any terminal injector can interfere with unsent user input. Other adapters can use the same contract, but v0.1 does not include watchers or autonomous desktop triggers.
 
 **Unavoidable limitation:** even with `LETTERBOX_CMUX_SUBMIT=1`, the adapter cannot verify the target pane's input line is empty before sending the doorbell text and an Enter keypress — cmux exposes no query for a pane's current input-buffer state. If the recipient already has unsent input typed in that pane, the injected Enter will submit it alongside the doorbell line. This is a property of blind terminal-keystroke injection generally, not a bug this adapter can fix in code; it is the reason the behavior defaults off.
 
