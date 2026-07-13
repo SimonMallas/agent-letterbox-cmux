@@ -26,9 +26,11 @@ Desktop activation/notification is a human-visible hint only. It must not be pre
 
 1. Document and test the terminal cmux/tmux path thoroughly.
 2. Expand core error-path, lock, reply, and adapter tests.
-3. Add release/security/contribution documentation.
+3. ~~Add release/security/contribution documentation.~~ **Done** (`SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`).
 4. Dogfood the private repository with terminal-agent round trips.
 5. Release public `v0.1.0` only after private dogfooding is stable.
+
+v0.1 remains **terminal-first**: optional doorbells wake live sessions; they do not replace human- or session-driven inbox handling.
 
 ## Deferred integrations
 

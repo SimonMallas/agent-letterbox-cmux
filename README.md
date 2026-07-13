@@ -4,6 +4,20 @@
 
 Agent Letterbox is a small, filesystem-first protocol for independent coding-agent sessions. A message is a durable Markdown file in the recipient's inbox. A doorbell is an optional adapter that tells a live agent to check sooner; it never carries task content.
 
+**v0.1 is terminal-first.** Durable letters on disk are the product. Optional cmux/tmux/desktop adapters only help a *live* session notice new mail. This release does **not** promise autonomous desktop-agent turns, webhook-driven unattended processing, or always-on inbox watchers — see [ROADMAP.md](ROADMAP.md).
+
+## Release readiness (pre-public)
+
+| Doc | Purpose |
+|-----|---------|
+| [SPEC.md](SPEC.md) | Protocol rules |
+| [ROADMAP.md](ROADMAP.md) | Supported vs deferred scope |
+| [SECURITY.md](SECURITY.md) | Threat model and reporting |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to test and send changes |
+| [CHANGELOG.md](CHANGELOG.md) | User-visible history toward `v0.1.0` |
+
+Public `v0.1.0` should wait until private dogfooding of terminal round-trips is stable. Tag when ready; do not treat `main` alone as a release promise.
+
 ## Requirements
 
 - **Bash** and standard **macOS/Linux** userland (`date`, `mktemp`, `od`, `find`, `ln`)
@@ -81,6 +95,10 @@ export LETTERBOX_CMUX_PATTERNS="$PWD/.letterbox/cmux-patterns.tsv"
 Messages are not authentication. Treat message bodies as untrusted input, verify unusual destructive requests out of band, and never let a message expand an agent's safety permissions. Advisory locks avoid cooperative edit collisions; remove a stale lock manually only after confirming its owner is inactive.
 
 See [SPEC.md](SPEC.md) for the protocol rules and [ROADMAP.md](ROADMAP.md) for supported v0.1 scope. This repository contains no server, database, cloud service, agent-vendor dependency, or mandatory terminal multiplexer.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Security reports: [SECURITY.md](SECURITY.md).
 
 ## License
 
