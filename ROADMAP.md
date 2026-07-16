@@ -9,8 +9,8 @@ Agent Letterbox is a filesystem-first coordination protocol for coding agents.
 - Durable Markdown letters in per-agent inboxes.
 - Reply-first handling and recipient-owned archival.
 - Atomic message publication, advisory locks, and filesystem completion proof.
-- Immediate doorbells for live terminal agents through optional cmux adapters.
-- tmux and desktop adapters as notification/visibility adapters where their platform capabilities permit.
+- Immediate doorbells for live terminal agents through optional cmux or tmux adapters.
+- Desktop adapters as notification/visibility adapters where their platform capabilities permit.
 - No-op/session-boundary inbox checking when no doorbell exists.
 
 **Not supported in v0.1:**
