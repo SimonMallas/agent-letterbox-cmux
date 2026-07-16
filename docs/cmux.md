@@ -14,9 +14,26 @@ It then targets the discovered surface explicitly. Agents do not need to share a
 
 For a multi-agent setup, use one workspace per live terminal agent and save that arrangement as a **cmux saved workspace layout**. Newer cmux releases can reopen a named layout and set one as the default for new workspaces.
 
+## Self-register dynamic agents
+
+A new agent does not need a known title pattern. From inside its own live cmux terminal, run:
+
+```bash
+LETTERBOX_DIR=/path/to/.letterbox letterbox cmux register agent-zero
+```
+
+The command records the current `CMUX_SURFACE_ID` in `cmux-agents.tsv` under the shared Letterbox directory. The cmux adapter prefers that exact live surface over title matching. The agent should repeat registration at startup/resume because surface IDs change after a restart.
+
+```bash
+letterbox cmux status
+letterbox cmux unregister agent-zero
+```
+
+Registration refuses to silently assign the same live surface to two agent identities.
+
 ## Configure title patterns
 
-Create a local, tab-separated pattern file:
+Static title patterns remain useful for agents that do not self-register. Create a local, tab-separated pattern file:
 
 ```text
 # agent<TAB>stable terminal-title substring

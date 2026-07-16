@@ -4,6 +4,7 @@ test:
 	./tests/smoke.sh
 	./tests/test_error_paths.sh
 	./tests/cmux-doorbell-safety.sh
+	./tests/test_cmux_registration.sh
 	./tests/test_tmux_doorbell.sh
 	./tests/test_desktop_adapter.sh
 	./tests/webhook_e2e_harness.sh

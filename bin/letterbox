@@ -26,6 +26,54 @@ frontmatter_value() {
   ' "$1"
 }
 canonical_dir() { (cd "$1" && pwd -P); }
+cmux_registry_path() { printf '%s' "${LETTERBOX_CMUX_REGISTRY:-$BOX/cmux-agents.tsv}"; }
+
+cmd_cmux_register() {
+  local agent="${1:?usage: letterbox cmux register <agent>}" registry surface owner tmp
+  need_agent "$agent"
+  command -v cmux >/dev/null 2>&1 || die 'cmux is unavailable'
+  surface="${CMUX_SURFACE_ID:-}"
+  [[ "$surface" =~ ^surface:[0-9]+$ ]] || die 'run registration from inside the agent cmux terminal (CMUX_SURFACE_ID is missing)'
+  cmux tree --all 2>/dev/null | grep -F "$surface" >/dev/null || die "current surface is not live: $surface"
+  mkdir -p "$BOX/$agent/inbox" "$BOX/$agent/processed" "$BOX/locks"
+  registry="$(cmux_registry_path)"
+  mkdir -p "$(dirname "$registry")"
+  if [[ -f "$registry" ]]; then
+    owner="$(awk -F '\t' -v surface="$surface" '$2 == surface { print $1; exit }' "$registry")"
+    [[ -z "$owner" || "$owner" == "$agent" ]] || die "surface $surface is already registered to $owner"
+  fi
+  tmp="$(mktemp "$(dirname "$registry")/.cmux-agents.tmp.XXXXXX")"
+  [[ -f "$registry" ]] && awk -F '\t' -v agent="$agent" '$1 != agent { print }' "$registry" > "$tmp"
+  printf '%s\t%s\t%s\n' "$agent" "$surface" "$(now)" >> "$tmp"
+  mv "$tmp" "$registry"
+  printf 'registered: %s → %s\n' "$agent" "$surface"
+}
+
+cmd_cmux_status() {
+  local registry="$(cmux_registry_path)"
+  [[ -f "$registry" ]] || { printf 'no cmux registrations: %s\n' "$registry"; return; }
+  cat "$registry"
+}
+
+cmd_cmux_unregister() {
+  local agent="${1:?usage: letterbox cmux unregister <agent>}" registry tmp
+  need_agent "$agent"
+  registry="$(cmux_registry_path)"
+  [[ -f "$registry" ]] || { printf 'no cmux registration for %s\n' "$agent"; return; }
+  tmp="$(mktemp "$(dirname "$registry")/.cmux-agents.tmp.XXXXXX")"
+  awk -F '\t' -v agent="$agent" '$1 != agent { print }' "$registry" > "$tmp"
+  mv "$tmp" "$registry"
+  printf 'unregistered: %s\n' "$agent"
+}
+
+cmd_cmux() {
+  case "${1:-}" in
+    register) shift; cmd_cmux_register "$@";;
+    unregister) shift; cmd_cmux_unregister "$@";;
+    status) shift; cmd_cmux_status "$@";;
+    *) die 'usage: letterbox cmux {register|unregister|status} <agent>';;
+  esac
+}
 
 cmd_version() {
   [[ -f "$VERSION_FILE" ]] || die "version file not found: $VERSION_FILE"
@@ -197,6 +245,6 @@ case "${1:-}" in
   --version|-V|version) cmd_version;;
   init) shift; cmd_init "$@";; send) shift; cmd_send "$@";; check) shift; cmd_check "$@";;
   reply) shift; cmd_reply "$@";; done) shift; cmd_done "$@";; lock) shift; cmd_lock "$@";; unlock) shift; cmd_unlock "$@";;
-  status) shift; cmd_status "$@";;
-  *) printf 'usage: letterbox {init|send|check|reply|done|lock|unlock|status|--version} ...\n' >&2; exit 2;;
+  status) shift; cmd_status "$@";; cmux) shift; cmd_cmux "$@";;
+  *) printf 'usage: letterbox {init|send|check|reply|done|lock|unlock|status|cmux|--version} ...\n' >&2; exit 2;;
 esac

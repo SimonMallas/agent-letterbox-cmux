@@ -75,6 +75,12 @@ export LETTERBOX_CMUX_PATTERNS="$PWD/.letterbox/cmux-patterns.tsv"
 export LETTERBOX_CMUX_SUBMIT=1
 ```
 
+For a dynamically titled or previously unknown agent, let it self-register from inside its own cmux terminal instead of guessing a title pattern:
+
+```bash
+letterbox cmux register agent-zero
+```
+
 **tmux:**
 
 ```bash
