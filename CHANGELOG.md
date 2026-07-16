@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 for **tagged releases**. Until the first public tag, treat versions as pre-release.
 
+## [Unreleased]
+
+### Added
+
+- cmux adapter guide covering saved workspace layouts, cross-workspace discovery, update safety, and post-update doorbell verification.
+
 ## [0.1.0] — 2026-07-16
 
 ### Added
@@ -31,4 +37,5 @@ for **tagged releases**. Until the first public tag, treat versions as pre-relea
 
 - Documented untrusted-letter model, advisory locks, and doorbell injection risks in `SECURITY.md`.
 
+[Unreleased]: https://github.com/SimonMallas/agent-letterbox/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/SimonMallas/agent-letterbox/releases/tag/v0.1.0
