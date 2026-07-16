@@ -40,6 +40,9 @@ chmod +x bin/letterbox adapters/*.sh tests/*.sh
 
 ./tests/webhook_e2e_harness.sh
 # expect: webhook e2e harness: PASS
+
+# Full release/dogfood gate: runs every deterministic test.
+make test
 ```
 
 `smoke.sh` covers core send/reply/archive and locks. `webhook_e2e_harness.sh` proves **webhook-bridge completion is judged only by on-disk Letterbox ACK/result + processed original**—not model prose (covers the hallucinated-completion failure). See [docs/webhook-e2e-proof.md](docs/webhook-e2e-proof.md). Both run in CI on **Ubuntu** and **macOS** (see [`.github/workflows/smoke.yml`](.github/workflows/smoke.yml)).
