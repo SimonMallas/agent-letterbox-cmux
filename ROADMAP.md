@@ -28,7 +28,7 @@ Desktop activation/notification is a human-visible hint only. It must not be pre
 2. ~~Expand core error-path, lock, reply, and adapter tests.~~ **Done** (`make test`, CI, real error-path coverage).
 3. ~~Add release/security/contribution documentation.~~ **Done** (`SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`).
 4. ~~Dogfood the private repository with terminal-agent round trips.~~ **Done** (Pi → Claude → Grok → Hermes → Pi across separate cmux workspaces).
-5. Dogfood cmux and tmux as the only supported automatic-doorbell environments: cross-workspace/session targeting, title/session pattern configuration, and safe input submission.
+5. ~~Dogfood cmux and tmux as the only supported automatic-doorbell environments.~~ **Done** (cmux cross-workspace ring and live tmux agent session both delivered, handled, replied, and archived a real disposable letter).
 6. Review/import approved visual identity assets and social card.
 7. Release public v0.1 only after the private `v0.1.0` baseline and final public-facing assets are reviewed.
 
