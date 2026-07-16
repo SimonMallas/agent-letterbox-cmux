@@ -45,7 +45,7 @@ The adapter discovers these agents anywhere in cmux with `cmux tree --all`, incl
 
 ### Dynamic or duplicate agent terminals
 
-Do not use a shared title pattern for dynamically titled agents or two sessions of the same runtime. Give every live session a distinct Letterbox identity and self-register it from inside that terminal:
+Do not use a shared title pattern for dynamically titled agents or multiple sessions of **any** runtime. This applies equally to multiple Pi, Hermes, Grok, Claude, or future-agent sessions. Give every live session a distinct Letterbox identity and self-register it from inside that terminal:
 
 ```bash
 letterbox cmux register claude-review
