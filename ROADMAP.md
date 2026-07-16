@@ -24,11 +24,12 @@ Desktop activation/notification is a human-visible hint only. It must not be pre
 
 ## Next milestones
 
-1. Document and test the terminal cmux/tmux path thoroughly.
-2. Expand core error-path, lock, reply, and adapter tests.
+1. ~~Document and test the terminal cmux/tmux path thoroughly.~~ **Done** (`docs/cmux.md`, cross-workspace ring dogfood, adapter tests).
+2. ~~Expand core error-path, lock, reply, and adapter tests.~~ **Done** (`make test`, CI, real error-path coverage).
 3. ~~Add release/security/contribution documentation.~~ **Done** (`SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`).
-4. Dogfood the private repository with terminal-agent round trips.
-5. Release public `v0.1.0` only after private dogfooding is stable.
+4. ~~Dogfood the private repository with terminal-agent round trips.~~ **Done** (Pi → Claude → Grok → Hermes → Pi across separate cmux workspaces).
+5. Review/import approved visual identity assets and social card.
+6. Release public v0.1 only after the private `v0.1.0` baseline and final public-facing assets are reviewed.
 
 v0.1 remains **terminal-first**: optional doorbells wake live sessions; they do not replace human- or session-driven inbox handling.
 
