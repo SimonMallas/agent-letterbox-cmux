@@ -14,6 +14,7 @@ for **tagged releases**. Until the first public tag, treat versions as pre-relea
 - Opt-in tmux `send-keys` automatic agent doorbell plus a live disposable tmux proof and setup guide.
 - Reframed the README around live, near-instant cross-agent coordination through cmux/tmux doorbells.
 - cmux self-registration for dynamically titled or previously unknown live agents, with registry-first doorbell targeting.
+- Standard cmux team setup guide covering shared identities, title patterns, duplicate/dynamic sessions, startup registration, and validation.
 
 ## [0.1.0] — 2026-07-16
 

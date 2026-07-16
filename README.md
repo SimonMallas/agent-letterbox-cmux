@@ -50,7 +50,7 @@ Each hop is a durable letter plus an automatic terminal doorbell. Agents may liv
 
 cmux and tmux submission are explicit opt-ins because any terminal-input mechanism can submit text already waiting in the target input buffer. Use them for dedicated agent terminals.
 
-## Quick start: form a two-agent team
+## Quick start: establish shared Letterbox mail
 
 Requires Bash and standard macOS/Linux userland. The core has no server, database, cloud account, or mandatory multiplexer.
 
@@ -61,6 +61,10 @@ export LETTERBOX_DIR="$PWD/.letterbox"
 
 letterbox init planner reviewer
 ```
+
+### Standard live cmux team setup
+
+For the full multi-agent setup—static title patterns, dynamically titled agents, duplicate agent runtimes, self-registration, startup/resume instructions, and cross-workspace validation—follow [docs/team-setup.md](docs/team-setup.md).
 
 ### 1. Configure a live doorbell
 
@@ -132,6 +136,7 @@ make test
 - [SPEC.md](SPEC.md) — message format, reply-first semantics, and safety rules
 - [docs/cmux.md](docs/cmux.md) — cmux cross-workspace setup and update verification
 - [docs/tmux.md](docs/tmux.md) — tmux automatic doorbell setup
+- [docs/team-setup.md](docs/team-setup.md) — standard live cmux team setup and self-registration
 - [ROADMAP.md](ROADMAP.md) — supported v0.1 scope
 - [SECURITY.md](SECURITY.md) — threat model and reporting
 - [CONTRIBUTING.md](CONTRIBUTING.md) — development and test guidance
