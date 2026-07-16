@@ -12,6 +12,7 @@ for **tagged releases**. Until the first public tag, treat versions as pre-relea
 
 - cmux adapter guide covering saved workspace layouts, cross-workspace discovery, update safety, and post-update doorbell verification.
 - Opt-in tmux `send-keys` automatic agent doorbell plus a live disposable tmux proof and setup guide.
+- Reframed the README around live, near-instant cross-agent coordination through cmux/tmux doorbells.
 
 ## [0.1.0] — 2026-07-16
 

@@ -1,115 +1,138 @@
 # Agent Letterbox
 
-**Files are the letters. Doorbells are optional.**
+## Ring the agent. Keep the message.
 
-Agent Letterbox is a small, filesystem-first protocol for independent coding-agent sessions. A message is a durable Markdown file in the recipient's inbox. A doorbell is an optional adapter that tells a live agent to check sooner; it never carries task content.
+**Agent Letterbox turns separate coding-agent sessions into a live team.**
 
-**v0.1 is terminal-first.** Durable letters on disk are the product. Optional cmux/tmux/desktop adapters only help a *live* session notice new mail. This release does **not** promise autonomous desktop-agent turns, webhook-driven unattended processing, or always-on inbox watchers — see [ROADMAP.md](ROADMAP.md).
+An agent sends a durable letter to another agent's inbox. When the recipient is live, a terminal doorbell immediately delivers one safe instruction:
 
-## Release readiness (pre-public)
-
-| Doc | Purpose |
-|-----|---------|
-| [SPEC.md](SPEC.md) | Protocol rules |
-| [ROADMAP.md](ROADMAP.md) | Supported vs deferred scope |
-| [SECURITY.md](SECURITY.md) | Threat model and reporting |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to test and send changes |
-| [CHANGELOG.md](CHANGELOG.md) | User-visible history toward `v0.1.0` |
-
-Public `v0.1.0` should wait until private dogfooding of terminal round-trips is stable. Tag when ready; do not treat `main` alone as a release promise.
-
-## Requirements
-
-- **Bash** and standard **macOS/Linux** userland (`date`, `mktemp`, `od`, `find`, `ln`)
-- No server, package registry, language runtime, or terminal multiplexer required for the core CLI
-
-Check the helper version with:
-
-```bash
-letterbox --version
+```text
+📬 letterbox doorbell: check your inbox
 ```
 
-## Verify (first thing)
+The recipient wakes, reads the real message from disk, replies, and continues the flow.
 
-Confirm the helper and protocol rules work on your machine:
+```text
+Agent A writes a letter
+        ↓
+Doorbell wakes Agent B's live terminal
+        ↓
+Agent B checks inbox, replies, and hands work onward
+```
+
+This is not agent chat pasted across terminals. **Files carry the work; doorbells make the team move.**
+
+> **Agent mail that waits safely—and rings when it matters.**
+
+## What it enables
+
+- **Near-instant live coordination** between independent agent sessions
+- **Free-flowing handoffs** without a human copying task text between panes
+- **Clear ownership:** delegates require ACK/NACK before work starts
+- **Durable history:** letters survive a closed pane, restart, model change, or missed doorbell
+- **Verified completion:** reply first, then archive; filesystem state—not plausible agent prose—proves work happened
+
+A successful live exchange looks like this:
+
+```text
+Pi → Claude → Grok → Hermes → Pi
+```
+
+Each hop is a durable letter plus an automatic terminal doorbell. Agents may live in separate workspaces; they do not need to share a pane or a conversation.
+
+## Supported automatic doorbells
+
+| Environment | Live agent wake-up |
+|---|---|
+| **cmux** | Yes — cross-panel and cross-workspace terminal input doorbell |
+| **tmux** | Yes — opt-in `send-keys` terminal input doorbell |
+| Ordinary terminals / desktop apps | Durable-letter fallback only; no automatic agent wake-up in v0.1 |
+
+cmux and tmux submission are explicit opt-ins because any terminal-input mechanism can submit text already waiting in the target input buffer. Use them for dedicated agent terminals.
+
+## Quick start: form a two-agent team
+
+Requires Bash and standard macOS/Linux userland. The core has no server, database, cloud account, or mandatory multiplexer.
 
 ```bash
 chmod +x bin/letterbox adapters/*.sh tests/*.sh
-./tests/smoke.sh
-# expect: smoke test: PASS
-
-./tests/webhook_e2e_harness.sh
-# expect: webhook e2e harness: PASS
-
-# Full release/dogfood gate: runs every deterministic test.
-make test
-```
-
-`smoke.sh` covers core send/reply/archive and locks. `webhook_e2e_harness.sh` proves **webhook-bridge completion is judged only by on-disk Letterbox ACK/result + processed original**—not model prose (covers the hallucinated-completion failure). See [docs/webhook-e2e-proof.md](docs/webhook-e2e-proof.md). Both run in CI on **Ubuntu** and **macOS** (see [`.github/workflows/smoke.yml`](.github/workflows/smoke.yml)).
-
-## Five-minute round trip
-
-```bash
 export PATH="$PWD/bin:$PATH"
 export LETTERBOX_DIR="$PWD/.letterbox"
 
 letterbox init planner reviewer
-
-# Planner delivers a task.
-printf '%s\n' 'Review src/auth.ts and report correctness findings.' |
-  LETTERBOX_AGENT=planner letterbox send reviewer delegate auth-review --ack
-
-# Reviewer lists durable inbox messages (each file name embeds the message id).
-LETTERBOX_AGENT=reviewer letterbox check
-# Copy the id: line from the message frontmatter, e.g.
-#   id: 2026-07-12T110000-planner-delegate-auth-review-a1b2c3d4
-# Or use the full path / basename under $LETTERBOX_DIR/reviewer/inbox/*.md
-
-printf '%s\n' 'Accepted. I will review the authentication flow.' |
-  LETTERBOX_AGENT=reviewer letterbox reply <message-id-or-inbox-path> ack accept-auth-review
-
-# Planner receives the acknowledgement.
-LETTERBOX_AGENT=planner letterbox check
 ```
 
-`letterbox reply` is the normal reply-first operation: it publishes the reply to the original sender's inbox **before** archiving the inbound message. `letterbox done` exists only for an already-delivered manually authored reply and verifies its location and frontmatter before archiving. **Archiving is not delivery**—if you skip `reply`/`send` into the peer inbox, the peer never sees your answer.
+### 1. Configure a live doorbell
 
-## Doorbells: make live coordination immediate
+Choose the adapter that matches your terminal environment.
 
-Filesystem delivery works without a doorbell: an agent checks at startup, resume, completion, or a checkpoint. A doorbell makes a live session check immediately.
-
-The core uses this simple adapter contract:
-
-```text
-<adapter> <recipient> <message-type> <slug>
-```
-
-Included adapters:
-
-- `adapters/noop.sh` — durable delivery only.
-- `adapters/cmux.sh` — finds a live terminal from local title patterns and can submit the standardized one-line doorbell with explicit opt-in.
-- `adapters/tmux.sh` — optional tmux agent-input doorbell, with explicit submit opt-in.
-- `adapters/desktop.sh` — macOS notification/activation visibility adapter; it does not start an agent turn.
+**cmux:**
 
 ```bash
 cp examples/cmux-patterns.tsv.example .letterbox/cmux-patterns.tsv
 export LETTERBOX_DOORBELL="$PWD/adapters/cmux.sh"
 export LETTERBOX_CMUX_PATTERNS="$PWD/.letterbox/cmux-patterns.tsv"
+export LETTERBOX_CMUX_SUBMIT=1
 ```
 
-`--now` rings only when a doorbell adapter is configured; the inbox message is delivered regardless. The cmux adapter discovers surfaces using `cmux tree --all`, so live terminal agents may be in another cmux workspace. The tmux adapter targets a configured live tmux session. To inject the doorbell plus Enter into either terminal, explicitly set `LETTERBOX_CMUX_SUBMIT=1` or `LETTERBOX_TMUX_SUBMIT=1`; this is opt-in because any terminal injector can interfere with unsent user input. v0.1 does not include watchers or autonomous desktop triggers.
+**tmux:**
 
-**Unavoidable limitation:** even with `LETTERBOX_CMUX_SUBMIT=1`, the adapter cannot verify the target pane's input line is empty before sending the doorbell text and an Enter keypress — cmux exposes no query for a pane's current input-buffer state. If the recipient already has unsent input typed in that pane, the injected Enter will submit it alongside the doorbell line. This is a property of blind terminal-keystroke injection generally, not a bug this adapter can fix in code; it is the reason the behavior defaults off.
+```bash
+cp examples/tmux-patterns.tsv .letterbox/tmux-patterns.tsv
+export LETTERBOX_DOORBELL="$PWD/adapters/tmux.sh"
+export LETTERBOX_TMUX_PATTERNS="$PWD/.letterbox/tmux-patterns.tsv"
+export LETTERBOX_TMUX_SUBMIT=1
+```
 
-## Safety and boundaries
+### 2. Send a live delegate
 
-Messages are not authentication. Treat message bodies as untrusted input, verify unusual destructive requests out of band, and never let a message expand an agent's safety permissions. Advisory locks avoid cooperative edit collisions; remove a stale lock manually only after confirming its owner is inactive.
+```bash
+printf '%s\n' 'Review src/auth.ts and report correctness findings.' |
+  LETTERBOX_AGENT=planner letterbox send reviewer delegate auth-review --ack --now
+```
 
-See [SPEC.md](SPEC.md) for the protocol rules, [ROADMAP.md](ROADMAP.md) for supported v0.1 scope, [docs/cmux.md](docs/cmux.md) for cross-workspace cmux operation, and [docs/tmux.md](docs/tmux.md) for tmux setup. This repository contains no server, database, cloud service, agent-vendor dependency, or mandatory terminal multiplexer.
+The letter is written to `reviewer/inbox/`; the configured terminal adapter rings the reviewer's live session.
 
-## Contributing
+### 3. Reply and complete the handoff
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Security reports: [SECURITY.md](SECURITY.md).
+The reviewer checks the inbox, then replies through the public CLI:
+
+```bash
+LETTERBOX_AGENT=reviewer letterbox check
+
+printf '%s\n' 'Accepted. I will review the authentication flow.' |
+  LETTERBOX_AGENT=reviewer letterbox reply <message-id-or-inbox-path> ack accept-auth-review
+```
+
+`letterbox reply` delivers the reply into the sender's inbox **before** archiving the inbound letter. That is the safety rule that keeps a team moving without silent loss.
+
+## The fallback is still part of the team
+
+If no live terminal is available, the letter remains in the inbox. The agent finds it at startup, resume, a checkpoint, or a manual `letterbox check`.
+
+The doorbell accelerates coordination; it never becomes the only delivery path.
+
+## Test it
+
+```bash
+letterbox --version
+make test
+```
+
+`make test` runs core reply/archive tests, error-path coverage, cmux and tmux doorbell proofs, desktop visibility testing, the filesystem completion oracle, and the Hermes skill fixture.
+
+## Read more
+
+- [SPEC.md](SPEC.md) — message format, reply-first semantics, and safety rules
+- [docs/cmux.md](docs/cmux.md) — cmux cross-workspace setup and update verification
+- [docs/tmux.md](docs/tmux.md) — tmux automatic doorbell setup
+- [ROADMAP.md](ROADMAP.md) — supported v0.1 scope
+- [SECURITY.md](SECURITY.md) — threat model and reporting
+- [CONTRIBUTING.md](CONTRIBUTING.md) — development and test guidance
+
+## Scope
+
+v0.1 is built for **live terminal agent teams**. It deliberately does not claim autonomous desktop agents, webhook-triggered unattended processing, persistent watchers, or required background services.
 
 ## License
 
