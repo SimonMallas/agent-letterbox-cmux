@@ -1,106 +1,108 @@
 # cmux team setup
 
-This is the standard Agent Letterbox setup for a live terminal-agent team. You choose the cmux layout: one workspace per agent, a multi-panel workspace, separate windows, or a mix. Agent Letterbox does not create or own panels.
+This is the standard Agent Letterbox setup for a live terminal-agent team.
 
-## 1. Choose one shared Letterbox directory
+**You control cmux.** Open whatever panels, workspaces, windows, and agents fit the task. Letterbox never creates or rearranges your cmux layout; it only discovers or registers live agent surfaces and rings them.
 
-Every participating agent must use the same directory:
+## One-time setup
 
-```bash
-export LETTERBOX_DIR="$HOME/.agent-letterbox"
-```
-
-Initialize the identities you plan to use:
+Run once from the Agent Letterbox checkout:
 
 ```bash
-letterbox init pi claude grok hermes
+letterbox cmux setup --agents pi,claude,grok,hermes --submit
 ```
 
-Each identity gets an `inbox/` and `processed/` directory under the shared Letterbox.
-
-## 2. Configure automatic cmux doorbells
-
-```bash
-export LETTERBOX_DOORBELL="$PWD/adapters/cmux.sh"
-export LETTERBOX_CMUX_PATTERNS="$LETTERBOX_DIR/cmux-patterns.tsv"
-export LETTERBOX_CMUX_SUBMIT=1
-```
-
-`LETTERBOX_CMUX_SUBMIT=1` is required for automatic agent input. It can submit text already present in a target terminal input buffer, so use it only for dedicated agent terminals.
-
-## 3. Register agents by the right method
-
-### Stable, unique terminal titles
-
-A stable title pattern is sufficient for one instance of an agent:
+This creates `~/.agent-letterbox/` by default, including:
 
 ```text
-# $LETTERBOX_DIR/cmux-patterns.tsv
-pi	π -
-hermes	hermes
-grok	grok
+inboxes and processed folders for every named agent
+cmux-agents.tsv          # live self-registrations
+cmux-patterns.tsv        # optional static title patterns
+env.sh                   # shared Letterbox/cmux environment
+AGENT-LETTERBOX.md       # startup/resume instruction snippet
 ```
 
-The adapter discovers these agents anywhere in cmux with `cmux tree --all`, including other workspaces.
+`--submit` enables automatic terminal input doorbells. Leave it out if you want visibility notifications only.
 
-### Dynamic or duplicate agent terminals
+Use another shared location when needed:
 
-Do not use a shared title pattern for dynamically titled agents or multiple sessions of **any** runtime. This applies equally to multiple Pi, Hermes, Grok, Claude, or future-agent sessions. Give every live session a distinct Letterbox identity and self-register it from inside that terminal:
+```bash
+letterbox cmux setup --agents planner,reviewer --dir /shared/letterbox --submit
+```
+
+## Launch agents in any cmux layout
+
+Open cmux and create your own layout. Then launch each agent inside its chosen pane or workspace through the wrapper:
+
+```bash
+letterbox cmux run pi -- pi
+letterbox cmux run claude -- claude
+letterbox cmux run grok -- grok
+letterbox cmux run hermes -- hermes chat
+```
+
+The wrapper:
+
+1. loads the generated shared environment;
+2. sets `LETTERBOX_AGENT`;
+3. self-registers the current live cmux surface;
+4. launches the requested agent command.
+
+The agent can live in any workspace. The cmux adapter uses `cmux tree --all` and registered surface IDs to target it across panels and workspaces.
+
+## Dynamic and duplicate agents
+
+The wrapper solves dynamic titles and duplicate runtimes automatically. Give each live session a distinct identity:
+
+```bash
+letterbox cmux run pi-research -- pi
+letterbox cmux run pi-builder -- pi
+letterbox cmux run agent-zero -- agent-zero
+```
+
+Each registration maps an identity to its current `surface:N` in the shared `cmux-agents.tsv` registry. Surface IDs change after restart/resume, so use `letterbox cmux run` again whenever the agent is relaunched.
+
+For an already-running agent, register manually from inside its terminal:
 
 ```bash
 letterbox cmux register claude-review
-letterbox cmux register pi-research
-letterbox cmux register pi-builder
 ```
 
-Registration records the current `CMUX_SURFACE_ID` in:
-
-```text
-$LETTERBOX_DIR/cmux-agents.tsv
-```
-
-The cmux adapter prefers this exact surface mapping over title patterns.
-
-## 4. Add startup/resume instructions to every agent
-
-Each participating agent should be told:
-
-```text
-At startup or resume:
-1. If your title is dynamic or you share a runtime with another session, run:
-   letterbox cmux register <your-identity>
-2. Run: letterbox check
-3. For actionable letters, reply first with letterbox reply, then verify inbox state.
-4. Preserve priority: use --now on a reply only when the original letter had priority: now.
-```
-
-Surface IDs are temporary, so dynamic/duplicate sessions must re-register after a restart or resume.
-
-## 5. Validate the team
-
-Send a harmless urgent letter to a live agent in another workspace:
+Inspect or remove registrations:
 
 ```bash
-printf '%s\n' 'Doorbell smoke test. Reply with an ACK only.' |
-  LETTERBOX_AGENT=pi letterbox send hermes delegate doorbell-smoke --ack --now
+letterbox cmux status
+letterbox cmux unregister claude-review
 ```
 
-Verify all of the following:
+## Send a live handoff
 
-1. The recipient letter appears in the correct inbox.
-2. The standard doorbell reaches the intended cmux surface.
-3. The recipient sends an ACK/result.
-4. The reply is in the sender inbox and the original is in recipient `processed/`.
+From one agent terminal:
 
-## Layout is your choice
-
-Agent Letterbox works with:
-
-```text
-one agent per workspace
-multiple agents in one workspace
-multiple cmux windows
-mixed layouts
+```bash
+printf '%s\n' 'Review src/auth.ts and report correctness findings.' |
+  letterbox send claude delegate auth-review --ack --now
 ```
 
-The only requirement for automatic cmux doorbells is a live, discoverable or self-registered terminal surface.
+The message is written to Claude's inbox first. If Claude is live, the cmux adapter injects the generic doorbell line into its registered terminal.
+
+For an urgent reply, preserve urgency:
+
+```bash
+printf '%s\n' 'ACK: I am reviewing it now.' |
+  letterbox reply <message-id> ack auth-review-ack --now
+```
+
+## Safety
+
+Automatic terminal input is powerful and intentionally opt-in. `--submit` may submit text already waiting in a target terminal input buffer. Use it only for dedicated agent terminals.
+
+The doorbell contains no task content. The durable letter remains the real message and fallback if an agent is offline.
+
+## Validate
+
+```bash
+make test
+```
+
+Then send a harmless `--now` delegate between two live agents in separate cmux workspaces. Verify the inbox letter, the target terminal doorbell, the ACK/result, and the archived original.

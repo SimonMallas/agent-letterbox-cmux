@@ -57,33 +57,24 @@ Requires Bash and standard macOS/Linux userland. The core has no server, databas
 ```bash
 chmod +x bin/letterbox adapters/*.sh tests/*.sh
 export PATH="$PWD/bin:$PATH"
-export LETTERBOX_DIR="$PWD/.letterbox"
 
-letterbox init planner reviewer
+# One-time cmux team setup. It creates ~/.agent-letterbox by default.
+letterbox cmux setup --agents pi,claude,grok,hermes --submit
+source "$HOME/.agent-letterbox/env.sh"
 ```
 
 ### Standard live cmux team setup
 
-For the full multi-agent setup—static title patterns, dynamically titled agents, duplicate agent runtimes, self-registration, startup/resume instructions, and cross-workspace validation—follow [docs/team-setup.md](docs/team-setup.md).
-
-### 1. Configure a live doorbell
-
-Choose the adapter that matches your terminal environment.
-
-**cmux:**
+Open cmux and arrange panels or workspaces however the task requires. Then launch agents from their chosen panes:
 
 ```bash
-cp examples/cmux-patterns.tsv.example .letterbox/cmux-patterns.tsv
-export LETTERBOX_DOORBELL="$PWD/adapters/cmux.sh"
-export LETTERBOX_CMUX_PATTERNS="$PWD/.letterbox/cmux-patterns.tsv"
-export LETTERBOX_CMUX_SUBMIT=1
+letterbox cmux run pi -- pi
+letterbox cmux run claude -- claude
+letterbox cmux run grok -- grok
+letterbox cmux run hermes -- hermes chat
 ```
 
-For a dynamically titled or previously unknown agent, let it self-register from inside its own cmux terminal instead of guessing a title pattern:
-
-```bash
-letterbox cmux register agent-zero
-```
+The wrapper self-registers each current live cmux surface, so dynamic titles and duplicate agent runtimes do not need title guessing. See [docs/team-setup.md](docs/team-setup.md) for the complete workflow.
 
 **tmux:**
 
@@ -98,20 +89,20 @@ export LETTERBOX_TMUX_SUBMIT=1
 
 ```bash
 printf '%s\n' 'Review src/auth.ts and report correctness findings.' |
-  LETTERBOX_AGENT=planner letterbox send reviewer delegate auth-review --ack --now
+  LETTERBOX_AGENT=pi letterbox send claude delegate auth-review --ack --now
 ```
 
-The letter is written to `reviewer/inbox/`; the configured terminal adapter rings the reviewer's live session.
+The letter is written to `claude/inbox/`; the configured terminal adapter rings Claude's live session.
 
 ### 3. Reply and complete the handoff
 
-The reviewer checks the inbox, then replies through the public CLI:
+Claude checks the inbox, then replies through the public CLI:
 
 ```bash
-LETTERBOX_AGENT=reviewer letterbox check
+LETTERBOX_AGENT=claude letterbox check
 
 printf '%s\n' 'Accepted. I will review the authentication flow.' |
-  LETTERBOX_AGENT=reviewer letterbox reply <message-id-or-inbox-path> ack accept-auth-review
+  LETTERBOX_AGENT=claude letterbox reply <message-id-or-inbox-path> ack accept-auth-review --now
 ```
 
 `letterbox reply` delivers the reply into the sender's inbox **before** archiving the inbound letter. That is the safety rule that keeps a team moving without silent loss.
