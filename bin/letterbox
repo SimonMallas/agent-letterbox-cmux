@@ -158,7 +158,15 @@ cmd_done() {
   archive_message "$message"
 }
 
-lock_name() { local p="$1"; printf '%s.lock' "$(printf '%s' "$p" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | sed 's/^-//')"; }
+lock_name() {
+  # Escape literal hyphens before encoding slashes so `sub/file` and
+  # `sub-file` always produce distinct advisory lock paths.
+  local p
+  p="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  p="${p//-/--}"
+  p="${p//\//-slash-}"
+  printf '%s.lock' "$p"
+}
 cmd_lock() {
   need_me
   local target="${1:?usage: letterbox lock <path>}" lock="$BOX/locks/$(lock_name "${1:?}")"

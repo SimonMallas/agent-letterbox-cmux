@@ -60,4 +60,11 @@ fi
 lb alpha unlock shared-resource >/dev/null
 printf '%s\n' 'PASS'
 
+printf '%s\n' '=== Distinct path lock names do not collide ==='
+lb alpha lock sub/file >/dev/null
+lb beta lock sub-file >/dev/null
+lb alpha unlock sub/file >/dev/null
+lb beta unlock sub-file >/dev/null
+printf '%s\n' 'PASS'
+
 printf '%s\n' 'error-path tests: PASS'

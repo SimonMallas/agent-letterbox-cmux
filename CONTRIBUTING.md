@@ -33,18 +33,13 @@ export PATH="$PWD/bin:$PATH"
 
 ## Tests
 
-Run the dependency-free suite before opening a PR:
+Run the full dependency-free suite before opening a PR:
 
 ```bash
-./tests/smoke.sh
-./tests/cmux-doorbell-safety.sh
-./tests/test_desktop_adapter.sh
-./tests/webhook_e2e_harness.sh
-# if Python is available for skill fixture tests:
-python3 tests/test_skill_prompt.py
+make test
 ```
 
-Expect each script to print an explicit **PASS** (or pytest OK). CI runs the shell harnesses on Ubuntu and macOS.
+This includes smoke, error-path, adapter-safety, webhook-oracle, and skill-fixture coverage. Expect each script to print an explicit **PASS**. CI runs the same suite on Ubuntu and macOS.
 
 ## Coding guidelines
 

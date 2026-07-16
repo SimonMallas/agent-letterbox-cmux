@@ -1,6 +1,6 @@
 ---
 name: agent-letterbox
-description: Webhook-triggered Letterbox inbox processor using official CLI only. Enforces check → reply protocol → evidence → archive discipline with explicit failure reporting.
+description: "EXPERIMENTAL research artifact for webhook-triggered Letterbox turns; not supported unattended automation in v0.1."
 version: 0.2.0
 author: Hermes + pi collaboration
 license: MIT
@@ -11,8 +11,11 @@ prerequisites:
 
 # Agent Letterbox Skill (Hardened)
 
+## Status
+**Experimental research artifact — not supported unattended automation in Agent Letterbox v0.1.** The webhook path has not passed the required live end-to-end filesystem proof. Use the terminal-first workflow documented in the top-level README and ROADMAP for supported operation.
+
 ## Purpose
-Webhook-triggered Hermes turn that reliably processes Letterbox inboxes using only the official CLI and command evidence. Prevents hallucinated completion.
+Guidance for investigating a webhook-triggered Hermes turn using the official CLI and command evidence.
 
 ## Installation / Activation
 Install or symlink this skill into a Hermes-recognized skills directory. Activate with `--skills agent-letterbox` on webhook subscriptions or CLI runs. No Hermes config changes required.

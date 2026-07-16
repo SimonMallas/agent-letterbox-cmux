@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 for **tagged releases**. Until the first public tag, treat versions as pre-release.
 
-## [Unreleased]
+## [0.1.0] — 2026-07-16
 
 ### Added
 
@@ -24,13 +24,11 @@ for **tagged releases**. Until the first public tag, treat versions as pre-relea
 - Reply path hardened: `letterbox reply` publishes then archives; undelivered `done` is rejected.
 - Urgent reply doorbells preserved when original priority is `now`.
 - cmux adapter: terminal keystroke submit gated behind `LETTERBOX_CMUX_SUBMIT=1` with documented blind-input limitation.
+- Advisory lock names now distinguish path separators from literal hyphens.
+- Added full `make test` gate, real error-path coverage, and CLI `--version` support.
 
 ### Security
 
 - Documented untrusted-letter model, advisory locks, and doorbell injection risks in `SECURITY.md`.
 
-## [0.1.0] — TBD
-
-First public release target. Will be dated when tagged after private dogfooding is stable (see ROADMAP).
-
-[Unreleased]: https://github.com/SimonMallas/agent-letterbox/compare/HEAD
+[0.1.0]: https://github.com/SimonMallas/agent-letterbox/releases/tag/v0.1.0

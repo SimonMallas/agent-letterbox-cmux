@@ -1,32 +1,29 @@
 #!/usr/bin/env bash
-# Dependency-free Bash mock test for the desktop adapter.
+# Dependency-free Bash mock test for the macOS desktop adapter.
 set -euo pipefail
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
-# Create mock osascript
-cat > "$tmpdir/osascript" << 'MOCK'
+cat > "$tmpdir/osascript" <<'MOCK'
 #!/usr/bin/env bash
-echo "MOCK_OSASCRIPT_CALLED: $*" >> "$MOCK_LOG"
-exit 0
+printf '%s\n' "$@" >> "$MOCK_LOG"
 MOCK
 chmod +x "$tmpdir/osascript"
 
+app='Hermes "quoted"'
+box='/tmp/letterbox-desktop-test'
 export PATH="$tmpdir:$PATH"
-export LETTERBOX_MACOS_APP="Hermes"
-export LETTERBOX_DIR="/tmp/letterbox"
+export LETTERBOX_MACOS_APP="$app"
+export LETTERBOX_DIR="$box"
 export MOCK_LOG="$tmpdir/calls.log"
 
-# Run the adapter
-bash "$(dirname "$0")/../adapters/desktop.sh" pi delegate test-slug
+bash "$(dirname "$0")/../adapters/desktop.sh" reviewer delegate test-slug
 
-# Verify calls
-if grep -q "display notification" "$MOCK_LOG" && grep -q "tell application" "$MOCK_LOG"; then
-  echo "PASS: osascript was invoked correctly (notification + activation)"
-  exit 0
-else
-  echo "FAIL: expected osascript calls not found"
-  cat "$MOCK_LOG"
-  exit 1
-fi
+# Fixed AppleScript source is present, while dynamic values reach osascript as
+# separate argv entries instead of being interpolated into that source.
+grep -F 'display notification (item 1 of argv)' "$MOCK_LOG" >/dev/null
+grep -F 'tell application (item 1 of argv)' "$MOCK_LOG" >/dev/null
+grep -Fx "$app" "$MOCK_LOG" >/dev/null
+grep -Fx "📬 letterbox doorbell: unacked delegate in $box/reviewer/inbox/ — please check" "$MOCK_LOG" >/dev/null
+printf '%s\n' 'desktop adapter test: PASS'
