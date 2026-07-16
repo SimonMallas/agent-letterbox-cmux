@@ -11,14 +11,14 @@ Agent Letterbox is a filesystem-first coordination protocol for coding agents.
 - Atomic message publication, advisory locks, and filesystem completion proof.
 - Immediate doorbells for live terminal agents through optional cmux or tmux adapters.
 - Desktop adapters as notification/visibility adapters where their platform capabilities permit.
-- No-op/session-boundary inbox checking when no doorbell exists.
+- No-op/session-boundary inbox checking when no doorbell exists (fallback only; not an automatic-doorbell development target).
 
 **Not supported in v0.1:**
 
 - Autonomous desktop-agent turns.
 - Webhook-triggered unattended Letterbox processing.
 - Persistent inbox watchers, retry supervisors, or cmux relay/proxy services.
-- Multi-machine transport, databases, dashboards, MCP servers, or required daemons.
+- Multi-machine transport, databases, dashboards, MCP servers, required daemons, or an unmanaged-terminal bridge.
 
 Desktop activation/notification is a human-visible hint only. It must not be presented as proof that an agent started a turn or checked its inbox.
 
@@ -28,8 +28,9 @@ Desktop activation/notification is a human-visible hint only. It must not be pre
 2. ~~Expand core error-path, lock, reply, and adapter tests.~~ **Done** (`make test`, CI, real error-path coverage).
 3. ~~Add release/security/contribution documentation.~~ **Done** (`SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`).
 4. ~~Dogfood the private repository with terminal-agent round trips.~~ **Done** (Pi → Claude → Grok → Hermes → Pi across separate cmux workspaces).
-5. Review/import approved visual identity assets and social card.
-6. Release public v0.1 only after the private `v0.1.0` baseline and final public-facing assets are reviewed.
+5. Dogfood cmux and tmux as the only supported automatic-doorbell environments: cross-workspace/session targeting, title/session pattern configuration, and safe input submission.
+6. Review/import approved visual identity assets and social card.
+7. Release public v0.1 only after the private `v0.1.0` baseline and final public-facing assets are reviewed.
 
 v0.1 remains **terminal-first**: optional doorbells wake live sessions; they do not replace human- or session-driven inbox handling.
 
