@@ -77,7 +77,7 @@
       <rect x="28" y="38" width="128" height="10" rx="3" fill="#1A2332" opacity="0.14"/>
       <rect x="28" y="60" width="208" height="8" rx="2" fill="#1A2332" opacity="0.08"/>
       <rect x="28" y="78" width="176" height="8" rx="2" fill="#1A2332" opacity="0.08"/>
-      <text x="28" y="150" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#5C7A6E">shared-brain/bus/</text>
+      <text x="28" y="150" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#5C7A6E">letterbox/inbox/</text>
       <text x="28" y="172" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" fill="#1A2332" opacity="0.38">inbox · outbox · ring</text>
     </g>
     <g transform="translate(38,18) rotate(3)">
