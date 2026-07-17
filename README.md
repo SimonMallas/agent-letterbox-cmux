@@ -61,6 +61,8 @@ export PATH="$PWD/bin:$PATH"
 # One-time cmux team setup. It creates ~/.agent-letterbox by default.
 letterbox cmux setup --agents pi,claude,grok,hermes --submit
 source "$HOME/.agent-letterbox/env.sh"
+
+# Setup links the shared agent-letterbox skill into ~/.agents/skills/.
 ```
 
 ### Standard live cmux team setup

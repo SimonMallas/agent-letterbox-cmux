@@ -20,6 +20,8 @@ cmux-agents.tsv          # live self-registrations
 cmux-patterns.tsv        # optional static title patterns
 env.sh                   # shared Letterbox/cmux environment
 AGENT-LETTERBOX.md       # startup/resume instruction snippet
+
+It also symlinks the bundled `agent-letterbox` skill into `~/.agents/skills/agent-letterbox` (override with `LETTERBOX_SKILLS_DIR`). Agents that support global Agent Skills can then load the same doorbell/reply behavior automatically.
 ```
 
 `--submit` enables automatic terminal input doorbells. Leave it out if you want visibility notifications only.
@@ -44,9 +46,10 @@ letterbox cmux run hermes -- hermes chat
 The wrapper:
 
 1. loads the generated shared environment;
-2. sets `LETTERBOX_AGENT`;
-3. self-registers the current live cmux surface;
-4. launches the requested agent command.
+2. exposes the shared Agent Letterbox skill location;
+3. sets `LETTERBOX_AGENT`;
+4. self-registers the current live cmux surface;
+5. launches the requested agent command.
 
 The agent can live in any workspace. The cmux adapter uses `cmux tree --all` and registered surface IDs to target it across panels and workspaces.
 

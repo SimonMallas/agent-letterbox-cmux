@@ -16,6 +16,7 @@ for **tagged releases**. Until the first public tag, treat versions as pre-relea
 - cmux self-registration for dynamically titled or previously unknown live agents, with registry-first doorbell targeting.
 - Standard cmux team setup guide covering shared identities, title patterns, duplicate/dynamic sessions, startup registration, and validation.
 - One-command `letterbox cmux setup` bootstrap plus `letterbox cmux run` agent launcher for user-controlled cmux layouts.
+- Bundled shared Agent Letterbox skill, automatically linked into the standard global Agent Skills location during cmux setup.
 
 ## [0.1.0] — 2026-07-16
 
