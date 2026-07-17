@@ -23,7 +23,7 @@ The agent checks the durable message, replies, and hands work onward.
 - A team that can work across separate cmux workspaces
 - A practical way to turn individual agent terminals into one coordinated team
 
-The supported automatic doorbell platforms are **cmux** and **tmux**. Ordinary terminals and desktop apps still receive durable mail, but need a manual/session-start check in v0.1.
+The supported automatic doorbell platforms are **cmux** and **tmux**. Ordinary terminals and desktop apps still receive durable mail, but need a manual/session-start check in v0.1. cmux has the one-command team bootstrap below; tmux setup is documented in [docs/tmux.md](docs/tmux.md) and is being brought to the same bootstrap experience.
 
 ---
 
@@ -33,7 +33,11 @@ You need macOS or Linux, Bash, Git, and cmux. No server, database, cloud account
 
 ## Step 1 — Open a terminal and copy/paste this
 
-Open any terminal window. Copy and paste this whole block into it:
+Open any terminal window. You can either copy/paste the whole block below yourself, **or ask an existing coding agent**:
+
+> Set up Agent Letterbox using the README Quick Start. Do not change my cmux layout.
+
+If you are doing it yourself, copy and paste this whole block:
 
 ```bash
 git clone https://github.com/SimonMallas/agent-letterbox.git \
@@ -44,7 +48,7 @@ export PATH="$PWD/bin:$PATH"
 letterbox cmux setup --agents pi,claude,grok,hermes --automatic-doorbells
 ```
 
-This downloads a local copy of Agent Letterbox, then sets up the team. Because the repository is private today, your GitHub account needs access to it first.
+This downloads a local copy of Agent Letterbox, then sets up the team. If you are new to GitHub, you do not need to understand Git first—copying the block is enough.
 
 If you already downloaded it, copy/paste this instead:
 
@@ -54,10 +58,6 @@ git pull
 export PATH="$PWD/bin:$PATH"
 letterbox cmux setup --agents pi,claude,grok,hermes --automatic-doorbells
 ```
-
-You can also ask an existing coding agent:
-
-> Install Agent Letterbox using the README Quick Start. Do not change my cmux layout.
 
 This automatically:
 

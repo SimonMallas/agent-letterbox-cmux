@@ -19,6 +19,7 @@ for **tagged releases**. Until the first public tag, treat versions as pre-relea
 - Bundled shared Agent Letterbox skill and global `letterbox` launcher, automatically linked during cmux setup.
 - Rewrote the README as a beginner-friendly, step-by-step cmux team installation guide.
 - Added the clearer `--automatic-doorbells` alias for cmux setup.
+- Updated the public README wording so users can copy/paste setup or ask an existing agent to perform it.
 
 ## [0.1.0] — 2026-07-16
 
