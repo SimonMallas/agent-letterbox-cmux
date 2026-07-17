@@ -2,6 +2,8 @@
 
 ## Ring the bell. Create the team.
 
+![Agent Letterbox for cmux](assets/hero/letterbox-hero-1600x900.png)
+
 **Agent Letterbox for cmux turns separate coding-agent terminals into a live team.**
 
 A message is saved safely on disk. When the recipient is live, cmux delivers one short instruction into its terminal:

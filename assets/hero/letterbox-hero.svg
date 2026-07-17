@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Agent Letterbox FOR CMUX — the doorbell that makes agents a team">
+  <defs>
+    <linearGradient id="desk" x1="0" y1="0" x2="0.85" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="55%" stop-color="#FAFBFC"/>
+      <stop offset="100%" stop-color="#F3F5F7"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="42%" cy="46%" r="48%">
+      <stop offset="0%" stop-color="#6B8F7A" stop-opacity="0.14"/>
+      <stop offset="45%" stop-color="#6B8F7A" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#6B8F7A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="spot" cx="50%" cy="40%" r="35%">
+      <stop offset="0%" stop-color="#6B8F7A" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#6B8F7A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cardA" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F7F3EB"/>
+      <stop offset="100%" stop-color="#EDE6D8"/>
+    </linearGradient>
+    <linearGradient id="cardB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F0EBE0"/>
+      <stop offset="100%" stop-color="#E2DACB"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#1A2332" flood-opacity="0.12"/>
+    </filter>
+    <filter id="markGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.2" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <g id="bell2-mark">
+      <path transform="matrix(-1,0,0,1,0,0)" fill="#1A2332" fill-rule="evenodd" d="M356.086182,196.731506C354.587708,196.612183,353.448792,196.078613,352.468689,195.036743C351.690186,194.209167,351.253143,193.236679,351.168793,192.144226L351.140503,191.778046L346.381195,191.778046C343.203949,191.778046,341.539337,191.76326,341.373566,191.733551C341.236969,191.709091,340.948608,191.603912,340.732727,191.499832C340.408936,191.343704,340.280396,191.250763,339.998444,190.968887C339.617523,190.588089,339.426422,190.26918,339.327423,189.849106C339.218811,189.388351,339.227051,189.360092,339.546021,189.100021C341.828796,187.238708,343.578461,185.021759,344.863831,182.362061C346.372986,179.239243,347.103973,176.09549,347.194336,172.339279C347.207611,171.78688,347.247406,171.090637,347.282776,170.792084C347.581299,168.27092,349.213226,166.316483,351.849304,165.32309C352.432953,165.103149,353.461182,164.845062,354.110046,164.755661C354.542175,164.696106,354.619476,164.674561,354.59613,164.620132C354.470947,164.328445,354.447083,164.198029,354.463898,163.897568C354.478882,163.628922,354.508972,163.519669,354.642517,163.248901C354.839752,162.849045,355.225281,162.444504,355.549744,162.297012C356.218109,161.993164,357.081299,162.099899,357.687042,162.561295C357.827576,162.668335,358.004852,162.847092,358.081024,162.958557C358.358612,163.364807,358.461517,163.985474,358.325531,164.43367C358.29126,164.546661,358.263,164.650192,358.262756,164.663757C358.262512,164.677307,358.427094,164.712082,358.628479,164.741013C361.798615,165.196472,364.198395,166.794189,365.124146,169.065659C365.505127,170.000504,365.619019,170.656494,365.670715,172.21373C365.746674,174.502243,365.908752,175.864334,366.303162,177.528534C367.458008,182.401642,369.803162,186.246445,373.430695,189.213913L373.595886,189.349045L373.550568,189.653336C373.487366,190.077698,373.365051,190.370087,373.108673,190.709656C372.848511,191.054276,372.484955,191.35881,372.1315,191.528214C371.593933,191.785828,371.797577,191.776749,366.542786,191.77742L361.745514,191.778046L361.720276,191.872208C361.706421,191.923996,361.694458,192.069931,361.693756,192.196533C361.691284,192.633392,361.503967,193.329605,361.251343,193.840759C360.768921,194.816956,359.812195,195.747253,358.796265,196.228073C358.033356,196.589142,356.912659,196.797318,356.086182,196.731506z"/>
+      <path transform="matrix(-1,0,0,1,0,0)" fill="#1A2332" fill-rule="evenodd" d="M399.53595,178.297028C400.656372,177.738708,401.707855,176.856827,402.338898,175.946228C403.348816,174.488953,403.348816,174.488953,403.348816,159.938904C403.348816,145.38887,403.348816,145.38887,402.285889,143.859375C401.664429,142.965134,400.571228,142.000229,399.653809,141.536209C398.084686,140.742569,398.084686,140.742569,373.456726,140.742569C346.849823,140.742569,347.446472,140.702866,345.370575,142.611252C343.440125,144.385941,343.223877,145.536942,343.215454,154.081451C343.210754,158.84845,343.351715,162.222046,343.572845,162.635239C344.07782,163.578766,346.217682,163.578766,346.722626,162.635239C346.923462,162.259995,347.087769,159.811447,347.087769,157.194031L347.087769,152.435104L359.503906,158.493591C370.578888,163.89769,372.112427,164.552094,373.701416,164.552094C375.29541,164.552094,376.739044,163.930435,387.421814,158.643799C393.988251,155.394241,399.424744,152.735504,399.50293,152.735504C399.581116,152.735504,399.645081,157.187836,399.645081,162.629578C399.645081,173.597031,399.538452,174.204269,397.486786,174.919495C396.749115,175.176636,392.166168,175.310455,384.097382,175.310455C373.4151,175.310455,371.757874,175.382111,371.275238,175.864761C370.556366,176.583618,370.569,177.732529,371.304718,178.545471C371.850037,179.148041,372.73999,179.190536,384.815704,179.190536C397.74292,179.190536,397.74292,179.190536,399.53595,178.297028zM359.853882,154.235474C347.387024,148.173889,347.052643,147.984573,347.2659,147.109207C347.386414,146.614609,347.796844,145.892471,348.178009,145.504471C348.857849,144.812424,349.337219,144.798996,373.366425,144.798996C397.39566,144.798996,397.875031,144.812424,398.554871,145.504471C398.936035,145.892471,399.350281,146.629837,399.475464,147.143036C399.699615,148.062042,399.512634,148.169983,387.103088,154.285889C380.155762,157.709808,374.089905,160.48822,373.582062,160.479065C373.07547,160.469955,366.897797,157.660339,359.853882,154.235474z"/>
+    </g>
+  </defs>
+
+  <!-- field -->
+  <rect width="1600" height="900" fill="url(#desk)"/>
+  <rect width="1600" height="900" fill="url(#glow)"/>
+  <ellipse cx="500" cy="380" rx="360" ry="280" fill="url(#spot)"/>
+
+  <!-- fine grid hint (style, very subtle) -->
+  <g opacity="0.06" stroke="#1A2332" stroke-width="1">
+    <path d="M0 180 H1600 M0 360 H1600 M0 540 H1600 M0 720 H1600"/>
+    <path d="M200 0 V900 M400 0 V900 M600 0 V900 M800 0 V900 M1000 0 V900 M1200 0 V900 M1400 0 V900"/>
+  </g>
+
+  <!-- pulse rings -->
+  <g transform="translate(500,400)" fill="none" stroke="#6B8F7A">
+    <circle r="195" stroke-width="1.6" opacity="0.28"/>
+    <circle r="245" stroke-width="1.3" opacity="0.18"/>
+    <circle r="295" stroke-width="1.1" opacity="0.11"/>
+    <circle r="345" stroke-width="0.9" opacity="0.07"/>
+  </g>
+
+  <!-- HERO mark -->
+  <g filter="url(#markGlow)" transform="translate(500,380) scale(6.241803) translate(371.306794,-168.743042)">
+    <use href="#bell2-mark"/>
+  </g>
+  <text x="500" y="628" text-anchor="middle"
+        font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+        font-size="12" font-weight="600" letter-spacing="0.22em" fill="#5A6575">THE DOORBELL</text>
+  <text x="500" y="656" text-anchor="middle"
+        font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+        font-size="19" fill="#4A7A62">what turns agents into a team</text>
+
+  <!-- shared mail cards -->
+  <g transform="translate(78,128) scale(0.70)" filter="url(#cardShadow)" opacity="0.95">
+    <g transform="translate(0,40) rotate(-5.5)">
+      <rect x="10" y="14" width="300" height="200" rx="12" fill="#1A2332"/>
+      <rect width="300" height="200" rx="12" fill="url(#cardA)"/>
+      <rect x="28" y="38" width="128" height="10" rx="3" fill="#1A2332" opacity="0.14"/>
+      <rect x="28" y="60" width="208" height="8" rx="2" fill="#1A2332" opacity="0.08"/>
+      <rect x="28" y="78" width="176" height="8" rx="2" fill="#1A2332" opacity="0.08"/>
+      <text x="28" y="150" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#5C7A6E">shared-brain/bus/</text>
+      <text x="28" y="172" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" fill="#1A2332" opacity="0.38">inbox · outbox · ring</text>
+    </g>
+    <g transform="translate(38,18) rotate(3)">
+      <rect x="8" y="12" width="280" height="180" rx="12" fill="#1A2332"/>
+      <rect width="280" height="180" rx="12" fill="url(#cardB)"/>
+      <rect x="26" y="36" width="108" height="9" rx="2" fill="#1A2332" opacity="0.12"/>
+      <rect x="26" y="56" width="188" height="7" rx="2" fill="#1A2332" opacity="0.07"/>
+      <rect x="26" y="74" width="150" height="7" rx="2" fill="#1A2332" opacity="0.07"/>
+    </g>
+  </g>
+  <text x="185" y="348" text-anchor="middle"
+        font-family="ui-sans-serif, system-ui, -apple-system, sans-serif"
+        font-size="12" letter-spacing="0.06em" fill="#5A6575">shared mail between agents</text>
+
+  <!-- terminal -->
+  <g transform="translate(72,708)" filter="url(#cardShadow)">
+    <rect width="430" height="128" rx="14" fill="#0A0E14" stroke="#2E3A4C" stroke-width="1.5"/>
+    <circle cx="26" cy="26" r="5.5" fill="#6B8F7A"/>
+    <circle cx="46" cy="26" r="5.5" fill="#8A93A3" opacity="0.45"/>
+    <circle cx="66" cy="26" r="5.5" fill="#8A93A3" opacity="0.28"/>
+    <text x="26" y="64" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" fill="#8FBC9A">📬 letterbox doorbell</text>
+    <text x="26" y="94" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#6B8F7A">team notified · work continues</text>
+  </g>
+
+  <!-- right column copy -->
+  <text x="902" y="236" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700" letter-spacing="0.18em" fill="#5A6575">FOR CMUX</text>
+  <text x="900" y="288" font-family="ui-serif, Georgia, 'Times New Roman', serif" font-size="56" font-weight="600" fill="#1A2332">Agent Letterbox</text>
+  <text x="902" y="348" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-size="28" font-weight="500" fill="#3D6B54">The doorbell makes it a team.</text>
+
+  <text x="902" y="410" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="19" fill="#3A4558">Alone, every agent is an island.</text>
+  <text x="902" y="442" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="19" fill="#3A4558">With the letterbox and the ring, they share</text>
+  <text x="902" y="474" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="19" fill="#3A4558">work, hand off tasks, and stay in sync —</text>
+  <text x="902" y="506" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="19" fill="#3A4558">together the team becomes stronger.</text>
+
+  <!-- agent chips -->
+  <g transform="translate(902, 548)" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="13" font-weight="600">
+    <rect width="58" height="30" rx="15" fill="#F0F3F6" stroke="#C5CDD8" stroke-width="1"/>
+    <text x="29" y="20" text-anchor="middle" fill="#3A4558">pi</text>
+    <rect x="66" width="78" height="30" rx="15" fill="#F0F3F6" stroke="#C5CDD8" stroke-width="1"/>
+    <text x="105" y="20" text-anchor="middle" fill="#3A4558">claude</text>
+    <rect x="152" width="68" height="30" rx="15" fill="#E8F2EC" stroke="#6B8F7A" stroke-width="1"/>
+    <text x="186" y="20" text-anchor="middle" fill="#3D6B54">grok</text>
+    <rect x="228" width="78" height="30" rx="15" fill="#F0F3F6" stroke="#C5CDD8" stroke-width="1"/>
+    <text x="267" y="20" text-anchor="middle" fill="#3A4558">hermes</text>
+  </g>
+
+  <text x="902" y="628" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="17" fill="#5A6575">Files are the letters on the bus.</text>
+  <text x="902" y="656" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="17" fill="#5A6575">The doorbell is the call that keeps the team moving.</text>
+
+  <text x="902" y="720" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="14" letter-spacing="0.04em" fill="#7A8494">Terminal-first  ·  filesystem-first  ·  multi-agent</text>
+</svg>
