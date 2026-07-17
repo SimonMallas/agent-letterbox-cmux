@@ -1,39 +1,28 @@
-# Agent Letterbox Roadmap
+# Agent Letterbox for cmux roadmap
 
 ## v0.1 scope
 
-Agent Letterbox is a filesystem-first coordination protocol for coding agents.
+Agent Letterbox for cmux is a filesystem-first coordination system for live cmux terminal-agent teams.
 
-**Supported in v0.1:**
+**Supported:**
 
 - Durable Markdown letters in per-agent inboxes.
 - Reply-first handling and recipient-owned archival.
 - Atomic message publication, advisory locks, and filesystem completion proof.
-- Immediate doorbells for live terminal agents through optional cmux or tmux adapters.
-- Desktop adapters as notification/visibility adapters where their platform capabilities permit.
-- No-op/session-boundary inbox checking when no doorbell exists (fallback only; not an automatic-doorbell development target).
+- Automatic cmux doorbells across panels and workspaces.
+- cmux self-registration for dynamically titled and duplicate agent sessions.
+- User-controlled cmux layouts: panels, workspaces, or windows.
 
-**Not supported in v0.1:**
+**Not supported:**
 
+- tmux integration (maintained separately in `agent-letterbox-tmux`).
 - Autonomous desktop-agent turns.
-- Webhook-triggered unattended Letterbox processing.
-- Persistent inbox watchers, retry supervisors, or cmux relay/proxy services.
-- Multi-machine transport, databases, dashboards, MCP servers, required daemons, or an unmanaged-terminal bridge.
-
-Desktop activation/notification is a human-visible hint only. It must not be presented as proof that an agent started a turn or checked its inbox.
+- Webhook-triggered unattended processing.
+- Persistent watchers, relay/proxy services, or required background daemons.
+- Multi-machine transport, databases, dashboards, or MCP dependencies.
 
 ## Next milestones
 
-1. ~~Document and test the terminal cmux/tmux path thoroughly.~~ **Done** (`docs/cmux.md`, cross-workspace ring dogfood, adapter tests).
-2. ~~Expand core error-path, lock, reply, and adapter tests.~~ **Done** (`make test`, CI, real error-path coverage).
-3. ~~Add release/security/contribution documentation.~~ **Done** (`SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`).
-4. ~~Dogfood the private repository with terminal-agent round trips.~~ **Done** (Pi → Claude → Grok → Hermes → Pi across separate cmux workspaces).
-5. ~~Dogfood cmux and tmux as the only supported automatic-doorbell environments.~~ **Done** (cmux cross-workspace ring and live tmux agent session both delivered, handled, replied, and archived a real disposable letter).
-6. Review/import approved visual identity assets and social card.
-7. Release public v0.1 only after the private `v0.1.0` baseline and final public-facing assets are reviewed.
-
-v0.1 remains **terminal-first**: optional doorbells wake live sessions; they do not replace human- or session-driven inbox handling.
-
-## Deferred integrations
-
-Hermes webhook and desktop research established that they can trigger visibility or a fresh turn, but have not demonstrated reliable unattended Letterbox handling. Keep the Hermes skill and filesystem oracle as research/proof artifacts; do not enable a webhook bridge or watcher without a new end-to-end proof.
+1. Review/import approved visual identity assets and social card.
+2. Dogfood cmux team setup with real agents after major cmux updates.
+3. Release public v0.1 after final private presentation review.

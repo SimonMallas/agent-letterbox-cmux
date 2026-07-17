@@ -7,18 +7,19 @@ Thanks for interest in Agent Letterbox. This guide is for people improving the *
 **In scope**
 
 - Core CLI (`bin/letterbox`) and SPEC fidelity
-- Optional terminal doorbell adapters (cmux, tmux, desktop notify) with safe defaults
+- Optional cmux terminal doorbell adapter with safe defaults
 - Tests, docs, packaging for a small filesystem-first release
 - Clarifying failure modes and operator safety
 
 **Out of scope for v0.1 (see ROADMAP.md)**
 
+- tmux integration (maintained separately)
 - Autonomous desktop-agent turns
 - Webhook-triggered unattended Letterbox processing
 - Persistent inbox watchers / retry supervisors as product features
 - Required servers, databases, dashboards, or MCP dependencies
 
-Research artifacts (e.g. Hermes skill notes, filesystem oracle harness) may live in-tree; do not market them as supported unattended automation until a new roadmap milestone says so.
+Do not market desktop or webhook experiments as supported unattended automation.
 
 ## Development setup
 
@@ -39,7 +40,7 @@ Run the full dependency-free suite before opening a PR:
 make test
 ```
 
-This includes smoke, error-path, adapter-safety, webhook-oracle, and skill-fixture coverage. Expect each script to print an explicit **PASS**. CI runs the same suite on Ubuntu and macOS.
+This includes smoke, error-path, cmux adapter-safety, registration, and setup coverage. Expect each script to print an explicit **PASS**. CI runs the same suite on Ubuntu and macOS.
 
 ## Coding guidelines
 

@@ -6,9 +6,5 @@ test:
 	./tests/cmux-doorbell-safety.sh
 	./tests/test_cmux_registration.sh
 	./tests/test_cmux_setup.sh
-	./tests/test_tmux_doorbell.sh
-	./tests/test_desktop_adapter.sh
-	./tests/webhook_e2e_harness.sh
-	python3 tests/test_skill_prompt.py
 
 ci: test

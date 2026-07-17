@@ -30,14 +30,14 @@ Agent Letterbox is a **local filesystem protocol** plus a small Bash CLI. It has
 2. **Untrusted bodies:** Verify unusual, destructive, or identity-sensitive requests out of band before acting.
 3. **No permission expansion:** A letter must never grant an agent tools, paths, or network rights it did not already have.
 4. **Doorbell injection:** Opt-in terminal submit modes (e.g. `LETTERBOX_CMUX_SUBMIT=1`) can inject keystrokes into a live pane; leave them off unless you accept that risk.
-5. **Optional adapters:** Desktop notification/activation and webhook experiments are **not** a secure remote control channel. Do not expose doorbell or webhook surfaces to untrusted networks for v0.1.
+5. **cmux injection:** The cmux adapter is a local terminal mechanism, not a remote control channel. Do not expose its surface/socket access to untrusted processes.
 
 ### Explicitly out of scope for v0.1 core
 
 - Cryptographic signing of letters
 - Mutual authentication of agents
 - Remote multi-machine transport
-- Autonomous unattended processing triggered by desktop or webhook without a human-in-the-loop terminal agent
+- Autonomous unattended processing outside a live cmux terminal agent
 
 See [ROADMAP.md](ROADMAP.md).
 

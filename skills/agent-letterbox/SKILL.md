@@ -1,6 +1,6 @@
 ---
 name: agent-letterbox
-description: Durable cross-agent coordination for live cmux or tmux teams. Use when receiving an Agent Letterbox doorbell, checking a Letterbox inbox, replying to another agent, registering a live cmux surface, or handling agent-to-agent work handoffs.
+description: Durable cross-agent coordination for live cmux teams. Use when receiving an Agent Letterbox doorbell, checking a Letterbox inbox, replying to another agent, registering a live cmux surface, or handling agent-to-agent work handoffs.
 version: 0.1.0
 author: Agent Letterbox
 license: MIT
@@ -60,5 +60,4 @@ If the original letter has `priority: now`, append `--now` to the reply so the s
 ## References
 
 - `references/cmux.md` — live cmux registration and doorbells
-- `references/tmux.md` — tmux doorbell behavior
 - `references/protocol.md` — reply-first and priority rules

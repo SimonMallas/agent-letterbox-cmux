@@ -55,7 +55,7 @@ A doorbell is optional. Its only terminal content should be a generic prompt suc
 📬 letterbox doorbell: unacked delegate in <letterbox>/<agent>/inbox/ — please check
 ```
 
-cmux, tmux, filesystem-watch, IPC, desktop, and no-op adapters can implement the same contract. The shared filesystem remains the universal transport.
+The cmux adapter implements this contract for live terminal agents. The shared filesystem remains the universal transport; an offline agent checks its inbox at startup or resume.
 
 ## Leases
 
