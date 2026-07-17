@@ -1,6 +1,6 @@
 # Agent Letterbox for cmux
 
-## Ring the agent. Keep the message.
+## Ring the bell. Create the team.
 
 **Agent Letterbox for cmux turns separate coding-agent terminals into a live team.**
 
