@@ -20,12 +20,14 @@ chmod +x "$tmp/bin/cmux"
 export PATH="$tmp/bin:$PATH"
 export XDG_CONFIG_HOME="$tmp/config"
 export LETTERBOX_SKILLS_DIR="$tmp/skills"
+export LETTERBOX_BIN_DIR="$tmp/localbin"
 box="$tmp/team"
 
 "$letterbox" cmux setup --agents sender,receiver --dir "$box" --submit
 [[ -f "$box/env.sh" && -f "$box/AGENT-LETTERBOX.md" ]]
 [[ -L "$LETTERBOX_SKILLS_DIR/agent-letterbox" ]]
 [[ -f "$LETTERBOX_SKILLS_DIR/agent-letterbox/SKILL.md" ]]
+[[ -L "$LETTERBOX_BIN_DIR/letterbox" ]]
 [[ -d "$box/sender/inbox" && -d "$box/receiver/processed" ]]
 test "$(<"$XDG_CONFIG_HOME/agent-letterbox/default-dir")" = "$box"
 

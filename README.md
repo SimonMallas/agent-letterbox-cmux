@@ -2,141 +2,161 @@
 
 ## Ring the agent. Keep the message.
 
-**Agent Letterbox turns separate coding-agent sessions into a live team.**
+**Agent Letterbox turns separate coding-agent terminals into a live team.**
 
-An agent sends a durable letter to another agent's inbox. When the recipient is live, a terminal doorbell immediately delivers one safe instruction:
+A message is saved safely on disk. When the recipient is live, a doorbell sends one short instruction into its terminal:
 
 ```text
 📬 letterbox doorbell: check your inbox
 ```
 
-The recipient wakes, reads the real message from disk, replies, and continues the flow.
-
-```text
-Agent A writes a letter
-        ↓
-Doorbell wakes Agent B's live terminal
-        ↓
-Agent B checks inbox, replies, and hands work onward
-```
-
-This is not agent chat pasted across terminals. **Files carry the work; doorbells make the team move.**
+The agent checks the durable message, replies, and hands work onward.
 
 > **Agent mail that waits safely—and rings when it matters.**
 
 ## What it enables
 
-- **Near-instant live coordination** between independent agent sessions
-- **Free-flowing handoffs** without a human copying task text between panes
-- **Clear ownership:** delegates require ACK/NACK before work starts
-- **Durable history:** letters survive a closed pane, restart, model change, or missed doorbell
-- **Verified completion:** reply first, then archive; filesystem state—not plausible agent prose—proves work happened
+- Near-instant coordination between live agents
+- Agent-to-agent handoffs without a human copying task text between terminals
+- Durable messages that survive restarts, model changes, and missed doorbells
+- Clear ownership through ACK/NACK and reply-first handling
+- A team that can work across separate cmux workspaces
 
-A successful live exchange looks like this:
+The supported automatic doorbell platforms are **cmux** and **tmux**. Ordinary terminals and desktop apps still receive durable mail, but need a manual/session-start check in v0.1.
 
-```text
-Pi → Claude → Grok → Hermes → Pi
+---
+
+# Quick start: set up your cmux team
+
+You need macOS or Linux, Bash, Git, and cmux. No server, database, cloud account, or custom cmux layout is required.
+
+## Step 1 — Open a terminal
+
+Open any terminal. You can copy/paste the commands below yourself, or ask an existing coding agent:
+
+> Install Agent Letterbox using the README Quick Start. Do not change my cmux layout.
+
+Clone the repository and enter it:
+
+```bash
+git clone https://github.com/SimonMallas/agent-letterbox.git \
+  ~/Developer/agent-letterbox
+cd ~/Developer/agent-letterbox
 ```
 
-Each hop is a durable letter plus an automatic terminal doorbell. Agents may live in separate workspaces; they do not need to share a pane or a conversation.
+If it is already cloned:
 
-## Supported automatic doorbells
+```bash
+cd ~/Developer/agent-letterbox
+git pull
+```
 
-| Environment | Live agent wake-up |
-|---|---|
-| **cmux** | Yes — cross-panel and cross-workspace terminal input doorbell |
-| **tmux** | Yes — opt-in `send-keys` terminal input doorbell |
-| Ordinary terminals / desktop apps | Durable-letter fallback only; no automatic agent wake-up in v0.1 |
-
-cmux and tmux submission are explicit opt-ins because any terminal-input mechanism can submit text already waiting in the target input buffer. Use them for dedicated agent terminals.
-
-## Quick start: establish shared Letterbox mail
-
-Requires Bash and standard macOS/Linux userland. The core has no server, database, cloud account, or mandatory multiplexer.
+## Step 2 — Run one setup command
 
 ```bash
 chmod +x bin/letterbox adapters/*.sh tests/*.sh
 export PATH="$PWD/bin:$PATH"
 
-# One-time cmux team setup. It creates ~/.agent-letterbox by default.
 letterbox cmux setup --agents pi,claude,grok,hermes --submit
-source "$HOME/.agent-letterbox/env.sh"
-
-# Setup links the shared agent-letterbox skill into ~/.agents/skills/.
 ```
 
-### Standard live cmux team setup
+This automatically:
 
-Open cmux and arrange panels or workspaces however the task requires. Then launch agents from their chosen panes:
+- creates one shared Letterbox at `~/.agent-letterbox`
+- creates inboxes for Pi, Claude, Grok, and Hermes
+- installs the `letterbox` command into `~/.local/bin`
+- installs the shared `agent-letterbox` skill into `~/.agents/skills`
+- enables the automatic cmux doorbell
+- creates the live-surface registration registry
+
+> `--submit` enables automatic terminal input. Use it only for dedicated agent terminals: like any terminal-input tool, it can submit text already typed in a target terminal.
+
+## Step 3 — Open cmux your way
+
+Open cmux and arrange agents however you prefer:
+
+```text
+one workspace per agent
+four-panel grid
+separate windows
+any mix that suits the task
+```
+
+Agent Letterbox does not create, move, or resize your panels.
+
+## Step 4 — Launch agents through Letterbox
+
+In each agent's chosen cmux pane, use the launcher:
 
 ```bash
 letterbox cmux run pi -- pi
 letterbox cmux run claude -- claude
 letterbox cmux run grok -- grok
-letterbox cmux run hermes -- hermes chat
+letterbox cmux run hermes -- hermes
 ```
 
-The wrapper self-registers each current live cmux surface, so dynamic titles and duplicate agent runtimes do not need title guessing. See [docs/team-setup.md](docs/team-setup.md) for the complete workflow.
+The launcher gives the agent its identity, registers its current cmux surface, and starts the command. This is what lets Letterbox find and ring agents across workspaces.
 
-**tmux:**
+## Step 5 — Send the first handoff
 
-```bash
-cp examples/tmux-patterns.tsv .letterbox/tmux-patterns.tsv
-export LETTERBOX_DOORBELL="$PWD/adapters/tmux.sh"
-export LETTERBOX_TMUX_PATTERNS="$PWD/.letterbox/tmux-patterns.tsv"
-export LETTERBOX_TMUX_SUBMIT=1
-```
-
-### 2. Send a live delegate
+From the Pi terminal:
 
 ```bash
 printf '%s\n' 'Review src/auth.ts and report correctness findings.' |
   LETTERBOX_AGENT=pi letterbox send claude delegate auth-review --ack --now
 ```
 
-The letter is written to `claude/inbox/`; the configured terminal adapter rings Claude's live session.
-
-### 3. Reply and complete the handoff
-
-Claude checks the inbox, then replies through the public CLI:
+Claude receives a durable letter in its inbox and a live cmux doorbell. Claude then runs:
 
 ```bash
-LETTERBOX_AGENT=claude letterbox check
-
-printf '%s\n' 'Accepted. I will review the authentication flow.' |
-  LETTERBOX_AGENT=claude letterbox reply <message-id-or-inbox-path> ack accept-auth-review --now
+letterbox check
 ```
 
-`letterbox reply` delivers the reply into the sender's inbox **before** archiving the inbound letter. That is the safety rule that keeps a team moving without silent loss.
+To reply:
 
-## The fallback is still part of the team
+```bash
+printf '%s\n' 'ACK: I will review it now.' |
+  letterbox reply <message-id-or-inbox-path> ack auth-review-ack --now
+```
 
-If no live terminal is available, the letter remains in the inbox. The agent finds it at startup, resume, a checkpoint, or a manual `letterbox check`.
+The reply reaches Pi before Claude's original letter is archived.
 
-The doorbell accelerates coordination; it never becomes the only delivery path.
+---
 
-## Test it
+## New or duplicate agents
+
+For a new agent, or multiple sessions of the same runtime, give each session its own identity:
+
+```bash
+letterbox cmux run pi-research -- pi
+letterbox cmux run pi-builder -- pi
+letterbox cmux run agent-zero -- agent-zero
+```
+
+Each live session self-registers its exact current cmux surface. This avoids title collisions when two Pi, Claude, Hermes, Grok, or other agent sessions are open.
+
+## Test the installation
 
 ```bash
 letterbox --version
 make test
 ```
 
-`make test` runs core reply/archive tests, error-path coverage, cmux and tmux doorbell proofs, desktop visibility testing, the filesystem completion oracle, and the Hermes skill fixture.
+`make test` runs core delivery/reply tests, error paths, cmux/tmux doorbell proofs, and completion-oracle checks.
 
-## Read more
+## Learn more
 
-- [SPEC.md](SPEC.md) — message format, reply-first semantics, and safety rules
-- [docs/cmux.md](docs/cmux.md) — cmux cross-workspace setup and update verification
+- [docs/team-setup.md](docs/team-setup.md) — detailed cmux team setup
+- [docs/cmux.md](docs/cmux.md) — cmux cross-workspace operation and update verification
 - [docs/tmux.md](docs/tmux.md) — tmux automatic doorbell setup
-- [docs/team-setup.md](docs/team-setup.md) — standard live cmux team setup and self-registration
-- [ROADMAP.md](ROADMAP.md) — supported v0.1 scope
+- [SPEC.md](SPEC.md) — message format and reply-first semantics
+- [ROADMAP.md](ROADMAP.md) — v0.1 scope
 - [SECURITY.md](SECURITY.md) — threat model and reporting
-- [CONTRIBUTING.md](CONTRIBUTING.md) — development and test guidance
+- [CONTRIBUTING.md](CONTRIBUTING.md) — development guidance
 
 ## Scope
 
-v0.1 is built for **live terminal agent teams**. It deliberately does not claim autonomous desktop agents, webhook-triggered unattended processing, persistent watchers, or required background services.
+v0.1 is for live terminal-agent teams. It does not claim autonomous desktop agents, webhook-triggered unattended processing, persistent watchers, or required background services.
 
 ## License
 
