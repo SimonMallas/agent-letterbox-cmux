@@ -26,8 +26,8 @@ Do not market desktop or webhook experiments as supported unattended automation.
 Requirements: Bash and standard macOS/Linux userland.
 
 ```bash
-git clone <this-repo>
-cd agent-letterbox
+git clone https://github.com/SimonMallas/agent-letterbox-cmux.git
+cd agent-letterbox-cmux
 chmod +x bin/letterbox adapters/*.sh tests/*.sh
 export PATH="$PWD/bin:$PATH"
 ```

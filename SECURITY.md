@@ -53,6 +53,6 @@ If the project is still private, use the same private channel you already use wi
 
 ## Safe defaults for integrators
 
-- Prefer **session-boundary / terminal-first** checking over unattended bridges.
-- Judge completion by **on-disk** reply + archive (filesystem oracle), never by model prose alone.
-- Do not ship configs that bind experimental HTTP doorbells to non-loopback interfaces without authentication and a separate threat review.
+- Prefer live cmux terminal agents with durable inbox fallback.
+- Judge completion by **on-disk** reply + archive, never by model prose alone.
+- Do not expose cmux surface/socket access to untrusted processes.
