@@ -82,8 +82,8 @@ cmd_cmux_setup() {
     case "$1" in
       --agents) agents="${2:?missing comma-separated agent list}"; shift;;
       --dir) setup_dir="${2:?missing directory}"; shift;;
-      --submit) submit=true;;
-      *) die "usage: letterbox cmux setup --agents pi,claude [--dir <path>] [--submit]";;
+      --submit|--automatic-doorbells) submit=true;;
+      *) die "usage: letterbox cmux setup --agents pi,claude [--dir <path>] [--automatic-doorbells]";;
     esac
     shift
   done
@@ -148,7 +148,7 @@ EOF
   printf 'Agent Letterbox skill linked: %s\n' "$skill_target"
   printf 'Launch each agent inside any cmux pane/workspace with:\n'
   printf '  letterbox cmux run <agent-id> -- <agent-command>\n'
-  [[ "$submit" == true ]] || printf 'Automatic input is off. Re-run with --submit to enable it.\n'
+  [[ "$submit" == true ]] || printf 'Automatic input is off. Re-run with --automatic-doorbells to enable it.\n'
 }
 
 cmd_cmux_run() {

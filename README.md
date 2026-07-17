@@ -12,15 +12,16 @@ A message is saved safely on disk. When the recipient is live, a doorbell sends 
 
 The agent checks the durable message, replies, and hands work onward.
 
-> **Agent mail that waits safely—and rings when it matters.**
+> **Agent mail that waits safely—and a bell brings it alive.**
 
-## What it enables
+## What this opens up
 
 - Near-instant coordination between live agents
 - Agent-to-agent handoffs without a human copying task text between terminals
 - Durable messages that survive restarts, model changes, and missed doorbells
 - Clear ownership through ACK/NACK and reply-first handling
 - A team that can work across separate cmux workspaces
+- A practical way to turn individual agent terminals into one coordinated team
 
 The supported automatic doorbell platforms are **cmux** and **tmux**. Ordinary terminals and desktop apps still receive durable mail, but need a manual/session-start check in v0.1.
 
@@ -30,35 +31,33 @@ The supported automatic doorbell platforms are **cmux** and **tmux**. Ordinary t
 
 You need macOS or Linux, Bash, Git, and cmux. No server, database, cloud account, or custom cmux layout is required.
 
-## Step 1 — Open a terminal
+## Step 1 — Open a terminal and copy/paste this
 
-Open any terminal. You can copy/paste the commands below yourself, or ask an existing coding agent:
-
-> Install Agent Letterbox using the README Quick Start. Do not change my cmux layout.
-
-Clone the repository and enter it:
+Open any terminal window. Copy and paste this whole block into it:
 
 ```bash
 git clone https://github.com/SimonMallas/agent-letterbox.git \
   ~/Developer/agent-letterbox
 cd ~/Developer/agent-letterbox
+chmod +x bin/letterbox adapters/*.sh tests/*.sh
+export PATH="$PWD/bin:$PATH"
+letterbox cmux setup --agents pi,claude,grok,hermes --automatic-doorbells
 ```
 
-If it is already cloned:
+This downloads a local copy of Agent Letterbox, then sets up the team. Because the repository is private today, your GitHub account needs access to it first.
+
+If you already downloaded it, copy/paste this instead:
 
 ```bash
 cd ~/Developer/agent-letterbox
 git pull
-```
-
-## Step 2 — Run one setup command
-
-```bash
-chmod +x bin/letterbox adapters/*.sh tests/*.sh
 export PATH="$PWD/bin:$PATH"
-
-letterbox cmux setup --agents pi,claude,grok,hermes --submit
+letterbox cmux setup --agents pi,claude,grok,hermes --automatic-doorbells
 ```
+
+You can also ask an existing coding agent:
+
+> Install Agent Letterbox using the README Quick Start. Do not change my cmux layout.
 
 This automatically:
 
@@ -66,12 +65,14 @@ This automatically:
 - creates inboxes for Pi, Claude, Grok, and Hermes
 - installs the `letterbox` command into `~/.local/bin`
 - installs the shared `agent-letterbox` skill into `~/.agents/skills`
-- enables the automatic cmux doorbell
 - creates the live-surface registration registry
+- enables automatic cmux doorbells
 
-> `--submit` enables automatic terminal input. Use it only for dedicated agent terminals: like any terminal-input tool, it can submit text already typed in a target terminal.
+> `--automatic-doorbells` means Letterbox may type the safe generic doorbell line into a live agent terminal. This is what makes the team respond immediately. Use it only for dedicated agent terminals: like any terminal-input tool, it can submit text already typed in a target terminal.
 
-## Step 3 — Open cmux your way
+Stay in this same terminal for the next step; you do not need to open another one yet.
+
+## Step 2 — Open cmux your way
 
 Open cmux and arrange agents however you prefer:
 
@@ -84,7 +85,7 @@ any mix that suits the task
 
 Agent Letterbox does not create, move, or resize your panels.
 
-## Step 4 — Launch agents through Letterbox
+## Step 3 — Launch agents through Letterbox
 
 In each agent's chosen cmux pane, use the launcher:
 
@@ -95,9 +96,9 @@ letterbox cmux run grok -- grok
 letterbox cmux run hermes -- hermes
 ```
 
-The launcher gives the agent its identity, registers its current cmux surface, and starts the command. This is what lets Letterbox find and ring agents across workspaces.
+Copy and paste the appropriate command into each agent's chosen cmux pane or workspace. The launcher gives the agent its identity, registers its current cmux surface, and starts the command. This is what lets Letterbox find and ring agents across workspaces.
 
-## Step 5 — Send the first handoff
+## Step 4 — Send the first handoff
 
 From the Pi terminal:
 

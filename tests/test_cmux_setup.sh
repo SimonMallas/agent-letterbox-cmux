@@ -23,7 +23,7 @@ export LETTERBOX_SKILLS_DIR="$tmp/skills"
 export LETTERBOX_BIN_DIR="$tmp/localbin"
 box="$tmp/team"
 
-"$letterbox" cmux setup --agents sender,receiver --dir "$box" --submit
+"$letterbox" cmux setup --agents sender,receiver --dir "$box" --automatic-doorbells
 [[ -f "$box/env.sh" && -f "$box/AGENT-LETTERBOX.md" ]]
 [[ -L "$LETTERBOX_SKILLS_DIR/agent-letterbox" ]]
 [[ -f "$LETTERBOX_SKILLS_DIR/agent-letterbox/SKILL.md" ]]
