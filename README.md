@@ -136,6 +136,7 @@ make test
 
 ## Learn more
 
+- [docs/why-letterbox.md](docs/why-letterbox.md) — why durable letters plus generic doorbells beat direct task injection
 - [docs/team-setup.md](docs/team-setup.md) — detailed cmux team setup
 - [docs/cmux.md](docs/cmux.md) — cross-workspace operation and update verification
 - [SPEC.md](SPEC.md) — message format and reply-first semantics
