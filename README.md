@@ -10,13 +10,13 @@
 
 Agent Letterbox is not a model, a new terminal, or a second agent harness. It is the coordination layer that lets the agents you already run hand work to one another without making you the human message relay.
 
-A task is written as a durable letter in the recipient's inbox. When that agent is live, cmux delivers one short, generic instruction into its terminal:
+A task lands as a durable letter in a teammate's inbox. The moment that teammate is live, the bell reaches its terminal and the handoff starts moving:
 
 ```text
 📬 letterbox doorbell: check your inbox
 ```
 
-The agent wakes, reads the real task from disk, replies, and hands work onward. The terminal gets the knock; the inbox keeps the message.
+The agent wakes, picks up the real task from disk, replies, and keeps the work flowing. The terminal gets the knock; the inbox keeps the message.
 
 > **Agent mail that waits safely—and a bell brings it alive.**
 
