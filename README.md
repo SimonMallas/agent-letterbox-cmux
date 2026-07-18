@@ -39,25 +39,18 @@ Open any terminal window. You can either copy/paste the whole block below yourse
 > Set up Agent Letterbox for cmux using the README Quick Start. Do not change my cmux layout.
 
 ```bash
-git clone https://github.com/SimonMallas/agent-letterbox-cmux.git \
-  ~/Developer/agent-letterbox-cmux
-cd ~/Developer/agent-letterbox-cmux
-chmod +x bin/letterbox adapters/*.sh tests/*.sh
-export PATH="$PWD/bin:$PATH"
+curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
 letterbox cmux setup --agents pi,claude,grok,hermes --automatic-doorbells
 source "$HOME/.agent-letterbox/env.sh"
 ```
 
 This downloads a local copy and sets up the team. If you are new to GitHub, you do not need to understand Git first—copying the block is enough.
 
-If it is already downloaded:
+To update later, run the same install command again:
 
 ```bash
-cd ~/Developer/agent-letterbox-cmux
-git pull
-export PATH="$PWD/bin:$PATH"
-letterbox cmux setup --agents pi,claude,grok,hermes --automatic-doorbells
-source "$HOME/.agent-letterbox/env.sh"
+curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
 ```
 
 Setup automatically creates one shared Letterbox, agent inboxes, the global `letterbox` launcher, the shared Agent Letterbox skill, and the live-surface registration registry.
