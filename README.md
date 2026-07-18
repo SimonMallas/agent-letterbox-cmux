@@ -10,7 +10,7 @@
 
 Agent Letterbox is not a model, a new terminal, or a second agent harness. It is the coordination layer that lets the agents you already run hand work to one another without making you the human message relay.
 
-A task lands as a durable letter in a teammate's inbox. The moment that teammate is live, the bell reaches its terminal and the handoff starts moving:
+A task lands as a durable letter in a teammate's inbox. The doorbell rings, alerting the agent to check it:
 
 ```text
 📬 letterbox doorbell: check your inbox
