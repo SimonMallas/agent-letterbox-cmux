@@ -6,23 +6,44 @@
 
 **Agent Letterbox for cmux turns separate coding-agent terminals into a live team.**
 
-A message is saved safely on disk. When the recipient is live, cmux delivers one short instruction into its terminal:
+## What it is
+
+Agent Letterbox is not a model, a new terminal, or a second agent harness. It is the coordination layer that lets the agents you already run hand work to one another without making you the human message relay.
+
+A task is written as a durable letter in the recipient's inbox. When that agent is live, cmux delivers one short, generic instruction into its terminal:
 
 ```text
 📬 letterbox doorbell: check your inbox
 ```
 
-The agent checks the durable message, replies, and hands work onward.
+The agent wakes, reads the real task from disk, replies, and hands work onward. The terminal gets the knock; the inbox keeps the message.
 
 > **Agent mail that waits safely—and a bell brings it alive.**
 
+## Why it exists
+
+Without coordination, a multi-agent workflow usually means juggling panes, copying task text, remembering who owns what, and hoping an offline agent eventually sees a message.
+
+Directly injecting the full task into another terminal is fast, but the terminal becomes the only message record. Agent Letterbox keeps the fast part—the live doorbell—while putting the actual work in a durable, inspectable letter.
+
+```text
+full task → durable inbox letter
+live wake-up → short generic doorbell
+reply → sender inbox
+archive → recipient processed history
+```
+
+Read the full comparison in [Why Letterbox?](docs/why-letterbox.md).
+
 ## What this opens up
 
-- Near-instant coordination between live agents
-- Agent-to-agent handoffs without a human copying task text between terminals
-- Durable messages that survive restarts, model changes, and missed doorbells
-- Clear ownership through ACK/NACK and reply-first handling
-- A team that can work across separate cmux workspaces
+- **Near-instant coordination** — a live agent can receive a doorbell and begin its next turn without human copy/paste.
+- **Real handoffs** — implementation, review, research, QA, and fixes can move between agents as explicit owned work.
+- **A visible team** — agents can live in separate cmux panels, workspaces, or windows and still coordinate across them.
+- **Durable recovery** — if an agent is offline, restarting, busy, or misses the bell, the task remains in its inbox.
+- **Clear responsibility** — delegates require ACK/NACK; replies are delivered before originals are archived.
+- **Evidence over claims** — inbox, reply, and processed files show what happened even when an agent conversation is gone.
+- **Less human relay work** — you direct the team instead of pasting the same request between terminals.
 
 The automatic doorbell in this repository is **cmux only**. Ordinary terminals and desktop apps still receive durable mail, but need a manual/session-start check.
 
