@@ -45,7 +45,7 @@ Read the full comparison in [Why Letterbox?](docs/why-letterbox.md).
 - **Evidence over claims** — inbox, reply, and processed files show what happened even when an agent conversation is gone.
 - **Less human relay work** — you direct the team instead of pasting the same request between terminals.
 
-The automatic doorbell in this repository is **cmux only**. Ordinary terminals and desktop apps still receive durable mail, but need a manual/session-start check.
+This repository is purpose-built for live cmux agent teams.
 
 ---
 
