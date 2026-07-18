@@ -32,11 +32,13 @@ The automatic doorbell in this repository is **cmux only**. Ordinary terminals a
 
 You need macOS or Linux, Bash, Git, and cmux. No server, database, cloud account, or custom cmux layout is required.
 
-## Step 1 — Open a terminal and copy/paste this
+## Step 1 — Install Agent Letterbox
 
-Open any terminal window. You can either copy/paste the whole block below yourself, **or ask an existing coding agent**:
+Open any terminal window. You can either copy/paste the commands yourself, **or ask an existing coding agent**:
 
 > Set up Agent Letterbox for cmux using the README Quick Start. Do not change my cmux layout.
+
+### Option A — Recommended: copy/paste installer
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
@@ -47,13 +49,27 @@ source "$HOME/.agent-letterbox/env.sh"
 
 This downloads a local copy and sets up the team. If you are new to GitHub, you do not need to understand Git first—copying the block is enough.
 
-To update later, run the same install command again:
+To update later, run the same installer again:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
 ```
 
-Setup automatically creates one shared Letterbox, agent inboxes, the global `letterbox` launcher, the shared Agent Letterbox skill, and the live-surface registration registry.
+### Option B — Manual Git install
+
+Use this if you want to inspect the source, modify it, or contribute:
+
+```bash
+git clone https://github.com/SimonMallas/agent-letterbox-cmux.git \
+  ~/Developer/agent-letterbox-cmux
+cd ~/Developer/agent-letterbox-cmux
+chmod +x bin/letterbox adapters/*.sh tests/*.sh
+export PATH="$PWD/bin:$PATH"
+letterbox cmux setup --agents pi,claude,grok,hermes --automatic-doorbells
+source "$HOME/.agent-letterbox/env.sh"
+```
+
+Both options automatically create one shared Letterbox, agent inboxes, the global `letterbox` launcher, the shared Agent Letterbox skill, and the live-surface registration registry.
 
 > `--automatic-doorbells` lets Letterbox type the generic doorbell into a live agent terminal. Use it only for dedicated agent terminals: like any terminal-input tool, it can submit text already typed in a target terminal.
 
