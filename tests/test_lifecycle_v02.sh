@@ -270,8 +270,8 @@ printf 'accepted\n' | lb reviewer reply "$task_id" ack reply-slug >/dev/null &
 a=$!
 printf 'finished\n' | lb reviewer reply "$task_id" result reply-slug >/dev/null &
 r=$!
-wait "$a" || true
-wait "$r" || true
+wait "$a" || fail F2-ack-child-exit
+wait "$r" || fail F2-result-child-exit
 [[ -f "$box/reviewer/processed/$(basename "$task")" ]] || fail F2-not-terminal
 [[ ! -e "$box/reviewer/inbox/$(basename "$task").ack" ]] || fail F2-orphan-sidecar
 acks=$(find "$box/planner/inbox" -name '*--reviewer--ack.md' | wc -l | tr -d ' ')
