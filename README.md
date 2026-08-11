@@ -1,5 +1,7 @@
 # Agent Letterbox for cmux
 
+> **Public v0.2 preview package** (`agent-letterbox-cmux-v02-preview`). Same product as the cmux Letterbox; this repo is the staged 0.2 correctness release.
+
 ## Ring the bell. Create the team.
 
 ![Agent Letterbox for cmux](assets/hero/letterbox-hero-1600x900.png)
@@ -83,7 +85,7 @@ Set up Agent Letterbox for cmux using the README Quick Start. Do not change my c
 ### Option A — Recommended: copy/paste installer
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux-v02-preview/main/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells
 source "$HOME/.agent-letterbox/env.sh"
@@ -94,7 +96,7 @@ This downloads a local copy and sets up the team. If you are new to GitHub, you 
 To update later, run the same installer again:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux-v02-preview/main/install.sh | sh
 ```
 
 ### Option B — Manual Git install

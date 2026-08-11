@@ -17,30 +17,25 @@ Public v0.2 is a **correctness** release: task vs non-task lifecycle, non-termin
 - Automatic cmux doorbells across panels and workspaces (opt-in submit).
 - cmux self-registration for dynamically titled and duplicate agent sessions.
 - User-controlled cmux layouts: panels, workspaces, or windows.
+- Neutral public examples (`planner`, `reviewer`, `builder`, `researcher`).
 
 **Not supported (deferred / non-goals):**
 
-Carried forward:
-
-- tmux integration (maintained separately in `agent-letterbox-tmux`).
+- Sibling platform products (tmux / Herdr / Zellij — separate repos).
 - Autonomous desktop-agent turns.
 - Webhook-triggered unattended processing.
 - Persistent watchers, relay/proxy services, or required background daemons.
 - Multi-machine transport, databases, dashboards, or MCP dependencies.
-
-New explicit deferrals for v0.2:
-
 - Automatic backlog drain tools that bulk-file inboxes.
 - `check --deep` reconciliation of letters that older helpers wrongly archived after ACK.
 - A frontmatter protocol-version field (v0.2 keeps the on-disk format unchanged).
-- Multi-machine or networked doorbells.
 - Built-in chat bridges (external intake remains operator-owned if used at all).
 - Session `resume-log` as a public CLI surface.
 - A permanent postmaster role or central dispatcher.
 
 ## Next milestones
 
-1. Neutralise remaining install/demo roster and hero artwork where needed.
-2. Port lifecycle suite CI across macOS and Linux from clean clones.
-3. Soak the published artifact (curl + git install paths, one real ack→result cycle).
-4. Port the same lifecycle semantics to sibling platform repos one at a time with a real doorbell test each.
+1. Soak the published preview (curl + git install paths, one real ack→result cycle on live cmux).
+2. Promote preview → canonical `agent-letterbox-cmux` when ready; keep install URLs single-sourced.
+3. Keep lifecycle suite CI green on macOS and Linux from clean clones.
+4. Port the same lifecycle semantics to sibling platform repos only when each has its own real doorbell proof.
