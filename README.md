@@ -104,9 +104,9 @@ curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux-v0
 Use this if you want to inspect the source, modify it, or contribute:
 
 ```bash
-git clone https://github.com/SimonMallas/agent-letterbox-cmux.git \
-  ~/src/agent-letterbox-cmux
-cd ~/src/agent-letterbox-cmux
+git clone https://github.com/SimonMallas/agent-letterbox-cmux-v02-preview.git \
+  ~/src/agent-letterbox-cmux-v02-preview
+cd ~/src/agent-letterbox-cmux-v02-preview
 chmod +x bin/letterbox adapters/*.sh tests/*.sh
 export PATH="$PWD/bin:$PATH"
 letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells
