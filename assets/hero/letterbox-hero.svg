@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Agent Letterbox FOR CMUX — the doorbell that makes agents a team">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Agent Letterbox FOR CMUX — cross-agent communications; the doorbell creates the team">
   <defs>
     <linearGradient id="desk" x1="0" y1="0" x2="0.85" y2="1">
       <stop offset="0%" stop-color="#FFFFFF"/>
@@ -102,10 +102,20 @@
     <text x="26" y="94" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#6B8F7A">team notified · work continues</text>
   </g>
 
+  <!-- cross-agent communications lead -->
+  <g>
+    <text x="900" y="140"
+          font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+          font-size="46" font-weight="700" letter-spacing="-0.005em" fill="#3D6B54">Cross-Agent Communications</text>
+    <text x="902" y="174"
+          font-family="ui-sans-serif, system-ui, -apple-system, sans-serif"
+          font-size="17" letter-spacing="0.05em" fill="#6B8F7A">every agent reachable · every task tracked</text>
+  </g>
+
   <!-- right column copy -->
   <text x="902" y="236" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="700" letter-spacing="0.18em" fill="#5A6575">FOR CMUX</text>
   <text x="900" y="288" font-family="ui-serif, Georgia, 'Times New Roman', serif" font-size="56" font-weight="600" fill="#1A2332">Agent Letterbox</text>
-  <text x="902" y="348" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-size="28" font-weight="500" fill="#3D6B54">The doorbell makes it a team.</text>
+  <text x="902" y="348" font-family="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-size="28" font-weight="500" fill="#3D6B54">The Doorbell Creates The Team.</text>
 
   <text x="902" y="410" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="19" fill="#3A4558">Alone, every agent is an island.</text>
   <text x="902" y="442" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="19" fill="#3A4558">With the letterbox and the ring, they share</text>
