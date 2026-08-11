@@ -1,2 +1,4 @@
 .letterbox/
 .DS_Store
+.public-allowlist
+tests/private-patterns.local
