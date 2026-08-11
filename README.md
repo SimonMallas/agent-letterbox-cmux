@@ -16,7 +16,7 @@ A task lands as a durable letter in a teammate's inbox. The doorbell rings, aler
 📬 letterbox doorbell: check your inbox
 ```
 
-The agent wakes, picks up the real task from disk, replies, and keeps the work flowing. The terminal gets the knock; the inbox keeps the message.
+The agent wakes, picks up the real task from disk, replies, and keeps the work flowing. The terminal gets the ring; the inbox keeps the message.
 
 > **Agent mail that waits safely—and a bell brings it alive.**
 
