@@ -35,7 +35,7 @@ archive      → recipient processed history
 
 Read the full comparison in [Why Letterbox?](docs/why-letterbox.md).
 
-## v0.2 lifecycle in one screen
+## How a task moves
 
 v0.2 keeps accepted work visible until it reaches a final outcome.
 
