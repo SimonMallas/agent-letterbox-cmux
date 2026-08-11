@@ -38,5 +38,5 @@ chmod +x "$install_dir/bin/letterbox" "$install_dir/adapters"/*.sh "$install_dir
 
 printf '\nInstalled Agent Letterbox for cmux.\n'
 printf 'Next run:\n\n'
-printf '  letterbox cmux setup --agents pi,claude,grok,hermes --automatic-doorbells\n\n'
+printf '  letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells\n\n'
 printf 'If `letterbox` is not found, add %s to your PATH.\n' "$bin_dir"

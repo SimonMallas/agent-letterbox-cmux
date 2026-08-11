@@ -83,7 +83,7 @@ Open any terminal window. You can either copy/paste the commands yourself, **or 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
-letterbox cmux setup --agents planner,builder,reviewer --automatic-doorbells
+letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells
 source "$HOME/.agent-letterbox/env.sh"
 ```
 
@@ -105,7 +105,7 @@ git clone https://github.com/SimonMallas/agent-letterbox-cmux.git \
 cd ~/src/agent-letterbox-cmux
 chmod +x bin/letterbox adapters/*.sh tests/*.sh
 export PATH="$PWD/bin:$PATH"
-letterbox cmux setup --agents planner,builder,reviewer --automatic-doorbells
+letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells
 source "$HOME/.agent-letterbox/env.sh"
 ```
 
@@ -131,9 +131,10 @@ Agent Letterbox does not create, move, or resize your panels.
 In each agent's chosen cmux pane, use the launcher:
 
 ```bash
-letterbox cmux run planner -- <your-planner-command>
-letterbox cmux run builder -- <your-builder-command>
-letterbox cmux run reviewer -- <your-reviewer-command>
+letterbox cmux run planner -- <your-agent-cli>
+letterbox cmux run reviewer -- <your-agent-cli>
+letterbox cmux run builder -- <your-agent-cli>
+letterbox cmux run researcher -- <your-agent-cli>
 ```
 
 The launcher gives the agent an identity, registers its current cmux surface, and starts it. That is what lets Letterbox find and ring agents across workspaces.
@@ -170,9 +171,9 @@ Only `nack` or final `result` moves the original letter to `processed/`.
 Give each new or duplicate session a unique identity:
 
 ```bash
-letterbox cmux run planner-research -- <command>
-letterbox cmux run builder-a -- <command>
-letterbox cmux run agent-zero -- <command>
+letterbox cmux run planner-research -- <your-agent-cli>
+letterbox cmux run builder-a -- <your-agent-cli>
+letterbox cmux run agent-zero -- <your-agent-cli>
 ```
 
 Each self-registers its exact current cmux surface, avoiding title collisions.

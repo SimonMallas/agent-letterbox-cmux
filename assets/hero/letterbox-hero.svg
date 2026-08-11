@@ -112,16 +112,16 @@
   <text x="902" y="474" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="19" fill="#3A4558">work, hand off tasks, and stay in sync —</text>
   <text x="902" y="506" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="19" fill="#3A4558">together the team becomes stronger.</text>
 
-  <!-- agent chips -->
-  <g transform="translate(902, 548)" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="13" font-weight="600">
-    <rect width="58" height="30" rx="15" fill="#F0F3F6" stroke="#C5CDD8" stroke-width="1"/>
-    <text x="29" y="20" text-anchor="middle" fill="#3A4558">pi</text>
-    <rect x="66" width="78" height="30" rx="15" fill="#F0F3F6" stroke="#C5CDD8" stroke-width="1"/>
-    <text x="105" y="20" text-anchor="middle" fill="#3A4558">claude</text>
-    <rect x="152" width="68" height="30" rx="15" fill="#E8F2EC" stroke="#6B8F7A" stroke-width="1"/>
-    <text x="186" y="20" text-anchor="middle" fill="#3D6B54">grok</text>
-    <rect x="228" width="78" height="30" rx="15" fill="#F0F3F6" stroke="#C5CDD8" stroke-width="1"/>
-    <text x="267" y="20" text-anchor="middle" fill="#3A4558">hermes</text>
+  <!-- agent chips (public-neutral role cast) -->
+  <g transform="translate(902, 548)" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="12" font-weight="600">
+    <rect width="72" height="30" rx="15" fill="#F0F3F6" stroke="#C5CDD8" stroke-width="1"/>
+    <text x="36" y="20" text-anchor="middle" fill="#3A4558">planner</text>
+    <rect x="80" width="80" height="30" rx="15" fill="#F0F3F6" stroke="#C5CDD8" stroke-width="1"/>
+    <text x="120" y="20" text-anchor="middle" fill="#3A4558">reviewer</text>
+    <rect x="168" width="72" height="30" rx="15" fill="#E8F2EC" stroke="#6B8F7A" stroke-width="1"/>
+    <text x="204" y="20" text-anchor="middle" fill="#3D6B54">builder</text>
+    <rect x="248" width="96" height="30" rx="15" fill="#F0F3F6" stroke="#C5CDD8" stroke-width="1"/>
+    <text x="296" y="20" text-anchor="middle" fill="#3A4558">researcher</text>
   </g>
 
   <text x="902" y="628" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="17" fill="#5A6575">Files are the letters on the bus.</text>

@@ -9,7 +9,7 @@ This is the standard Agent Letterbox setup for a live terminal-agent team.
 Run once from the Agent Letterbox checkout:
 
 ```bash
-letterbox cmux setup --agents planner,builder,reviewer --automatic-doorbells
+letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells
 ```
 
 This creates `~/.agent-letterbox/` by default, including:
@@ -37,9 +37,10 @@ letterbox cmux setup --agents planner,reviewer --dir /shared/letterbox --automat
 Open cmux and create your own layout. Then launch each agent inside its chosen pane or workspace through the wrapper:
 
 ```bash
-letterbox cmux run planner -- <your-planner-command>
-letterbox cmux run builder -- <your-builder-command>
-letterbox cmux run reviewer -- <your-reviewer-command>
+letterbox cmux run planner -- <your-agent-cli>
+letterbox cmux run reviewer -- <your-agent-cli>
+letterbox cmux run builder -- <your-agent-cli>
+letterbox cmux run researcher -- <your-agent-cli>
 ```
 
 The wrapper:
@@ -57,9 +58,9 @@ The agent can live in any workspace. The cmux adapter uses `cmux tree --all` and
 The wrapper solves dynamic titles and duplicate runtimes automatically. Give each live session a distinct identity:
 
 ```bash
-letterbox cmux run planner-research -- <command>
-letterbox cmux run builder-a -- <command>
-letterbox cmux run agent-zero -- <command>
+letterbox cmux run planner-research -- <your-agent-cli>
+letterbox cmux run builder-a -- <your-agent-cli>
+letterbox cmux run agent-zero -- <your-agent-cli>
 ```
 
 Each registration maps an identity to its current `surface:N` in the shared `cmux-agents.tsv` registry. Surface IDs change after restart/resume, so use `letterbox cmux run` again whenever the agent is relaunched.
