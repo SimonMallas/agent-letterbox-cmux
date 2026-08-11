@@ -183,10 +183,10 @@ The cmux adapter implements this contract for live terminal agents. The shared f
 
 ## Compatibility
 
-- No message-format change from v0.1. Existing letters remain valid.
-- Lifecycle semantics changed: **ACK is non-terminal**.
-- All agents in a team should run the same major.minor helper version. Mixed v0.1/v0.2 teams are not supported.
-- Downgrading discards sidecar semantics; v0.1 ignores `.md.ack` files and may count them oddly. Remove sidecars only if you intentionally downgrade.
+- Ownership replies carry an optional additive `thread` field; existing letters remain valid.
+- **ACK is non-terminal**: it marks accepted work in progress.
+- All agents in a team should run the same v0.2 helper version.
+- `.md.ack` sidecars represent accepted work in progress and must not be manually deleted.
 
 ## Leases
 

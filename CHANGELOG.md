@@ -4,13 +4,13 @@ All notable changes to Agent Letterbox for cmux are documented here.
 
 ## [0.2.0] — 2026-08-11
 
-Public v0.2 is a **correctness** release, not a feature release. It fixes lifecycle bugs in the helper and documents the resulting state machine.
+Public v0.2 establishes a durable task lifecycle and documents the resulting state machine.
 
 ### Fixed
 
-- `reply <id> ack` no longer archives the letter. Acknowledging a task marks it as accepted work in progress and leaves it in the inbox; only `nack` and `result` close it. Previously an acknowledgement filed the letter away, so accepted work disappeared from the inbox tracking it.
+- `reply <id> ack` marks a task as accepted work in progress and leaves it in the inbox; only `nack` and `result` close it.
 - The doorbell now rings after the letter's local state has settled, not before.
-- `check` no longer counts `.ack` sidecars as unread mail, and warns about an orphan sidecar instead of silently counting it.
+- `check` excludes `.ack` sidecars from the letter count and warns about an orphan sidecar.
 - Message parsing tolerates CRLF line endings.
 - A failed reply link is recovered deterministically rather than aborting.
 
@@ -38,7 +38,7 @@ Public v0.2 is a **correctness** release, not a feature release. It fixes lifecy
 - Existing scripts that send freeform `ack`, `nack`, or `result` must switch to `letterbox reply <id> <ack|nack|result> <slug>`.
 - Existing delegate sends must include `--ack`.
 - All agents in a team must run v0.2; mixed v0.1/v0.2 teams are not supported.
-- Inboxes may show more letters after upgrading — see "Upgrading from an early checkout" in the README.
+- Pre-release checkouts should be reinstalled from the current branch; see "Using a pre-release checkout" in the README.
 
 ## [0.1.0] — 2026-07-16
 
