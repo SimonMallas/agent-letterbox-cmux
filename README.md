@@ -74,7 +74,7 @@ You need macOS or Linux, Bash, Git, and cmux. No server, database, cloud account
 
 ## Step 1 — Install Agent Letterbox
 
-Open any terminal window. You can either copy/paste the commands yourself, **or ask an existing coding agent**:
+Open any terminal window. You can either copy/paste the commands yourself, **or paste the prompt below into an existing coding agent that can access your terminal**:
 
 > Set up Agent Letterbox for cmux using the README Quick Start. Do not change my cmux layout.
 
