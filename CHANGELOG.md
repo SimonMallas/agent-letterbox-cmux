@@ -28,11 +28,15 @@ Public v0.2 is a **correctness** release, not a feature release. It fixes lifecy
 - `SPEC.md` raised to v0.2 with an explicit letter state machine and task vs non-task rules.
 - `done` refuses to close a letter that has been acknowledged; use `reply <id> result|nack`.
 - `file` refuses letters that require acknowledgement.
-- Documentation examples use neutral role identities (`planner`, `builder`, `reviewer`).
+- `send` rejects freeform `ack`, `nack`, and `result`; use `reply` for ownership responses so the helper derives their link and retry identity.
+- `delegate` now requires `--ack`.
+- Documentation examples use neutral role identities (`planner`, `builder`, `reviewer`, `researcher`).
 
 ### Compatibility
 
-- No message-format change. Existing letters remain valid.
+- Additive message-format change: ownership replies carry an optional `thread` field. Existing letters remain valid; older readers ignore unknown frontmatter keys.
+- Existing scripts that send freeform `ack`, `nack`, or `result` must switch to `letterbox reply <id> <ack|nack|result> <slug>`.
+- Existing delegate sends must include `--ack`.
 - All agents in a team must run v0.2; mixed v0.1/v0.2 teams are not supported.
 - Inboxes may show more letters after upgrading — see "Upgrading from an early checkout" in the README.
 

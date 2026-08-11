@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Public-safe v0.2 lifecycle matrix (Kimi map P0/P1/P2). Neutral identities only.
+# Public-safe v0.2 lifecycle matrix (P0/P1/P2). Neutral identities only.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"

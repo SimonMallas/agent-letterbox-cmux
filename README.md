@@ -182,7 +182,9 @@ Each self-registers its exact current cmux surface, avoiding title collisions.
 
 If you cloned this repository before v0.2.0, one behaviour has changed and it matters: **acknowledging a letter no longer files it away.** `letterbox reply <id> ack` now marks the letter as accepted work in progress and leaves it in the inbox; only `nack` and `result` close it. Previously an acknowledgement archived the letter, so accepted work disappeared from the inbox that was tracking it.
 
-There is no data migration. The message format is unchanged and your existing letters remain valid. Pull, and carry on.
+There is no data migration. The message format has one additive change: ownership replies now carry an optional `thread` field. Existing letters remain valid, and older readers ignore unknown frontmatter keys.
+
+If an early script used `letterbox send ... ack|nack|result`, change it to `letterbox reply <id> ack|nack|result <slug>`. Delegates now require `--ack` so ownership is explicit.
 
 Two notes: your inbox may show more letters than before — those are letters an acknowledgement wrongly archived, and seeing them again is the fix working. And all agents in a team should run the same version. If you intentionally downgrade to v0.1, delete leftover `.md.ack` sidecars first.
 
