@@ -16,7 +16,7 @@ test -n "$id"
 test "$(find "$box/beta/inbox" -name '.*.tmp.*' | wc -l | tr -d ' ')" = 0
 
 # A real reply publishes to alpha's inbox before archiving beta's inbound letter.
-printf 'Accepted.\n' | LETTERBOX_DIR="$box" LETTERBOX_AGENT=beta "$helper" reply "$message" ack accept-review
+printf 'Accepted.\n' | LETTERBOX_DIR="$box" LETTERBOX_AGENT=beta "$helper" reply "$message" result accept-review
 reply=("$box/alpha/inbox"/*.md)
 test "${#reply[@]}" = 1
 test "$(awk -F': ' '$1 == "re" { print $2; exit }' "${reply[0]}")" = "$id"
