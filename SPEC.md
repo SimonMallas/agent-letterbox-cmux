@@ -11,7 +11,7 @@ reply        → sender inbox (derived)
 archive      → recipient processed history
 ```
 
-The terminal gets the knock; the inbox keeps the message. Doorbell delivery is best-effort. The letter on disk is the record.
+The terminal gets a ring; the inbox keeps the message. Doorbell delivery is best-effort. The letter on disk is the record.
 
 ## Layout
 
@@ -174,7 +174,7 @@ A doorbell is optional. Its only terminal content should be a generic prompt suc
 
 Rules:
 
-- No task body, paths, secrets, or DONE-WHEN text in the knock line.
+- No task body, paths, secrets, or DONE-WHEN text in the doorbell line.
 - `priority: now` may ring a live surface; lower priorities are durable-only by default.
 - At-most-once notification over a durable at-least-once record.
 - Offline, busy, or unregistered agents still receive the letter in `inbox/`.

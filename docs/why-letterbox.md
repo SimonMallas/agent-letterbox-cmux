@@ -41,7 +41,7 @@ The doorbell is still an automatic live-agent wake-up. It is not a human notific
 | Harder to inspect/audit task ownership | Inbox, ACK sidecar, result, and processed archive provide an audit trail |
 | Arbitrary task content is injected into a live composer | Only a fixed generic line is injected |
 
-Terminal scrollback is a weaker boundary than the filesystem, so the task never goes through the knock line.
+Terminal scrollback is a weaker boundary than the filesystem, so the task never goes through the doorbell line.
 
 ## The practical result
 
