@@ -27,13 +27,32 @@ Without coordination, a multi-agent workflow usually means juggling panes, copyi
 Directly injecting the full task into another terminal is fast, but the terminal becomes the only message record. Agent Letterbox keeps the fast part—the live doorbell—while putting the actual work in a durable, inspectable letter.
 
 ```text
-full task → durable inbox letter
+full task    → durable inbox letter
 live wake-up → short generic doorbell
-reply → sender inbox
-archive → recipient processed history
+reply        → sender inbox
+archive      → recipient processed history
 ```
 
 Read the full comparison in [Why Letterbox?](docs/why-letterbox.md).
+
+## v0.2 lifecycle in one screen
+
+Public v0.2 is a **correctness** release: acknowledgements no longer file work away.
+
+```text
+send task (requires_ack=true)
+  → recipient: reply ack     # accepted WIP; letter stays in inbox (.md.ack)
+  → recipient: does the work
+  → recipient: reply result  # terminal; letter moves to processed/
+```
+
+Non-task letters (`info` / `status` / received replies) are filed with no invented response:
+
+```bash
+letterbox file <id>
+```
+
+See [SPEC.md](SPEC.md) and [docs/lifecycle.md](docs/lifecycle.md).
 
 ## What this opens up
 
@@ -41,8 +60,8 @@ Read the full comparison in [Why Letterbox?](docs/why-letterbox.md).
 - **Real handoffs** — implementation, review, research, QA, and fixes can move between agents as explicit owned work.
 - **A visible team** — agents can live in separate cmux panels, workspaces, or windows and still coordinate across them.
 - **Durable recovery** — if an agent is offline, restarting, busy, or misses the bell, the task remains in its inbox.
-- **Clear responsibility** — delegates require ACK/NACK; replies are delivered before originals are archived.
-- **Evidence over claims** — inbox, reply, and processed files show what happened even when an agent conversation is gone.
+- **Clear responsibility** — task letters require ACK/NACK/RESULT; ACK means in progress, not done.
+- **Evidence over claims** — inbox, reply, sidecar, and processed files show what happened even when an agent conversation is gone.
 - **Less human relay work** — you direct the team instead of pasting the same request between terminals.
 
 This repository is purpose-built for live cmux agent teams.
@@ -64,7 +83,7 @@ Open any terminal window. You can either copy/paste the commands yourself, **or 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
-letterbox cmux setup --agents pi,claude,grok,hermes --automatic-doorbells
+letterbox cmux setup --agents planner,builder,reviewer --automatic-doorbells
 source "$HOME/.agent-letterbox/env.sh"
 ```
 
@@ -82,11 +101,11 @@ Use this if you want to inspect the source, modify it, or contribute:
 
 ```bash
 git clone https://github.com/SimonMallas/agent-letterbox-cmux.git \
-  ~/Developer/agent-letterbox-cmux
-cd ~/Developer/agent-letterbox-cmux
+  ~/src/agent-letterbox-cmux
+cd ~/src/agent-letterbox-cmux
 chmod +x bin/letterbox adapters/*.sh tests/*.sh
 export PATH="$PWD/bin:$PATH"
-letterbox cmux setup --agents pi,claude,grok,hermes --automatic-doorbells
+letterbox cmux setup --agents planner,builder,reviewer --automatic-doorbells
 source "$HOME/.agent-letterbox/env.sh"
 ```
 
@@ -112,41 +131,59 @@ Agent Letterbox does not create, move, or resize your panels.
 In each agent's chosen cmux pane, use the launcher:
 
 ```bash
-letterbox cmux run pi -- pi
-letterbox cmux run claude -- claude
-letterbox cmux run grok -- grok
-letterbox cmux run hermes -- hermes
+letterbox cmux run planner -- <your-planner-command>
+letterbox cmux run builder -- <your-builder-command>
+letterbox cmux run reviewer -- <your-reviewer-command>
 ```
 
 The launcher gives the agent an identity, registers its current cmux surface, and starts it. That is what lets Letterbox find and ring agents across workspaces.
 
-## Step 4 — Send the first handoff
+## Step 4 — Send the first handoff (ack, then result)
 
-From the Pi terminal:
+From the planner terminal:
 
 ```bash
 printf '%s\n' 'Review src/auth.ts and report correctness findings.' |
-  LETTERBOX_AGENT=pi letterbox send claude delegate auth-review --ack --now
+  LETTERBOX_AGENT=planner letterbox send reviewer delegate auth-review --ack --now
 ```
 
-Claude receives a durable letter and a live cmux doorbell. To reply:
+Prefer `printf … | letterbox …` for bodies. Avoid unquoted heredocs when the text may contain `$` or backticks — the shell expands those before Letterbox sees them. The CLI owns frontmatter; only the body goes on stdin.
+
+The reviewer receives a durable letter and a live cmux doorbell. Accept the work (non-terminal):
 
 ```bash
-printf '%s\n' 'ACK: I will review it now.' |
-  letterbox reply <message-id-or-inbox-path> ack auth-review-ack --now
+printf '%s\n' 'ACK: reviewing auth.ts now.' |
+  LETTERBOX_AGENT=reviewer letterbox reply <message-id-or-inbox-path> ack auth-review --now
 ```
+
+The letter stays in the reviewer's inbox with an `.md.ack` sidecar (`letterbox check` shows `[ACCEPTED]`). When finished, close it:
+
+```bash
+printf '%s\n' 'RESULT: no critical issues; two nits in findings.md.' |
+  LETTERBOX_AGENT=reviewer letterbox reply <message-id-or-inbox-path> result auth-review --now
+```
+
+Only `nack` or final `result` moves the original letter to `processed/`.
 
 ## New or duplicate agents
 
 Give each new or duplicate session a unique identity:
 
 ```bash
-letterbox cmux run pi-research -- pi
-letterbox cmux run pi-builder -- pi
-letterbox cmux run agent-zero -- agent-zero
+letterbox cmux run planner-research -- <command>
+letterbox cmux run builder-a -- <command>
+letterbox cmux run agent-zero -- <command>
 ```
 
 Each self-registers its exact current cmux surface, avoiding title collisions.
+
+## Upgrading from an early checkout
+
+If you cloned this repository before v0.2.0, one behaviour has changed and it matters: **acknowledging a letter no longer files it away.** `letterbox reply <id> ack` now marks the letter as accepted work in progress and leaves it in the inbox; only `nack` and `result` close it. Previously an acknowledgement archived the letter, so accepted work disappeared from the inbox that was tracking it.
+
+There is no data migration. The message format is unchanged and your existing letters remain valid. Pull, and carry on.
+
+Two notes: your inbox may show more letters than before — those are letters an acknowledgement wrongly archived, and seeing them again is the fix working. And all agents in a team should run the same version. If you intentionally downgrade to v0.1, delete leftover `.md.ack` sidecars first.
 
 ## Test the installation
 
@@ -157,11 +194,14 @@ make test
 
 ## Learn more
 
+- [docs/lifecycle.md](docs/lifecycle.md) — task vs non-task, ACK/NACK/RESULT, `file`
 - [docs/why-letterbox.md](docs/why-letterbox.md) — why durable letters plus generic doorbells beat direct task injection
 - [docs/team-setup.md](docs/team-setup.md) — detailed cmux team setup
-- [docs/cmux.md](docs/cmux.md) — cross-workspace operation and update verification
-- [SPEC.md](SPEC.md) — message format and reply-first semantics
+- [docs/cmux.md](docs/cmux.md) — cross-workspace operation, recovery after updates
+- [SPEC.md](SPEC.md) — normative protocol (v0.2)
 - [SECURITY.md](SECURITY.md) — threat model and reporting
+- [ROADMAP.md](ROADMAP.md) — scope and deferred items
+- [CHANGELOG.md](CHANGELOG.md) — user-visible changes
 
 ## License
 

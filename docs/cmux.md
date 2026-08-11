@@ -48,7 +48,7 @@ export LETTERBOX_DOORBELL="$PWD/adapters/cmux.sh"
 export LETTERBOX_CMUX_PATTERNS="$PWD/.letterbox/cmux-patterns.tsv"
 ```
 
-Use one row per known title marker. Patterns are local configuration, not protocol data.
+Use one row per known title marker. Patterns are local configuration, not protocol data. Title matching is a legacy fallback only — never proof of identity.
 
 ## Safety: terminal input is opt-in
 
@@ -60,33 +60,60 @@ export LETTERBOX_CMUX_SUBMIT=1
 
 This can submit unsent text already present in the target terminal input buffer. Use it only for dedicated agent terminals where that risk is acceptable.
 
-## cmux update procedure
+Doorbell delivery means a wake-up was submitted to a verified live surface, not that the agent read or accepted the letter. If a safe live surface cannot be verified, Letterbox prefers silent durable delivery over risky pane injection.
 
-Do not update cmux while important agents are running. First let current turns settle or record their state.
+## Maintenance and recovery
 
-After an update:
+Do not update cmux while important agents are mid-turn. First let current turns settle or record their state. Letters already in inboxes remain durable across restarts; live doorbells do not.
 
-```bash
-cmux version
-cmux tree --all
-```
+### After cmux update, sleep/wake, or host restart
 
-Then run a harmless cross-workspace Letterbox smoke check:
+1. Confirm cmux is healthy:
 
-1. Send a `priority: now` `info` letter to a live agent in another workspace.
-2. Confirm the letter appears in that agent's inbox.
-3. Confirm the standardized doorbell reaches the intended surface.
-4. Confirm no other surface received injected input.
+   ```bash
+   cmux version
+   cmux tree --all
+   ```
 
-If a pane looks stale after sleep/wake, use cmux diagnostics before reusing old surface references:
+2. If panes look stale:
 
-```bash
-cmux surface-health
-cmux refresh-surfaces
-cmux tree --all
-```
+   ```bash
+   cmux surface-health
+   cmux refresh-surfaces
+   cmux tree --all
+   ```
+
+3. **Re-register every live agent from inside its own terminal.** Do not reuse remembered `surface:N` values.
+
+   ```bash
+   letterbox cmux register <agent-id>
+   letterbox cmux status
+   ```
+
+4. Each agent should scan its inbox (including any `[ACCEPTED]` WIP marked by `.md.ack` sidecars):
+
+   ```bash
+   letterbox check
+   ```
+
+5. Run a harmless cross-workspace smoke check:
+
+   - Send a `priority: now` `info` letter to a live agent in another workspace.
+   - Confirm the letter appears in that agent's inbox.
+   - Confirm the standardized doorbell reaches the intended surface only.
+   - Have the recipient `letterbox file` the info letter.
+   - Optionally run one disposable `delegate --ack` → `reply ack` → `reply result` cycle.
 
 Always rediscover current surfaces; never retain an old `surface:N` reference across a restart, sleep/wake, or update.
+
+### Accepted WIP after interruption
+
+An `[ACCEPTED]` task letter is still open work. After recovery:
+
+- finish with `letterbox reply <id> result …`, or
+- decline with `letterbox reply <id> nack …`.
+
+Do not `file` it, and do not hand-delete the `.md.ack` sidecar.
 
 ## Hooks
 

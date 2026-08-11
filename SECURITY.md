@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Until a public tag is cut, treat **main / pre-release** as the only line that receives security fixes. Once `v0.1.x` is tagged, report issues against the latest patch of that minor line.
+Until a public tag is cut, treat **main / pre-release** as the only line that receives security fixes. Once `v0.2.x` is tagged, report issues against the latest patch of that minor line.
 
 ## What this project is (and is not)
 
@@ -15,14 +15,17 @@ Agent Letterbox is a **local filesystem protocol** plus a small Bash CLI. It has
 
 **Anyone (or any process) who can write to a peer’s inbox directory can plant a letter.** Treat inbox contents as **untrusted data**, not as authority.
 
-## Threat model (v0.1)
+Letters are operator/user content on disk. The core project never transmits letter bodies to a network service.
+
+## Threat model (v0.2)
 
 | Trust | Assumption |
 |-------|------------|
 | Disk layout | You choose `LETTERBOX_DIR` on a machine and filesystem you control |
-| Agents | Cooperative agents follow reply-first and do not expand permissions from letter bodies |
+| Agents | Cooperative agents follow task/non-task lifecycle and do not expand permissions from letter bodies |
 | Doorbells | Optional adapters only signal a live session; they must not carry task content |
 | Locks | Advisory only — not a security boundary |
+| Sidecars | `.md.ack` files are local metadata beside open task letters |
 
 ### Expected operator practices
 
@@ -31,13 +34,15 @@ Agent Letterbox is a **local filesystem protocol** plus a small Bash CLI. It has
 3. **No permission expansion:** A letter must never grant an agent tools, paths, or network rights it did not already have.
 4. **Doorbell injection:** Opt-in terminal submit modes (e.g. `LETTERBOX_CMUX_SUBMIT=1`) can inject keystrokes into a live pane; leave them off unless you accept that risk.
 5. **cmux injection:** The cmux adapter is a local terminal mechanism, not a remote control channel. Do not expose its surface/socket access to untrusted processes.
+6. **External intake (if any):** Chat/email/webhooks are entry points, not bus identities. Allowlist sources before publishing letters; unknown senders fail closed; missing allowlist denies all. Do not put secrets or allowlist contents into letters or doorbells.
 
-### Explicitly out of scope for v0.1 core
+### Explicitly out of scope for v0.2 core
 
 - Cryptographic signing of letters
 - Mutual authentication of agents
 - Remote multi-machine transport
 - Autonomous unattended processing outside a live cmux terminal agent
+- Built-in third-party chat bridges
 
 See [ROADMAP.md](ROADMAP.md).
 
@@ -54,5 +59,6 @@ If the project is still private, use the same private channel you already use wi
 ## Safe defaults for integrators
 
 - Prefer live cmux terminal agents with durable inbox fallback.
-- Judge completion by **on-disk** reply + archive, never by model prose alone.
+- Judge completion by **on-disk** reply + archive (and sidecar state), never by model prose alone.
 - Do not expose cmux surface/socket access to untrusted processes.
+- Keep doorbell lines generic; never inject task bodies into terminals.
