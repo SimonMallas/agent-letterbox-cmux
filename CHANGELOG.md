@@ -37,7 +37,7 @@ Public v0.2 establishes a durable task lifecycle and documents the resulting sta
 - Additive message-format change: ownership replies carry an optional `thread` field. Existing letters remain valid; older readers ignore unknown frontmatter keys.
 - Existing scripts that send freeform `ack`, `nack`, or `result` must switch to `letterbox reply <id> <ack|nack|result> <slug>`.
 - Existing delegate sends must include `--ack`.
-- All agents in a team must run v0.2; mixed v0.1/v0.2 teams are not supported.
+- All agents in a team must run the same v0.2 helper version.
 - Pre-release checkouts should be reinstalled from the current branch; see "Using a pre-release checkout" in the README.
 
 ## [0.1.0] — 2026-07-16
