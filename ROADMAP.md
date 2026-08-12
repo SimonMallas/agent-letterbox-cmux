@@ -35,7 +35,7 @@ Public v0.2 is a **correctness** release: task vs non-task lifecycle, non-termin
 
 ## Next milestones
 
-1. Soak the published preview (curl + git install paths, one real ack→result cycle on live cmux).
-2. Promote preview → canonical `agent-letterbox-cmux` when ready; keep install URLs single-sourced.
+1. Soak the published v0.2 artifact (curl + git install paths, one real ack→result cycle on live cmux).
+2. Keep install/clone/curl URLs single-sourced at canonical `agent-letterbox-cmux`.
 3. Keep lifecycle suite CI green on macOS and Linux from clean clones.
 4. Port the same lifecycle semantics to sibling platform repos only when each has its own real doorbell proof.

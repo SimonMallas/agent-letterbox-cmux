@@ -26,8 +26,8 @@ Do not market desktop or webhook experiments as supported unattended automation.
 Requirements: Bash and standard macOS/Linux userland. cmux is required only for live adapter tests that use it; mock-backed safety tests run without cmux.
 
 ```bash
-git clone https://github.com/SimonMallas/agent-letterbox-cmux-v02-preview.git
-cd agent-letterbox-cmux-v02-preview
+git clone https://github.com/SimonMallas/agent-letterbox-cmux.git
+cd agent-letterbox-cmux
 chmod +x bin/letterbox adapters/*.sh tests/*.sh
 export PATH="$PWD/bin:$PATH"
 ```

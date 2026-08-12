@@ -2,11 +2,11 @@
 # Agent Letterbox for cmux installer.
 set -euo pipefail
 
-repo="${AGENT_LETTERBOX_REPO:-https://github.com/SimonMallas/agent-letterbox-cmux-v02-preview.git}"
-install_dir="${AGENT_LETTERBOX_INSTALL_DIR:-$HOME/.local/share/agent-letterbox-cmux-v02-preview}"
+repo="${AGENT_LETTERBOX_REPO:-https://github.com/SimonMallas/agent-letterbox-cmux.git}"
+install_dir="${AGENT_LETTERBOX_INSTALL_DIR:-$HOME/.local/share/agent-letterbox-cmux}"
 bin_dir="${AGENT_LETTERBOX_BIN_DIR:-$HOME/.local/bin}"
 
-fail() { printf 'agent-letterbox-cmux-v02-preview installer: %s\n' "$*" >&2; exit 1; }
+fail() { printf 'agent-letterbox-cmux installer: %s\n' "$*" >&2; exit 1; }
 command -v git >/dev/null 2>&1 || fail 'Git is required. Install Git, then run this command again.'
 
 if [[ -e "$install_dir" && ! -d "$install_dir/.git" ]]; then
