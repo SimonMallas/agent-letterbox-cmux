@@ -6,6 +6,8 @@
 
 **Agent Letterbox for cmux turns separate coding-agent terminals into a live team.**
 
+Cross-agent communication and agent-to-agent coordination for multi-agent AI coding teams. Task handoffs are durable letters on disk; the terminal ring is opt-in and best-effort.
+
 ## What it is
 
 Agent Letterbox is not a model, a new terminal, or a second agent harness. It is the coordination layer that lets the agents you already run hand work to one another without making you the human message relay.
@@ -16,9 +18,20 @@ A task lands as a durable letter in a teammate's inbox. The doorbell rings, aler
 📬 letterbox doorbell: check your inbox
 ```
 
-The agent wakes, picks up the real task from disk, replies, and keeps the work flowing. The terminal gets the ring; the inbox keeps the message.
+The agent wakes, picks up the real task from disk, replies, and keeps the work flowing. The terminal gets a ring; the inbox keeps the message.
 
 > **Agent mail that waits safely—and a bell brings it alive.**
+
+## The Agent Letterbox family
+
+One product per terminal — the same letters, the same protocol, and the same core test suite, plus the tests each terminal needs. Pick the one matching the terminal you already run:
+
+- **[cmux](https://github.com/SimonMallas/agent-letterbox-cmux)** — primary entry point
+- [tmux](https://github.com/SimonMallas/agent-letterbox-tmux)
+- [Herdr](https://github.com/SimonMallas/agent-letterbox-herdr)
+- [Zellij](https://github.com/SimonMallas/agent-letterbox-zellij) — terminal ring requires `LETTERBOX_ZELLIJ_SUBMIT=1`
+
+You are reading the **cmux** edition.
 
 ## Why it exists
 
