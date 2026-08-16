@@ -1,14 +1,14 @@
 ---
 name: agent-letterbox
 description: Durable cross-agent coordination for live cmux teams. Use when receiving an Agent Letterbox doorbell, checking a Letterbox inbox, replying to another agent, registering a live cmux surface, or handling agent-to-agent work handoffs.
-version: 0.2.0
+version: 0.3.0
 author: Agent Letterbox
 license: MIT
 ---
 
 # Agent Letterbox
 
-**Helper version:** see repository `VERSION` (currently **0.2.0** until v0.3 release integration). This skill documents the v0.3 core doorbell/check path already in the helper.
+**Helper version:** see repository `VERSION` (currently **0.3.0**). This skill documents the v0.3 doorbell, operational check, and durable-reading workflow.
 
 ## Core rule
 

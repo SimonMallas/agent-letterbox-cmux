@@ -1,6 +1,6 @@
 # Agent Letterbox Protocol v0.2
 
-> **v0.3 core (unreleased):** the public helper already implements the ratified v0.3 core (short-path RESULT, file `--read` guard, display-id/token resolver, additive doorbell, operational check). Repository `VERSION` remains **0.2.0** until release integration. v0.2 letters and token-less doorbells stay valid.
+> **v0.3.0:** the public helper implements the ratified v0.3 core (short-path RESULT, file `--read` guard, display-id/token resolver, additive doorbell, operational check). v0.2 letters and token-less doorbells stay valid.
 
 ## Public doorbell grammar
 
