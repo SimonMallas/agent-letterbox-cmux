@@ -65,6 +65,30 @@ confirm_label() {
   fi
   display_id "$id"
 }
+
+# Public doorbell grammar. Prefix/pattern only; exact full-line equality is a cutover BLOCK.
+V02_DOORBELL_PREFIX="📬 letterbox doorbell: unacked "
+V02_DOORBELL_TAIL=" — please check"
+format_doorbell_line() { # $1=to $2=type $3=id — never slug/body/full-id
+  local to="$1" type="$2" id="$3"
+  printf '%s%s in <letterbox>/%s/inbox/%s · %s\n' \
+    "$V02_DOORBELL_PREFIX" "$type" "$to" "$V02_DOORBELL_TAIL" "$(doorbell_token_for_id "$id")"
+}
+parse_doorbell_line() { # $1=line → v02 | v03 <token> | reject
+  local line="$1" rest tok
+  case "$line" in
+    "$V02_DOORBELL_PREFIX"*"$V02_DOORBELL_TAIL") printf 'v02\n'; return 0;;
+    "$V02_DOORBELL_PREFIX"*"$V02_DOORBELL_TAIL · "*)
+      rest="${line#*"$V02_DOORBELL_TAIL · "}"
+      tok="${rest%%$'\n'*}"
+      if [[ "$tok" =~ ^[0-9a-f]{8}$ ]]; then
+        printf 'v03 %s\n' "$tok"
+        return 0
+      fi
+      ;;
+  esac
+  return 1
+}
 message_arg_is_path() { [[ -f "$1" ]]; }
 
 resolve_action_ref() {
@@ -825,6 +849,19 @@ cmd_nudge() {
   ring_doorbell "$to" "$typ" "$id"
 }
 
+cmd_doorbell_line() {
+  local to="${1:?usage: letterbox doorbell-line <to> <type> <id>}"
+  local type="${2:?missing type}" id="${3:?missing id}"
+  format_doorbell_line "$to" "$type" "$id"
+}
+cmd_doorbell_parse() {
+  local line="${1:-}"
+  if [[ -z "$line" ]]; then
+    IFS= read -r line || die "doorbell-parse needs a line"
+  fi
+  parse_doorbell_line "$line" || die "reject"
+}
+
 cmd_token() {
   need_me
   local tok="${1:?usage: letterbox token <8hex>}"
@@ -918,6 +955,8 @@ case "${1:-}" in
   reply) shift; cmd_reply "$@";; file) shift; cmd_file "$@";; done) shift; cmd_done "$@";;
   read) shift; cmd_read "$@";; progress) shift; cmd_progress "$@";;
   nudge) shift; cmd_nudge "$@";; token) shift; cmd_token "$@";;
+  doorbell-line) shift; cmd_doorbell_line "$@";;
+  doorbell-parse) shift; cmd_doorbell_parse "$@";;
   lock) shift; cmd_lock "$@";; unlock) shift; cmd_unlock "$@";;
   status) shift; cmd_status "$@";; cmux) shift; cmd_cmux "$@";;
   *) printf 'usage: letterbox {init|send|check|read|progress|nudge|token|reply|file|done|lock|unlock|status|cmux|--version} ...\n\ncmux: setup | run | register | unregister | status\n' >&2; exit 2;;

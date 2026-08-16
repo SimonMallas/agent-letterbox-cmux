@@ -8,15 +8,34 @@ license: MIT
 
 # Agent Letterbox
 
+**Helper version:** see repository `VERSION` (currently **0.2.0** until v0.3 release integration). This skill documents the v0.3 core doorbell/check path already in the helper.
+
 ## Core rule
 
 A Letterbox message is the durable work item. A doorbell is only the fast signal that tells a live agent to check its inbox.
 
+## Permitted doorbell input (dual-accept)
+
+Accept **both** public shapes (prefix/pattern only — **never** require exact full-line equality):
+
 ```text
-📬 letterbox doorbell: check your inbox
+📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check
+📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check · <8-lowercase-hex>
 ```
 
-When this appears in your live terminal, check the inbox now.
+- MUST start with `📬 letterbox doorbell: unacked `
+- MUST contain ` — please check`
+- OPTIONAL suffix: ` · ` + exactly `[0-9a-f]{8}`
+- Reject a suffix that is present but not 8 lowercase hex
+- **Exact full-line equality is a cutover BLOCK** (silently drops the other shape)
+- Public grammar only: `<letterbox>/<agent>/inbox/` — no private host paths
+- Token is opaque 8-hex — never slug, body, path, secret, or full id
+
+On match: `letterbox check` (summary). Optionally `letterbox read <id-or-display-id>`. Do not claim read/handled from the knock.
+
+`submitted` / `pasted_not_submitted` / `no_live_surface` are doorbell **outcomes**. They never mean the letter was read or that a turn started.
+
+When a knock appears in your live terminal, check the inbox now.
 
 ## Startup and resume
 
@@ -32,14 +51,14 @@ When this appears in your live terminal, check the inbox now.
    letterbox check
    ```
 
-   Task letters show `[UNACKED]` or `[ACCEPTED]`. Sidecar files are not extra mail.
+   Task letters show `[UNACKED]` or `[ACCEPTED]`. Default check is operational (display id, live/stale, progress) and does **not** print letter bodies. Use `letterbox read` for the exact durable letter. Sidecar files are not extra mail.
 
 ## Task vs non-task
 
 | Kind | `requires_ack` | Action |
 |---|---|---|
 | Task (`request` / `delegate` / actionable `blocker`) | `true` | `reply ack` → work → `reply result` or `reply nack` |
-| Non-task (`info` / `status` / received replies) | `false` | Read and `letterbox file <id>` — do not invent a reply |
+| Non-task (`info` / `status` / received replies) | `false` | Read and `letterbox file <id>` — do not invent a reply. `requires_ack: false` **requests** may one-shot `reply result`. |
 
 **ACK is not done.** `letterbox reply <id> ack` leaves the letter in your inbox with a `.md.ack` sidecar. Only `nack` or final `result` archives it.
 
@@ -66,8 +85,12 @@ If the original letter has `priority: now`, append `--now` so the sender's live 
 Non-task disposal:
 
 ```bash
-letterbox file <message-id-or-path>
+letterbox file <id-or-display-id-or-token>
 ```
+
+PATH-form inbound `result`/`nack` requires `--read`. Explicit IDs file directly.
+
+`letterbox nudge <id>` re-rings an existing **open** letter. It does not create a new letter. Filed/terminal letters refuse.
 
 ## Stdin bodies
 

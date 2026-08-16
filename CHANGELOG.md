@@ -12,7 +12,9 @@ All notable changes to Agent Letterbox for cmux are documented here.
 - Operational `check` (live first, stale last, `--recent` footer, progress age) and read-only `check --thread`.
 - Privacy-safe confirmation lines (`display_id`, never basename/slug).
 
-v0.2 letters and token-less doorbells remain valid. The `thread` field is still additive/optional; unknown fields stay ignored.
+v0.2 letters and token-less doorbells remain valid. Dual-accept doorbell guidance is prefix/pattern only (exact full-line equality is a cutover BLOCK). The `thread` field is still additive/optional; unknown fields stay ignored.
+
+`VERSION` remains 0.2.0 until release integration.
 
 ## [0.2.0] — 2026-08-11
 

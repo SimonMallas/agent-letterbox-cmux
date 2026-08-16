@@ -5,7 +5,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 letterbox="$root/bin/letterbox"
 fails=0
 passes=0
-EXPECTED_PASS=23
+EXPECTED_PASS=28
 pass() { printf 'PASS: %s\n' "$*"; passes=$((passes + 1)); }
 fail() { printf 'FAIL: %s\n' "$*" >&2; fails=$((fails + 1)); }
 
@@ -157,6 +157,136 @@ tout="$(lb planner check --thread "$THR")"
 after=$(find "$box" -type f | sort | cksum)
 [[ "$before" == "$after" ]] && pass "--thread writes zero files" || fail "thread wrote"
 echo "$tout" | grep -q "$CANARY" && fail "thread leaked canary" || pass "thread no canary"
+
+# ── public dual-accept doorbell grammar (no private paths) ──
+new_box
+V02="📬 letterbox doorbell: unacked info in <letterbox>/reviewer/inbox/ — please check"
+V03="$V02 · abcd1234"
+[[ "$(lb planner doorbell-parse "$V02")" == v02 ]] && pass "parse accepts v0.2 tokenless" || fail "parse v02"
+[[ "$(lb planner doorbell-parse "$V03")" == "v03 abcd1234" ]] && pass "parse accepts v0.3 suffix" || fail "parse v03"
+if lb planner doorbell-parse "${V02} · zzzzzzzz" >/dev/null 2>&1; then fail "malformed token accepted"; else pass "malformed token rejected"; fi
+line="$(lb planner doorbell-line reviewer info 2026-08-16T080000-planner-info-x-abcd1234)"
+echo "$line" | grep -q "$CANARY" && fail "doorbell-line leaked canary"
+echo "$line" | grep -q 'shared-brain' && fail "doorbell-line used private path"
+[[ "$line" == "$V03" ]] && pass "doorbell-line public grammar + token" || fail "line: $line"
+
+# ── named mutations: [mut] FAIL is expected inner fail; outer PASS means caught ──
+mut_caught=0
+mut_total=4
+mutate_run() { # name old new then run via python
+  :
+}
+
+python3 - "$letterbox" "$CANARY" <<'PY' || exit 1
+import pathlib, shutil, subprocess, os, sys, tempfile
+helper, canary = sys.argv[1], sys.argv[2]
+src = pathlib.Path(helper).read_text()
+root = pathlib.Path(helper).parent.parent
+
+def mutate(name, old, new):
+    if old not in src:
+        print(f"FAIL: mutation {name} pattern missing", file=sys.stderr)
+        return None
+    d = pathlib.Path(tempfile.mkdtemp(prefix="lb-mut-"))
+    h = d / "letterbox"
+    h.write_text(src.replace(old, new, 1))
+    h.chmod(0o755)
+    return h
+
+def run(h, *args, env=None):
+    e = os.environ.copy()
+    if env:
+        e.update(env)
+    return subprocess.run([str(h), *args], capture_output=True, text=True, env=e)
+
+caught = 0
+
+# M-collision-first-match
+h = mutate("collision",
+           "  if (( ${#hits[@]} > 1 )); then",
+           "  if false && (( ${#hits[@]} > 1 )); then")
+if h:
+    box = tempfile.mkdtemp(prefix="lb-mutbox-")
+    subprocess.run([str(h), "init", "planner", "reviewer"], env={**os.environ, "LETTERBOX_DIR": box}, check=True, capture_output=True)
+    for mid in ("2026-08-16T081000-planner-info-one-deadbeef", "2026-08-01T090000-planner-info-two-deadbeef"):
+        p = pathlib.Path(box) / "reviewer" / "inbox" / f"{mid}.md"
+        p.write_text(f"---\nid: {mid}\nfrom: planner\nto: reviewer\ntype: info\nre:\npriority: now\nrequires_ack: false\ndeadline:\n---\nbody {canary}\n")
+    r = run(h, "read", "deadbeef", env={"LETTERBOX_DIR": box, "LETTERBOX_AGENT": "reviewer"})
+    if r.returncode == 0:
+        print("[mut] FAIL: collision first-match read succeeded")
+        print("PASS: mutation M-collision-first-match caught")
+        caught += 1
+    else:
+        print("FAIL: mutation M-collision-first-match SURVIVED", file=sys.stderr)
+
+# M-file-C-removed
+h = mutate("file-C",
+           '      if [[ "$arg_is_path" == true && "$assert_read" != true ]]; then',
+           '      if false && [[ "$arg_is_path" == true && "$assert_read" != true ]]; then')
+if h:
+    box = tempfile.mkdtemp(prefix="lb-mutbox-")
+    subprocess.run([str(h), "init", "planner", "reviewer"], env={**os.environ, "LETTERBOX_DIR": box}, check=True, capture_output=True)
+    mid = "2026-08-16T080002-planner-result-peer-dddd4444"
+    p = pathlib.Path(box) / "reviewer" / "inbox" / f"{mid}.md"
+    p.write_text(f"---\nid: {mid}\nfrom: planner\nto: reviewer\ntype: result\nre:\npriority: now\nrequires_ack: false\ndeadline:\n---\nbody\n")
+    r = run(h, "file", str(p), env={"LETTERBOX_DIR": box, "LETTERBOX_AGENT": "reviewer"})
+    if r.returncode == 0:
+        print("[mut] FAIL: path RESULT filed without --read")
+        print("PASS: mutation M-file-C-removed caught")
+        caught += 1
+    else:
+        print("FAIL: mutation M-file-C-removed SURVIVED", file=sys.stderr)
+
+# M-confirm-basename (canary leak)
+h = mutate("confirm-privacy",
+           """confirm_label() {
+  local f=\"$1\" id
+  id=\"$(frontmatter_value \"$f\" id 2>/dev/null || true)\"
+  if [[ -z \"$id\" ]]; then
+    id=\"${f##*/}\"; id=\"${id%.md}\"
+  fi
+  display_id \"$id\"
+}""",
+           """confirm_label() {
+  local f=\"$1\"
+  basename \"$f\"
+}""")
+if h:
+    box = tempfile.mkdtemp(prefix="lb-mutbox-")
+    subprocess.run([str(h), "init", "planner", "reviewer"], env={**os.environ, "LETTERBOX_DIR": box}, check=True, capture_output=True)
+    mid = f"2026-08-16T080100-planner-info-{canary}-abcd1234"
+    p = pathlib.Path(box) / "reviewer" / "inbox" / f"{mid}.md"
+    p.write_text(f"---\nid: {mid}\nfrom: planner\nto: reviewer\ntype: info\nre:\npriority: now\nrequires_ack: false\ndeadline:\n---\nbody {canary}\n")
+    r = run(h, "file", mid, env={"LETTERBOX_DIR": box, "LETTERBOX_AGENT": "reviewer"})
+    if canary in (r.stdout or ""):
+        print("[mut] FAIL: file confirmation leaked canary slug")
+        print("PASS: mutation M-confirm-basename caught")
+        caught += 1
+    else:
+        print("FAIL: mutation M-confirm-basename SURVIVED", r.stdout, file=sys.stderr)
+
+# M-exact-match-grammar BLOCK
+h = mutate("exact-match",
+           '''    "$V02_DOORBELL_PREFIX"*"$V02_DOORBELL_TAIL · "*)''',
+           '''    "EXACT-ONLY-NEVER-MATCH · "*)''')
+if h:
+    v03 = "📬 letterbox doorbell: unacked info in <letterbox>/reviewer/inbox/ — please check · abcd1234"
+    r = run(h, "doorbell-parse", v03)
+    if r.returncode != 0:
+        print("[mut] FAIL: exact-match parse rejected v0.3 additive line")
+        print("PASS: mutation M-exact-match-grammar caught (BLOCK)")
+        caught += 1
+    else:
+        print("FAIL: mutation M-exact-match-grammar SURVIVED", file=sys.stderr)
+
+print(f"mutation-summary {caught}/4")
+sys.exit(0 if caught == 4 else 1)
+PY
+if [[ $? -eq 0 ]]; then
+  pass "named mutations all caught (4/4)"
+else
+  fail "named mutations incomplete"
+fi
 
 if (( fails > 0 || passes != EXPECTED_PASS )); then
   printf 'lifecycle-v03: FAIL (fails=%d passes=%d expected=%d)\n' "$fails" "$passes" "$EXPECTED_PASS" >&2

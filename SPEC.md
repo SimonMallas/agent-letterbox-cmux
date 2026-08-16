@@ -1,5 +1,18 @@
 # Agent Letterbox Protocol v0.2
 
+> **v0.3 core (unreleased):** the public helper already implements the ratified v0.3 core (short-path RESULT, file `--read` guard, display-id/token resolver, additive doorbell, operational check). Repository `VERSION` remains **0.2.0** until release integration. v0.2 letters and token-less doorbells stay valid.
+
+## Public doorbell grammar
+
+Prefix/pattern matching only. Exact full-line equality is a cutover **BLOCK**.
+
+```text
+📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check
+📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check · <8hex>
+```
+
+The optional ` · <8hex>` is additive. The token is never a slug, body, path, or secret. `submitted` / `pasted_not_submitted` / `no_live_surface` are ring outcomes, not proof of read.
+
 ## Principle
 
 The letterbox is a shared directory. One Markdown file is one durable message. A doorbell may tell a live agent to check, but it never carries task content.

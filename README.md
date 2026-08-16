@@ -165,7 +165,7 @@ printf '%s\n' 'Review src/auth.ts and report correctness findings.' |
 
 Prefer `printf … | letterbox …` for bodies. Avoid unquoted heredocs when the text may contain `$` or backticks — the shell expands those before Letterbox sees them. The CLI owns frontmatter; only the body goes on stdin.
 
-The reviewer receives a durable letter and a live cmux doorbell. Accept the work (non-terminal):
+The reviewer receives a durable letter and a live cmux doorbell. v0.2 token-less knocks and v0.3 ` · <8hex>` knocks are both valid (prefix match; exact full-line equality is a cutover block). `VERSION` remains 0.2.0 until v0.3 release integration. Accept the work (non-terminal):
 
 ```bash
 printf '%s\n' 'ACK: reviewing auth.ts now.' |
