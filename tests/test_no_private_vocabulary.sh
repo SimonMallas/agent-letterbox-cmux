@@ -4,41 +4,89 @@
 #
 # Fails make test with file:line for internal/private porting residue.
 # Baseline is identical across public cmux/tmux/herdr/zellij ports.
-set -uo pipefail
+#
+# grep only: rg -I means --no-filename (hits would lack the required
+# file:line) and rg skips hidden files by default (dotfile residue would
+# escape). grep -RFnI covers both: filename:line output, hidden files included.
+set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"; cd "$root"
-self="tests/$(basename "$0")"
+self_name="$(basename "$0")"
 
-# Patterns are the private residue list. This file is excluded from the scan.
+# Product surface. This script is excluded from hits (patterns live here).
+paths=(
+  bin
+  adapters
+  tests
+  docs
+  Makefile
+  SPEC.md
+  README.md
+  skills
+)
+for opt in CHANGELOG.md CONTRIBUTING.md SECURITY.md ROADMAP.md VERSION; do
+  [[ -e "$opt" ]] && paths+=("$opt")
+done
+
+# Forbidden tokens (fixed baseline — do not weaken per-port).
+# Built from parts so this file is not a self-hit if ever scanned.
 patterns=(
-  'shared-brain'
-  'bus doorbell'
-  'BUS_AGENT'
-  'BUS_DIR'
-  'telegram'
-  'launchd'
-  'kimik357'
-  'utc_now'
+  "shared""-brain"
+  "bus ""doorbell"
+  "BUS_""AGENT"
+  "BUS_""DIR"
+  "tele""gram"
+  "launch""d"
+  "kimik""357"
+  "utc_""now"
 )
 
-# Tracked files in the required sweep set only.
-files="$(git ls-files -- bin adapters tests docs Makefile SPEC.md README.md skills CHANGELOG.md CONTRIBUTING.md SECURITY.md ROADMAP.md 2>/dev/null | grep -v -e "^$self\$" || true)"
-[[ -n "$files" ]] || { echo "no-private-vocabulary: no tracked files in sweep set?" >&2; exit 1; }
+search() {
+  local pat="$1"
+  shift
+  grep -RFnI -- "$pat" "$@" 2>/dev/null || true
+}
 
 fails=0
-while IFS= read -r f; do
-  [[ -n "$f" && -f "$f" ]] || continue
-  for pat in "${patterns[@]}"; do
-    hits="$(grep -nF -e "$pat" "$f" 2>/dev/null || true)"
-    [[ -z "$hits" ]] && continue
-    while IFS= read -r line; do
-      printf 'FAIL: private vocabulary %s\n  %s:%s\n' "$pat" "$f" "$line" >&2
-      fails=$((fails + 1))
-    done <<< "$hits"
-  done
-done <<< "$files"
+echo "private-vocabulary sweep: scanning product paths..."
+
+for pat in "${patterns[@]}"; do
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    case "$line" in
+      *"/tests/$self_name:"*|"tests/$self_name:"*) continue;;
+    esac
+    echo "FAIL: private vocabulary '$pat' at $line" >&2
+    fails=$((fails + 1))
+  done < <(search "$pat" "${paths[@]}")
+done
 
 if (( fails > 0 )); then
   printf 'no-private-vocabulary: FAIL (%d hit(s))\n' "$fails" >&2
   exit 1
 fi
+
+# Mutation: planted visible and hidden residue must both fail with file:line.
+# A scanner that uses rg -I (no filename) or skips dotfiles would miss one.
+planted="${patterns[2]}"
+fixture="$(mktemp -d "${TMPDIR:-/tmp}/lb-vocab-mut.XXXXXX")"
+cleanup_fixture() { rm -rf "$fixture"; }
+trap cleanup_fixture EXIT
+mkdir -p "$fixture/docs"
+printf 'residue %s\n' "$planted" > "$fixture/docs/visible-plant.txt"
+printf 'residue %s\n' "$planted" > "$fixture/docs/.hidden-plant"
+plant_out="$(search "$planted" "$fixture/docs")"
+if ! printf '%s\n' "$plant_out" | grep -Eq 'visible-plant\.txt:[0-9]+:'; then
+  echo "FAIL: visible planted residue was not reported with file:line" >&2
+  echo "$plant_out" >&2
+  exit 1
+fi
+if ! printf '%s\n' "$plant_out" | grep -Eq '\.hidden-plant:[0-9]+:'; then
+  echo "FAIL: hidden planted residue was not reported with file:line" >&2
+  echo "$plant_out" >&2
+  exit 1
+fi
+echo "PASS: planted visible residue reported as file:line"
+echo "PASS: planted hidden residue reported as file:line"
+
 printf 'no-private-vocabulary: PASS\n'
+exit 0
