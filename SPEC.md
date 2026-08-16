@@ -179,10 +179,11 @@ Prefer `printf … | letterbox …` (or another explicit stdin write) over shell
 
 ## Doorbells
 
-A doorbell is optional. Its only terminal content should be a generic prompt such as:
+A doorbell is optional. Its only terminal content is the standardized line the adapter emits:
 
 ```text
-📬 letterbox doorbell: check your inbox
+📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check
+📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check · <8hex>
 ```
 
 Rules:
