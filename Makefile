@@ -19,6 +19,7 @@ test:
 	./tests/test_error_paths.sh
 	./tests/test_no_private_data.sh
 	./tests/test_no_private_vocabulary.sh
+	./tests/test_no_private_vocabulary_mutation.sh
 	./tests/test_release_text.sh
 	$(call run_lifecycle,tests/test_lifecycle_v02.sh,lifecycle v0.2: PASS)
 	$(call run_lifecycle,tests/test_lifecycle_v03.sh,lifecycle v0.3: PASS)

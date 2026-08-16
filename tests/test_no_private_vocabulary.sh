@@ -65,34 +65,5 @@ if (( fails > 0 )); then
   exit 1
 fi
 
-# Mutation: visible, hidden, and .github/workflow residue must all fail
-# with file:line. A directory allowlist would miss the CI plant.
-planted="${patterns[2]}"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/lb-vocab-mut.XXXXXX")"
-cleanup_fixture() { rm -rf "$fixture"; }
-trap cleanup_fixture EXIT
-git -C "$fixture" init -q
-mkdir -p "$fixture/docs" "$fixture/.github/workflows"
-printf 'residue %s\n' "$planted" > "$fixture/docs/visible-plant.txt"
-printf 'residue %s\n' "$planted" > "$fixture/docs/.hidden-plant"
-printf 'residue %s\n' "$planted" > "$fixture/.github/workflows/plant.yml"
-git -C "$fixture" add -A
-
-plant_out="$(cd "$fixture" && hits_for "$planted")"
-require_hit() {
-  local needle="$1"
-  if ! printf '%s\n' "$plant_out" | grep -Eq "$needle"; then
-    echo "FAIL: planted residue not reported with file:line: $needle" >&2
-    echo "$plant_out" >&2
-    exit 1
-  fi
-}
-require_hit 'docs/visible-plant\.txt:[0-9]+:'
-require_hit 'docs/\.hidden-plant:[0-9]+:'
-require_hit '\.github/workflows/plant\.yml:[0-9]+:'
-echo "PASS: planted visible residue reported as file:line"
-echo "PASS: planted hidden residue reported as file:line"
-echo "PASS: planted .github/workflow residue reported as file:line"
-
 printf 'no-private-vocabulary: PASS\n'
 exit 0
