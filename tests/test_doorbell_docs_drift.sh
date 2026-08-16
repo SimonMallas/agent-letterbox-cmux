@@ -136,6 +136,54 @@ slot() {
 canon_v02="$(slot "$real_v02")"
 canon_v03="$(slot "$real_v03")"
 
+# Single canonical grammar — all four adapters are checked against this,
+# not against their own source string. A lone product cannot drift.
+GRAMMAR_V02='📬 letterbox doorbell: unacked <TYPE> in <DIR>/<AGENT>/inbox/ — please check'
+GRAMMAR_V03="$GRAMMAR_V02 · <TOKEN>"
+if [[ "$canon_v02" != "$GRAMMAR_V02" ]]; then
+  echo "FAIL: $plat runtime v0.2 does not match the shared grammar" >&2
+  echo "  runtime:  $canon_v02" >&2
+  echo "  grammar:  $GRAMMAR_V02" >&2
+  exit 1
+fi
+if [[ "$canon_v03" != "$GRAMMAR_V03" ]]; then
+  echo "FAIL: $plat runtime v0.3 does not match the shared grammar" >&2
+  echo "  runtime:  $canon_v03" >&2
+  echo "  grammar:  $GRAMMAR_V03" >&2
+  exit 1
+fi
+echo "PASS: $plat runtime matches the shared v0.2/v0.3 grammar"
+
+# Docs-followable rule (what the corrected docs teach): prefix match,
+# optional ' · <8hex>' after the tail, reject malformed / the short line.
+docs_rule_accept() {
+  local line="$1" rest
+  local prefix='📬 letterbox doorbell: unacked '
+  local tail=' — please check'
+  [[ "$line" == "$prefix"* ]] || return 1
+  [[ "$line" == *"$tail"* ]] || return 1
+  rest="${line#*"$tail"}"
+  [[ -z "$rest" ]] && return 0
+  [[ "$rest" =~ ^\ ·\ [0-9a-f]{8}$ ]]
+}
+if ! docs_rule_accept "$real_v02"; then
+  echo "FAIL: documented prefix rule rejects runtime v0.2" >&2
+  exit 1
+fi
+if ! docs_rule_accept "$real_v03"; then
+  echo "FAIL: documented prefix rule rejects runtime v0.3" >&2
+  exit 1
+fi
+if docs_rule_accept "$real_v02 · zzzzzzzz"; then
+  echo "FAIL: documented prefix rule accepted a malformed suffix" >&2
+  exit 1
+fi
+if docs_rule_accept '📬 letterbox doorbell: check your inbox'; then
+  echo "FAIL: documented prefix rule accepted the short README line" >&2
+  exit 1
+fi
+echo "PASS: documented prefix rule accepts both runtime shapes and rejects malformed"
+
 normalize_doc() {
   local s="$1"
   s="${s#*\`}"
