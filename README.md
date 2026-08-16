@@ -6,8 +6,6 @@
 
 **Agent Letterbox for cmux turns separate coding-agent terminals into a live team.**
 
-Cross-agent communication and agent-to-agent coordination for multi-agent AI coding teams. Task handoffs are durable letters on disk; the terminal ring is opt-in and best-effort.
-
 ## What it is
 
 Agent Letterbox is not a model, a new terminal, or a second agent harness. It is the coordination layer that lets the agents you already run hand work to one another without making you the human message relay.
