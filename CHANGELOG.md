@@ -2,6 +2,11 @@
 
 All notable changes to Agent Letterbox for cmux are documented here.
 
+## [0.3.1] — 2026-08-16
+
+- Correct v0.3 release metadata, roadmap, skill, and specification wording.
+- Harden public release gates: tracked-file private-vocabulary scan, hidden/CI residue mutations, and early-abort lifecycle checks.
+
 ## [0.3.0] — 2026-08-16
 
 ### Added
