@@ -16,7 +16,7 @@ v0.2 letters and token-less doorbells remain valid. Dual-accept doorbell guidanc
 
 `VERSION` remains 0.2.0 until release integration.
 
-- `tests/test_no_private_vocabulary.sh` is a separate product-cleanliness gate: `make test` fails on private helper/host/transport residue in every tracked file (`git ls-files -z`, including dotted directories such as CI workflows), not a directory allowlist. Hits report file:line. A companion self-mutation harness plants visible, hidden, and workflow residue in a repo copy, runs the real gate, and requires file:line failure; inner output is `[mut]`-prefixed.
+- `tests/test_no_private_vocabulary.sh` is a separate product-cleanliness gate: `make test` fails on private helper/host/transport residue in every tracked file (`git ls-files -z`, including dotted directories such as CI workflows), not a directory allowlist. Hits report file:line. A companion self-mutation harness plants visible, hidden, and workflow residue in a repo copy, runs the real gate, and requires file:line failure; inner output is `[mut]`-prefixed. The harness also asserts the gate PASSes on the cleaned copy, or the plants prove nothing.
 - Lifecycle v0.2 and v0.3 register an EXIT-trap plus expected-count and a final `PASS` footer so an early abort cannot green-wash. `make test` requires those footers. Mutation coverage proves `exit 0` and a set -e abort after the first assertion fail with an explicit incomplete-footer error.
 - Adapter compatibility: the v0.2 doorbell line is a byte-prefix of the v0.3 line, asserted through `adapters/cmux.sh` (not only the helper formatter).
 

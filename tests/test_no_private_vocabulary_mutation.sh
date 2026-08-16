@@ -44,6 +44,14 @@ for rel in "docs/visible-residue.md" ".github/workflows/residue-ci.yml" ".hidden
   plant_and_run "$rel"
 done
 
+# Clean tree must pass, or every assertion above is meaningless.
+if (cd "$tmp/repo" && "./tests/$gate_name" >/dev/null 2>&1); then
+  echo "PASS: gate passes on a clean tree"
+else
+  echo "FAIL: gate fails on a clean tree — the assertions above prove nothing" >&2
+  fails=$((fails + 1))
+fi
+
 if [[ "$fails" -ne 0 ]]; then
   echo "vocabulary-gate mutation: FAIL ($fails)" >&2
   exit 1
