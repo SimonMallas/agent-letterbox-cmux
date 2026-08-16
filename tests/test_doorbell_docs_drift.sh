@@ -197,7 +197,12 @@ normalize_doc() {
   s="${s%%$'\n'*}"
   s="${s%"${s##*[![:space:]]}"}"
   s="${s#"${s%%[![:space:]]*}"}"
+  s="${s//“/}"
+  s="${s//”/}"
+  s="${s%\"}"
+  s="${s%\'}"
   s="${s//<8-lowercase-hex>/<TOKEN>}"
+  s="${s//<8-hex>/<TOKEN>}"
   s="${s//<8hex>/<TOKEN>}"
   if [[ "$s" =~ \ ·\ [0-9a-f]{8}$ ]]; then
     s="${s% · *} · <TOKEN>"
@@ -206,6 +211,18 @@ normalize_doc() {
   s="${s//<agent>/<AGENT>}"
   s="${s//<letterbox>/<DIR>}"
   s="${s//<LETTERBOX_DIR>/<DIR>}"
+  s="${s//\$type/<TYPE>}"
+  s="${s//\$to/<AGENT>}"
+  s="${s//\$tok/<TOKEN>}"
+  s="${s//\$token/<TOKEN>}"
+  s="${s//\${tok\}/<TOKEN>}"
+  s="${s//\${token\}/<TOKEN>}"
+  s="${s//\${root\}/<DIR>}"
+  s="${s//\${LETTERBOX_DIR:?set LETTERBOX_DIR\}/<DIR>}"
+  s="${s//\${LETTERBOX_DIR\}/<DIR>}"
+  s="$(printf '%s' "$s" | sed -E \
+    -e 's/unacked [^ ]+ in /unacked <TYPE> in /' \
+    -e 's# in [^[:space:]]+/[^[:space:]]+/inbox/# in <DIR>/<AGENT>/inbox/#')"
   printf '%s\n' "$s"
 }
 
@@ -240,13 +257,28 @@ scan_file() {
   done < "$f"
 }
 
-scan_file README.md
-scan_file SPEC.md
-shopt -s nullglob
-for f in skills/*/SKILL.md skills/SKILL.md; do
+# Every tracked file (not a path allowlist). The gate and its mutation
+# harness necessarily contain the short line as a negative plant/check.
+skip_scan() {
+  case "$1" in
+    tests/test_doorbell_docs_drift.sh|tests/test_doorbell_docs_drift_mutation.sh) return 0;;
+  esac
+  return 1
+}
+list_files() {
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git ls-files -z
+  else
+    find . -type f -not -path './.git/*' -print0
+  fi
+}
+while IFS= read -r -d '' f; do
+  f="${f#./}"
+  skip_scan "$f" && continue
+  [[ -f "$f" ]] || continue
+  grep -qI '' "$f" 2>/dev/null || continue
   scan_file "$f"
-done
-shopt -u nullglob
+done < <(list_files)
 
 if (( fails > 0 )); then
   echo "doorbell-docs-drift: FAIL ($fails)" >&2

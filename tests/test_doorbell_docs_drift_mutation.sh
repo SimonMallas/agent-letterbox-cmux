@@ -125,6 +125,8 @@ plant() {
 plant README.md
 plant SPEC.md
 plant skills/agent-letterbox/SKILL.md
+# Prove the widened git ls-files scope, not just the old allowlist.
+plant docs/why-letterbox.md
 
 echo "[mut] --- clean tree ---"
 if ( cd "$tmp/repo" && "./$gate" >/dev/null 2>&1 ); then

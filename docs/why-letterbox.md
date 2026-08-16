@@ -23,7 +23,7 @@ This is fast, but the terminal becomes both the message transport and the work r
 
 ```text
 write full task to Agent B's inbox
-→ inject: “📬 letterbox doorbell: check your inbox”
+→ inject: “📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check”
 → Agent B reads the durable letter
 → Agent B ACKs (work stays visible), then RESULTs (archives)
 ```
