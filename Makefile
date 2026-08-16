@@ -27,5 +27,7 @@ test:
 	./tests/test_cmux_registration.sh
 	./tests/test_cmux_setup.sh
 	./tests/cmux-doorbell-safety.sh
+	./tests/test_doorbell_docs_drift.sh
+	./tests/test_doorbell_docs_drift_mutation.sh
 
 ci: test
