@@ -27,8 +27,13 @@ run_gate() {
   return 0
 }
 
-echo "[mut] --- delete adapters/cmux.sh ---"
-rm -f "$tmp/repo/adapters/cmux.sh"
+plat=""
+for c in cmux tmux herdr zellij; do
+  if [[ -x "$root/adapters/$c.sh" ]]; then plat="$c"; break; fi
+done
+adpt="adapters/${plat}.sh"
+echo "[mut] --- delete $adpt ---"
+rm -f "$tmp/repo/$adpt"
 run_gate
 if [[ "$LAST_RC" -eq 0 ]]; then
   echo "FAIL: [mut] gate passed with adapter deleted — would be vacuous" >&2
@@ -39,24 +44,48 @@ elif ! printf '%s\n' "$LAST_OUT" | grep -q 'would be vacuous'; then
 else
   echo "PASS: [mut] deleting the adapter fails the gate (vacuous)"
 fi
-# restore adapter from the original tree
-cp "$root/adapters/cmux.sh" "$tmp/repo/adapters/cmux.sh"
+cp "$root/$adpt" "$tmp/repo/$adpt"
 
 echo "[mut] --- move token ahead of the tail ---"
-if python3 - "$tmp/repo/adapters/cmux.sh" <<'PY'
+if python3 - "$tmp/repo/$adpt" "$plat" <<'PY'
 from pathlib import Path
 import sys
 p = Path(sys.argv[1])
+plat = sys.argv[2]
 t = p.read_text()
-old = '''line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/ — please check"
-if [[ "$token" =~ ^[0-9a-f]{8}$ ]]; then
-  line="$line · $token"
-fi'''
-new = '''line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/"
-if [[ "$token" =~ ^[0-9a-f]{8}$ ]]; then
-  line="$line · $token"
-fi
-line="$line — please check"'''
+pairs = {
+    "cmux": (
+        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/ — please check"\n'
+        'if [[ "$token" =~ ^[0-9a-f]{8}$ ]]; then\n'
+        '  line="$line · $token"\n'
+        'fi',
+        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/"\n'
+        'if [[ "$token" =~ ^[0-9a-f]{8}$ ]]; then\n'
+        '  line="$line · $token"\n'
+        'fi\n'
+        'line="$line — please check"',
+    ),
+    "tmux": (
+        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/ — please check"\n'
+        '[ -n "$tok" ] && line="$line · $tok"',
+        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/"\n'
+        '[ -n "$tok" ] && line="$line · $tok"\n'
+        'line="$line — please check"',
+    ),
+    "herdr": (
+        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/ — please check"\n'
+        '# Additive v0.3 token suffix; the token is opaque (never slug/body/path).\n'
+        '[[ "$token" =~ ^[0-9a-f]{8}$ ]] && line="$line · $token"',
+        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/"\n'
+        '[[ "$token" =~ ^[0-9a-f]{8}$ ]] && line="$line · $token"\n'
+        'line="$line — please check"',
+    ),
+    "zellij": (
+        '  line="${prefix}${type} in ${root}/${to}/inbox/${tail} · ${tok}"',
+        '  line="${prefix}${type} in ${root}/${to}/inbox/ · ${tok}${tail}"',
+    ),
+}
+old, new = pairs[plat]
 if old not in t:
     raise SystemExit(3)
 p.write_text(t.replace(old, new, 1))
@@ -73,7 +102,7 @@ else
   echo "FAIL: [mut] token-ahead mutation did not apply" >&2
   fails=$((fails + 1))
 fi
-cp "$root/adapters/cmux.sh" "$tmp/repo/adapters/cmux.sh"
+cp "$root/$adpt" "$tmp/repo/$adpt"
 
 plant() {
   local rel="$1"

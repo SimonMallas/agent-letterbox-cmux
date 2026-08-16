@@ -4,10 +4,14 @@
 # `📬 letterbox doorbell:` in README/SPEC/skill must match that shape.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"; cd "$root"
-adapter="$root/adapters/cmux.sh"
 
-if [[ ! -x "$adapter" ]]; then
-  echo "FAIL: adapters/cmux.sh missing — gate would be vacuous" >&2
+plat=""
+for c in cmux tmux herdr zellij; do
+  if [[ -x "$root/adapters/$c.sh" ]]; then plat="$c"; break; fi
+done
+adapter="$root/adapters/${plat:-}.sh"
+if [[ -z "$plat" || ! -x "$adapter" ]]; then
+  echo "FAIL: adapters/<platform>.sh missing — gate would be vacuous" >&2
   exit 1
 fi
 
@@ -15,37 +19,101 @@ work="$(mktemp -d "${TMPDIR:-/tmp}/lb-drift.XXXXXX")"
 cleanup() { rm -rf "$work"; }
 trap cleanup EXIT
 
-mockbin="$work/bin"
-mkdir -p "$mockbin"
-cat > "$mockbin/cmux" <<'MOCK'
-#!/usr/bin/env bash
-echo "$*" >> "$MOCK_LOG"
-case "$1" in
-  tree) echo 'surface:1 [terminal] "reviewer - pane"' ;;
-  *) : ;;
-esac
-exit 0
-MOCK
-chmod +x "$mockbin/cmux"
-printf 'reviewer\treviewer\n' > "$work/cmux-patterns.tsv"
-
 # Known invocation values — used only to *normalise* the captured line,
 # never to construct the expected doorbell.
 inv_dir="$work/box"
 inv_to="reviewer"
 inv_type="info"
-mkdir -p "$inv_dir"
+mkdir -p "$inv_dir" "$work/bin"
+
+setup_platform() {
+  case "$plat" in
+    cmux)
+      cat > "$work/bin/cmux" <<'MOCK'
+#!/usr/bin/env bash
+echo "$*" >> "$MOCK_LOG"
+case "$1" in
+  tree) echo 'surface:1 [terminal] "reviewer - pane"' ;;
+esac
+exit 0
+MOCK
+      chmod +x "$work/bin/cmux"
+      printf 'reviewer\treviewer\n' > "$work/patterns.tsv"
+      ;;
+    tmux)
+      cat > "$work/bin/tmux" <<'MOCK'
+#!/usr/bin/env bash
+echo "$*" >> "$MOCK_LOG"
+case "$1" in
+  list-panes) printf '%s\n' "${MOCK_PANE:-%1}" ;;
+  has-session) exit 0 ;;
+esac
+exit 0
+MOCK
+      chmod +x "$work/bin/tmux"
+      printf 'reviewer\t%%1\n' > "$work/patterns.tsv"
+      ;;
+    herdr)
+      cat > "$work/bin/herdr" <<'MOCK'
+#!/usr/bin/env bash
+echo "$*" >> "$MOCK_LOG"
+exit 0
+MOCK
+      chmod +x "$work/bin/herdr"
+      printf 'reviewer\t%%1\n' > "$work/patterns.tsv"
+      ;;
+    zellij)
+      cat > "$work/bin/zellij" <<'MOCK'
+#!/usr/bin/env bash
+echo "$*" >> "$MOCK_LOG"
+if [[ "${1:-}" == "-s" ]]; then shift 2; fi
+if [[ "${1:-}" == "action" && "${2:-}" == "list-panes" ]]; then
+  printf 'terminal_7 [Pane #7] running\n'
+fi
+exit 0
+MOCK
+      chmod +x "$work/bin/zellij"
+      printf 'reviewer\t7\tsess\n' > "$work/patterns.tsv"
+      ;;
+  esac
+}
 
 emit_real() {
-  local tok="${1:-}" log="$work/cmux-send.log"
+  local tok="${1:-}" log="$work/send.log"
   : > "$log"
-  MOCK_LOG="$log" PATH="$mockbin:$PATH" \
-    LETTERBOX_DIR="$inv_dir" \
-    LETTERBOX_CMUX_PATTERNS="$work/cmux-patterns.tsv" \
-    LETTERBOX_CMUX_SUBMIT=1 \
-    "$adapter" "$inv_to" "$inv_type" ${tok:+"$tok"} >/dev/null 2>&1 || true
-  sed -n 's/^send --surface surface:[0-9][0-9]* //p' "$log" | head -1
+  case "$plat" in
+    cmux)
+      MOCK_LOG="$log" PATH="$work/bin:$PATH" \
+        LETTERBOX_DIR="$inv_dir" LETTERBOX_CMUX_PATTERNS="$work/patterns.tsv" \
+        LETTERBOX_CMUX_SUBMIT=1 \
+        "$adapter" "$inv_to" "$inv_type" ${tok:+"$tok"} >/dev/null 2>&1 || true
+      sed -n 's/^send --surface surface:[0-9][0-9]* //p' "$log" | head -1
+      ;;
+    tmux)
+      MOCK_LOG="$log" MOCK_PANE='%1' PATH="$work/bin:$PATH" \
+        LETTERBOX_DIR="$inv_dir" LETTERBOX_TMUX_PATTERNS="$work/patterns.tsv" \
+        LETTERBOX_TMUX_SUBMIT=1 LETTERBOX_DOORBELL_TOKEN="$tok" \
+        "$adapter" "$inv_to" "$inv_type" someslug >/dev/null 2>&1 || true
+      sed -n 's/^send-keys -t %1 -l //p' "$log" | head -1
+      ;;
+    herdr)
+      MOCK_LOG="$log" HERDR_BIN_PATH="$work/bin/herdr" \
+        LETTERBOX_DIR="$inv_dir" LETTERBOX_HERDR_PATTERNS="$work/patterns.tsv" \
+        LETTERBOX_HERDR_SUBMIT=1 \
+        "$adapter" "$inv_to" "$inv_type" someslug ${tok:+"$tok"} >/dev/null 2>&1 || true
+      sed -n 's/^pane send-text %1 //p' "$log" | head -1
+      ;;
+    zellij)
+      MOCK_LOG="$log" ZELLIJ_BIN_PATH="$work/bin/zellij" \
+        LETTERBOX_DIR="$inv_dir" LETTERBOX_ZELLIJ_PATTERNS="$work/patterns.tsv" \
+        LETTERBOX_ZELLIJ_SUBMIT=1 \
+        "$adapter" "$inv_to" "$inv_type" someslug ${tok:+"$tok"} >/dev/null 2>&1 || true
+      sed -n 's/.*write-chars --pane-id [^ ]* //p' "$log" | head -1
+      ;;
+  esac
 }
+
+setup_platform
 
 real_v02="$(emit_real)"
 real_v03="$(emit_real a1b2c3d4)"
