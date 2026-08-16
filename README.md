@@ -48,7 +48,7 @@ Read the full comparison in [Why Letterbox?](docs/why-letterbox.md).
 
 ## How a task moves
 
-v0.2 keeps accepted work visible until it reaches a final outcome.
+v0.3 keeps accepted work visible until it reaches a final outcome.
 
 ```text
 send task (requires_ack=true)
@@ -193,7 +193,7 @@ Each self-registers its exact current cmux surface, avoiding title collisions.
 
 ## Using a pre-release checkout
 
-If you installed an earlier checkout from `main`, reinstall from the current branch and use the lifecycle commands above. v0.2 adds an optional `thread` field to ownership replies; existing letters remain valid. All agents in one team should run the same v0.2 helper.
+If you installed an earlier checkout from `main`, reinstall from the current branch and use the lifecycle commands above. v0.3 adds operational reading verbs and additive doorbell tokens while keeping v0.2 letters valid. v0.2 introduced an optional additive `thread` field; existing letters remain valid and older readers ignore it. All agents in one team should run the same helper version.
 
 ## Test the installation
 
@@ -208,7 +208,7 @@ make test
 - [docs/why-letterbox.md](docs/why-letterbox.md) — why durable letters plus generic doorbells beat direct task injection
 - [docs/team-setup.md](docs/team-setup.md) — detailed cmux team setup
 - [docs/cmux.md](docs/cmux.md) — cross-workspace operation, recovery after updates
-- [SPEC.md](SPEC.md) — normative protocol (v0.2)
+- [SPEC.md](SPEC.md) — normative protocol (v0.3)
 - [SECURITY.md](SECURITY.md) — threat model and reporting
 - [ROADMAP.md](ROADMAP.md) — scope and deferred items
 - [CHANGELOG.md](CHANGELOG.md) — user-visible changes
