@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Public-safe v0.2 lifecycle matrix (P0/P1/P2). Neutral identities only.
+# EXIT trap: early set -e/-u abort must not green-wash (Pi/Claude 2026-08-16).
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -7,6 +8,9 @@ letterbox="$root/bin/letterbox"
 PASS=0
 FAIL=0
 BLOCK_FAILED=0
+EXPECTED_PASS=21
+SUITE_DONE=0
+FOOTER_MARK='lifecycle v0.2: PASS'
 
 # fail marks the current block; pass must not green-wash a failed block.
 fail() {
@@ -40,16 +44,26 @@ file_sha() {
 }
 
 box=""
-cleanup() {
+cleanup_box() {
   if [[ -n "${box:-}" && -d "$box" ]]; then
-    rm -rf "$box"
+    rm -rf "$box" || true
   fi
-  return 0
+  box=""
 }
-trap cleanup EXIT
+
+# Registered BEFORE first assertion. Any abnormal exit checks completion.
+lifecycle_exit_gate() {
+  cleanup_box
+  if [[ "$SUITE_DONE" == 1 ]]; then
+    return 0
+  fi
+  echo "lifecycle v0.2: FAIL (early abort or incomplete: pass=${PASS:-0} expected=${EXPECTED_PASS} fail=${FAIL:-0}; missing '${FOOTER_MARK}')" >&2
+  exit 1
+}
+trap lifecycle_exit_gate EXIT
 
 new_box() {
-  cleanup
+  cleanup_box
   box="$(mktemp -d "${TMPDIR:-/tmp}/lb-v02.XXXXXX")"
   LETTERBOX_DIR="$box" "$letterbox" init planner reviewer >/dev/null
 }
@@ -85,6 +99,16 @@ ack_file="$(find "$box/planner/inbox" -name '*--reviewer--ack.md' -type f -print
 [[ "$(file_sha "$task")" == "$orig_hash" ]] || fail B1-mutated
 grep -Fq "re: $task_id" "$ack_file" || fail B1-re
 pass B1-ack-stamp-wip
+
+# Mutation hooks: prove exit 0 and set -e abort after assertion 1 cannot green-wash.
+if [[ "${LETTERBOX_MUTATE_EARLY_EXIT0:-0}" == 1 ]]; then
+  echo "MUTATION: early exit 0 after first assertion" >&2
+  exit 0
+fi
+if [[ "${LETTERBOX_MUTATE_EARLY_ABORT:-0}" == 1 ]]; then
+  echo "MUTATION: set-e abort after first assertion" >&2
+  false
+fi
 
 # B2 terminal result + direct
 begin_block
@@ -353,5 +377,15 @@ if printf 'x\n' | lb planner send reviewer delegate badthread --ack --thread 'ba
 pass A1-thread
 
 echo
-echo "lifecycle v0.2: $PASS passed, $FAIL failed"
-[[ "$FAIL" -eq 0 ]]
+echo "lifecycle v0.2: $PASS passed, $FAIL failed (expected $EXPECTED_PASS passes)"
+if [[ "$FAIL" -ne 0 ]]; then
+  echo "lifecycle v0.2: FAIL (failures=$FAIL)" >&2
+  exit 1
+fi
+if [[ "$PASS" -ne "$EXPECTED_PASS" ]]; then
+  echo "lifecycle v0.2: FAIL (pass count $PASS != expected $EXPECTED_PASS — possible early abort)" >&2
+  exit 1
+fi
+echo "$FOOTER_MARK"
+SUITE_DONE=1
+exit 0

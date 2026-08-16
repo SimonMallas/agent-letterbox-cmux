@@ -1,20 +1,34 @@
 #!/usr/bin/env bash
 # Public-safe v0.3 core: short path, file C, resolver, doorbell, check, privacy.
+# EXIT trap (Claude/Pi 2026-08-16): early set -e/-u abort must NOT green-wash.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 letterbox="$root/bin/letterbox"
 fails=0
 passes=0
-EXPECTED_PASS=28
+EXPECTED_PASS=31
+SUITE_DONE=0
+FOOTER_MARK='lifecycle v0.3: PASS'
 pass() { printf 'PASS: %s\n' "$*"; passes=$((passes + 1)); }
 fail() { printf 'FAIL: %s\n' "$*" >&2; fails=$((fails + 1)); }
 
 CANARY="canaryslugxyz-leaky-task"
 box=""
-cleanup() { [[ -n "${box:-}" && -d "$box" ]] && rm -rf "$box"; return 0; }
-trap cleanup EXIT
+cleanup_box() { [[ -n "${box:-}" && -d "$box" ]] && rm -rf "$box" || true; box=""; }
+
+# Registered BEFORE first assertion. Any abnormal exit checks completion.
+lifecycle_exit_gate() {
+  cleanup_box
+  if [[ "$SUITE_DONE" == 1 ]]; then
+    return 0
+  fi
+  echo "lifecycle v0.3: FAIL (early abort or incomplete: pass=${passes:-0} expected=${EXPECTED_PASS} fail=${fails:-0}; missing '${FOOTER_MARK}')" >&2
+  exit 1
+}
+trap lifecycle_exit_gate EXIT
+
 new_box() {
-  cleanup
+  cleanup_box
   box="$(mktemp -d "${TMPDIR:-/tmp}/lb-v03.XXXXXX")"
   LETTERBOX_DIR="$box" "$letterbox" init planner reviewer >/dev/null
 }
@@ -46,6 +60,17 @@ if printf 'done\n' | lb reviewer reply 2026-08-16T080000-planner-request-small-a
 else
   fail "A1 reply result failed"
 fi
+
+# Mutation hooks: prove exit 0 and set -e abort after assertion 1 cannot green-wash.
+if [[ "${LETTERBOX_MUTATE_EARLY_EXIT0:-0}" == 1 ]]; then
+  echo "MUTATION: early exit 0 after first assertion" >&2
+  exit 0
+fi
+if [[ "${LETTERBOX_MUTATE_EARLY_ABORT:-0}" == 1 ]]; then
+  echo "MUTATION: set-e abort after first assertion" >&2
+  false
+fi
+
 write_letter reviewer planner request false "2026-08-16T080001-planner-request-noack-bbbb2222"
 if printf 'nope\n' | lb reviewer reply 2026-08-16T080001-planner-request-noack-bbbb2222 ack taking 2>/dev/null; then
   fail "A1 ack on non-task should fail"
@@ -171,6 +196,50 @@ echo "$line" | grep -qE '/(Users|home)/' && fail "doorbell-line used host path"
 [[ "$line" == *'<letterbox>/'* ]] || fail "doorbell-line missing public placeholder"
 [[ "$line" == "$V03" ]] && pass "doorbell-line public grammar + token" || fail "line: $line"
 
+# ── real adapter: v0.2 line is a byte-prefix of v0.3 (not helper stub) ──
+new_box
+adpt="$root/adapters/cmux.sh"
+mockbin="$box/mockbin"
+mkdir -p "$mockbin"
+cat > "$mockbin/cmux" <<'MOCK'
+#!/usr/bin/env bash
+echo "$*" >> "$MOCK_LOG"
+case "$1" in
+  tree) echo 'surface:1 [terminal] "reviewer - pane"' ;;
+  *) : ;;
+esac
+exit 0
+MOCK
+chmod +x "$mockbin/cmux"
+printf 'reviewer\treviewer\n' > "$box/cmux-patterns.tsv"
+emit_real() {
+  local tok="${1:-}" log="$box/cmux-send.log"
+  : > "$log"
+  MOCK_LOG="$log" PATH="$mockbin:$PATH" \
+    LETTERBOX_DIR="$box" \
+    LETTERBOX_CMUX_PATTERNS="$box/cmux-patterns.tsv" \
+    LETTERBOX_CMUX_SUBMIT=1 \
+    "$adpt" reviewer info ${tok:+"$tok"} >/dev/null 2>&1 || true
+  sed -n 's/^send --surface surface:[0-9][0-9]* //p' "$log" | head -1
+}
+real_v02="$(emit_real)"
+real_v03="$(emit_real a1b2c3d4)"
+if [[ -n "$real_v02" ]]; then
+  pass "real adapter emits a doorbell line (fixture wired to adapters/cmux.sh)"
+else
+  fail "adapter produced no line — fixture would be vacuous"
+fi
+if [[ -n "$real_v02" && "$real_v03" == "$real_v02"* && "$real_v03" != "$real_v02" ]]; then
+  pass "real v0.2 line is a byte-prefix of the real v0.3 line"
+else
+  fail "adapter additive property broken: v02='$real_v02' v03='$real_v03'"
+fi
+if [[ "$real_v03" != *"$CANARY"* && "$real_v03" =~ \ ·\ [0-9a-f]{8}$ ]]; then
+  pass "real v0.3 line ends in an 8-hex token and carries no slug"
+else
+  fail "real v0.3 token shape wrong or slug present: $real_v03"
+fi
+
 # ── named mutations: [mut] FAIL is expected inner fail; outer PASS means caught ──
 mut_caught=0
 mut_total=4
@@ -289,8 +358,16 @@ else
   fail "named mutations incomplete"
 fi
 
-if (( fails > 0 || passes != EXPECTED_PASS )); then
-  printf 'lifecycle-v03: FAIL (fails=%d passes=%d expected=%d)\n' "$fails" "$passes" "$EXPECTED_PASS" >&2
+echo
+echo "lifecycle v0.3: $passes passed, $fails failed (expected $EXPECTED_PASS passes)"
+if [[ "$fails" -ne 0 ]]; then
+  echo "lifecycle v0.3: FAIL (failures=$fails)" >&2
   exit 1
 fi
-printf 'lifecycle-v03: PASS (%d/%d)\n' "$passes" "$EXPECTED_PASS"
+if [[ "$passes" -ne "$EXPECTED_PASS" ]]; then
+  echo "lifecycle v0.3: FAIL (pass count $passes != expected $EXPECTED_PASS — possible early abort)" >&2
+  exit 1
+fi
+echo "$FOOTER_MARK"
+SUITE_DONE=1
+exit 0
