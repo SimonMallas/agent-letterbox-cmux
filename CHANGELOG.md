@@ -2,6 +2,18 @@
 
 All notable changes to Agent Letterbox for cmux are documented here.
 
+## Unreleased
+
+### Added
+
+- v0.3 core: one-shot `reply result` on `requires_ack: false`; path-form `file` of inbound result/nack requires `--read`.
+- Safe display-id / unique-token resolution for read, file, reply, progress, and nudge.
+- Additive token-bearing doorbell (` · <8hex>`); `nudge` re-rings an open letter; collision lists and refuses.
+- Operational `check` (live first, stale last, `--recent` footer, progress age) and read-only `check --thread`.
+- Privacy-safe confirmation lines (`display_id`, never basename/slug).
+
+v0.2 letters and token-less doorbells remain valid. The `thread` field is still additive/optional; unknown fields stay ignored.
+
 ## [0.2.0] — 2026-08-11
 
 Public v0.2 establishes a durable task lifecycle and documents the resulting state machine.

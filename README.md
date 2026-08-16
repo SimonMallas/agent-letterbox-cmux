@@ -172,7 +172,7 @@ printf '%s\n' 'ACK: reviewing auth.ts now.' |
   LETTERBOX_AGENT=reviewer letterbox reply <message-id-or-inbox-path> ack auth-review --now
 ```
 
-The letter stays in the reviewer's inbox with an `.md.ack` sidecar (`letterbox check` shows `[ACCEPTED]`). When finished, close it:
+The letter stays in the reviewer's inbox with an `.md.ack` sidecar (`letterbox check` shows `[ACCEPTED]`, display id, and optional progress — not the letter body). `letterbox read` prints the exact durable letter. When finished, close it:
 
 ```bash
 printf '%s\n' 'RESULT: no critical issues; two nits in findings.md.' |
