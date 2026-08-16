@@ -4,7 +4,9 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 letterbox="$root/bin/letterbox"
 fails=0
-pass() { printf 'PASS: %s\n' "$*"; }
+passes=0
+EXPECTED_PASS=23
+pass() { printf 'PASS: %s\n' "$*"; passes=$((passes + 1)); }
 fail() { printf 'FAIL: %s\n' "$*" >&2; fails=$((fails + 1)); }
 
 CANARY="canaryslugxyz-leaky-task"
@@ -156,8 +158,8 @@ after=$(find "$box" -type f | sort | cksum)
 [[ "$before" == "$after" ]] && pass "--thread writes zero files" || fail "thread wrote"
 echo "$tout" | grep -q "$CANARY" && fail "thread leaked canary" || pass "thread no canary"
 
-if (( fails > 0 )); then
-  printf 'lifecycle-v03: FAIL (%d)\n' "$fails" >&2
+if (( fails > 0 || passes != EXPECTED_PASS )); then
+  printf 'lifecycle-v03: FAIL (fails=%d passes=%d expected=%d)\n' "$fails" "$passes" "$EXPECTED_PASS" >&2
   exit 1
 fi
-printf 'lifecycle-v03: PASS\n'
+printf 'lifecycle-v03: PASS (%d/%d)\n' "$passes" "$EXPECTED_PASS"
