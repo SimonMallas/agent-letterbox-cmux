@@ -167,7 +167,8 @@ V03="$V02 · abcd1234"
 if lb planner doorbell-parse "${V02} · zzzzzzzz" >/dev/null 2>&1; then fail "malformed token accepted"; else pass "malformed token rejected"; fi
 line="$(lb planner doorbell-line reviewer info 2026-08-16T080000-planner-info-x-abcd1234)"
 echo "$line" | grep -q "$CANARY" && fail "doorbell-line leaked canary"
-echo "$line" | grep -q 'shared-brain' && fail "doorbell-line used private path"
+echo "$line" | grep -qE '/(Users|home)/' && fail "doorbell-line used host path"
+[[ "$line" == *'<letterbox>/'* ]] || fail "doorbell-line missing public placeholder"
 [[ "$line" == "$V03" ]] && pass "doorbell-line public grammar + token" || fail "line: $line"
 
 # ── named mutations: [mut] FAIL is expected inner fail; outer PASS means caught ──

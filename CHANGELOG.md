@@ -16,6 +16,8 @@ v0.2 letters and token-less doorbells remain valid. Dual-accept doorbell guidanc
 
 `VERSION` remains 0.2.0 until release integration.
 
+- `tests/test_no_private_vocabulary.sh` is a separate product-cleanliness gate: `make test` fails on private helper/host/transport residue in the public sweep set.
+
 ## [0.2.0] — 2026-08-11
 
 Public v0.2 establishes a durable task lifecycle and documents the resulting state machine.
