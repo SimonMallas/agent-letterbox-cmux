@@ -2,6 +2,40 @@
 
 All notable changes to Agent Letterbox for cmux are documented here.
 
+## [0.3.2] — 2026-08-16
+
+### Fixed
+
+- **The documented doorbell example did not match what the adapter emits.** README, SPEC and
+  the cmux docs showed:
+
+  a short form ending in `check your inbox`, with no type, path or token. The adapter has
+  never emitted that shape. It emits:
+
+  ```text
+  📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check
+  📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check · <8-lowercase-hex>
+  ```
+
+  **Impact:** an agent that built its permitted-line rule from the documented example would
+  have matched nothing and silently ignored every live doorbell — with no error to diagnose.
+  If you configured doorbell acceptance from the docs before 0.3.2, re-check it against the
+  two shapes above and match by prefix, never by exact equality.
+
+### Added
+
+- **A docs/code drift gate** (`tests/test_doorbell_docs_drift.sh`, run by `make test`). It
+  executes the adapter against a mocked platform CLI, captures the line actually emitted, and
+  asserts every documented doorbell line in every tracked file conforms to it. Failures name
+  the file and line. A companion mutation harness proves the gate catches planted drift in
+  README, SPEC, SKILL and `docs/`, and that it still passes on a clean tree.
+
+  This is the durable fix. The wrong example was a symptom; nothing previously bound the
+  documentation to the code.
+
+- **An agent entry point in the README**, naming `skills/agent-letterbox/SKILL.md` as the
+  operating manual. The acceptance rule lived only in the skill, and nothing pointed to it.
+
 ## [0.3.1] — 2026-08-16
 
 - Correct v0.3 release metadata, roadmap, skill, and specification wording.
