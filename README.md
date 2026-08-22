@@ -198,6 +198,26 @@ letterbox cmux run agent-zero -- <your-agent-cli>
 
 Each self-registers its exact current cmux surface, avoiding title collisions.
 
+## Tested with
+
+Each agent CLI below completed the full cycle live on this repo's current release — durable letter delivered, cmux doorbell rung in its pane, `ACK` returned, then `RESULT` — launched through `letterbox cmux run` (macOS, 2026-08-22):
+
+| Agent CLI | Version tested | Teach file |
+|---|---|---|
+| Claude Code | 2.1.234 | `CLAUDE.md` |
+| Gemini CLI | 0.46.0 | `GEMINI.md` |
+| OpenAI Codex | 0.149.0 | `AGENTS.md` |
+| OpenCode | 1.18.21 | `AGENTS.md` |
+| Cursor Agent | 2026.08.11 | `AGENTS.md` |
+| GitHub Copilot CLI | 1.0.80 | `AGENTS.md` |
+
+The teach file is a short note in the working directory telling the agent what a doorbell means and how to reply — Gemini CLI found and activated the bundled Letterbox skill from the doorbell alone. Any agent that can run shell commands and read a file can join the same way. The maintainers' own team (Claude, Grok, Kimi, Pi, Hermes) runs this letter protocol daily.
+
+Two things worth knowing:
+
+- **First-run dialogs can eat the doorbell's Enter.** Trust-this-folder prompts, logins, and slow TUI start-up may swallow the submitted keypress, leaving the doorbell text sitting unsubmitted in the agent's input box. The letter itself is never lost — it is already durable in the inbox. Press Enter in that pane, or ring again once the agent is idle.
+- **Launch with your box visible.** `letterbox` resolves the box from `LETTERBOX_DIR`, then `~/.config/agent-letterbox/default-dir`, then falls back to `$PWD/.letterbox`. If an agent seems to register "nowhere", it registered into the fallback box of its working directory — export `LETTERBOX_DIR` in the launching shell.
+
 ## Using a pre-release checkout
 
 If you installed an earlier checkout from `main`, reinstall from the current branch and use the lifecycle commands above. v0.3 adds operational reading verbs and additive doorbell tokens while keeping v0.2 letters valid. v0.2 introduced an optional additive `thread` field; existing letters remain valid and older readers ignore it. All agents in one team should run the same helper version.
