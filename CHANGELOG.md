@@ -1,3 +1,17 @@
+## v0.3.3 — 2026-08-22 (cmux edition)
+
+Fixed
+- `letterbox cmux run` and `letterbox cmux register` failed on current cmux with
+  "CMUX_SURFACE_ID is missing": cmux now exposes the surface id as a UUID, not the
+  legacy `surface:N` short ref. Registration now resolves the calling pane via
+  `cmux identify`'s caller object; legacy short-ref values keep working.
+- A null caller (no pane ancestry — cron, stripped environments) now fails with an
+  instructive error instead of silently registering the focused pane.
+
+Added
+- Regression suite for registration: UUID env, legacy short ref, bare env, and the
+  null-caller/focused-pane leak.
+
 # Changelog
 
 All notable changes to Agent Letterbox for cmux are documented here.
