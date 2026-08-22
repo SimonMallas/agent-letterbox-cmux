@@ -246,7 +246,10 @@ cmd_cmux_register() {
   # caller block specifically: the JSON also carries a `focused` surface.
   surface="${CMUX_SURFACE_ID:-}"
   if [[ ! "$surface" =~ ^surface:[0-9]+$ ]]; then
-    surface="$(cmux identify 2>/dev/null | awk '/"caller"/{f=1} f && /"surface_ref"/{gsub(/[",]/,""); print $3; exit}')"
+    # Only trust an actual caller object: `"caller" : null` (no pane
+    # ancestry, e.g. cron or a stripped env) must fail loudly rather than
+    # silently falling through to the focused pane's surface_ref.
+    surface="$(cmux identify 2>/dev/null | awk '/"caller" : \{/{f=1} f && /"surface_ref"/{gsub(/[",]/,""); print $3; exit}')"
   fi
   [[ "$surface" =~ ^surface:[0-9]+$ ]] || die 'run registration from inside an agent cmux terminal (no caller surface from cmux identify)'
   cmux tree --all 2>/dev/null | grep -F "$surface" >/dev/null || die "current surface is not live: $surface"

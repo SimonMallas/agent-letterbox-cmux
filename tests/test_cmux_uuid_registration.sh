@@ -55,4 +55,26 @@ rm -f "$LETTERBOX_CMUX_REGISTRY"
 env -u CMUX_SURFACE_ID "$letterbox" cmux register bare-agent
 awk -F $'\t' '$1 == "bare-agent" && $2 == "surface:7" { found=1 } END { exit !found }' "$LETTERBOX_CMUX_REGISTRY"
 
+# 4. caller null (no pane ancestry) → must die, never register the focused pane
+cat > "$tmp/bin/cmux" <<'MOCK'
+#!/usr/bin/env bash
+case "$1" in
+  identify)
+    printf '{\n  "caller" : null,\n  "focused" : {\n    "surface_ref" : "surface:9"\n  }\n}\n'
+    ;;
+  tree) echo 'surface:9 [terminal] "focused pane"' ;;
+esac
+MOCK
+chmod +x "$tmp/bin/cmux"
+rm -f "$LETTERBOX_CMUX_REGISTRY"
+if env -u CMUX_SURFACE_ID "$letterbox" cmux register orphan-agent 2>/dev/null; then
+  echo 'FAIL: caller-null registration was accepted' >&2
+  exit 1
+fi
+if [[ -f "$LETTERBOX_CMUX_REGISTRY" ]] && grep -F 'surface:9' "$LETTERBOX_CMUX_REGISTRY" >/dev/null; then
+  echo 'FAIL: focused surface registered despite null caller' >&2
+  exit 1
+fi
+
 printf '%s\n' 'cmux uuid registration test: PASS'
+
