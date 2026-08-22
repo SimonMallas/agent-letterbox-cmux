@@ -240,8 +240,15 @@ cmd_cmux_register() {
   local agent="${1:?usage: letterbox cmux register <agent>}" registry surface owner tmp
   need_agent "$agent"
   command -v cmux >/dev/null 2>&1 || die 'cmux is unavailable'
+  # cmux exposes CMUX_SURFACE_ID as a UUID on current builds; only legacy builds
+  # used the surface:N short ref. Resolve the caller's short ref via `cmux
+  # identify` — its caller object is the ancestry check itself. Parse the
+  # caller block specifically: the JSON also carries a `focused` surface.
   surface="${CMUX_SURFACE_ID:-}"
-  [[ "$surface" =~ ^surface:[0-9]+$ ]] || die 'run registration from inside the agent cmux terminal (CMUX_SURFACE_ID is missing)'
+  if [[ ! "$surface" =~ ^surface:[0-9]+$ ]]; then
+    surface="$(cmux identify 2>/dev/null | awk '/"caller"/{f=1} f && /"surface_ref"/{gsub(/[",]/,""); print $3; exit}')"
+  fi
+  [[ "$surface" =~ ^surface:[0-9]+$ ]] || die 'run registration from inside an agent cmux terminal (no caller surface from cmux identify)'
   cmux tree --all 2>/dev/null | grep -F "$surface" >/dev/null || die "current surface is not live: $surface"
   mkdir -p "$BOX/$agent/inbox" "$BOX/$agent/processed" "$BOX/locks"
   registry="$(cmux_registry_path)"
