@@ -2,7 +2,7 @@
 
 ## Ring the bell. Create the team.
 
-![Agent Letterbox for cmux](assets/hero/letterbox-hero-1600x900.png)
+![Eight coding agents handing work to each other over Agent Letterbox — panes ring as letters land](assets/hero/letterbox-team.gif)
 
 **Agent Letterbox for cmux turns separate coding-agent terminals into a live team.**
 
@@ -90,6 +90,12 @@ Open any terminal window. You can either copy/paste the commands yourself, **or 
 
 ```text
 Set up Agent Letterbox for cmux using the README Quick Start. Do not change my cmux layout.
+```
+
+### Or: add the skill straight to your agent
+
+```bash
+npx skills add SimonMallas/agent-letterbox-cmux
 ```
 
 ### Option A — Recommended: copy/paste installer
