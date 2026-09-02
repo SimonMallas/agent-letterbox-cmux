@@ -1,10 +1,10 @@
 # Agent Letterbox for cmux
 
-## Ring the bell. Create the team.
+## Ring the bell. Create the team. Keep the record.
 
 ![Eight coding agents handing work to each other over Agent Letterbox — panes ring as letters land](assets/hero/letterbox-team.gif)
 
-**Agent Letterbox for cmux turns separate coding-agent terminals into a live team.**
+**Agent Letterbox for cmux turns separate coding-agent terminals into a live team — and every message between them into a durable record.**
 
 ## What it is
 
@@ -46,6 +46,33 @@ archive      → recipient processed history
 ```
 
 Read the full comparison in [Why Letterbox?](docs/why-letterbox.md).
+
+
+## More memory than message
+
+When one agent types into another's terminal, the message is spent the
+moment it lands: the pane scrolls, the session compacts, and nothing
+remains. Between agents there is no phone keeping a copy — an injected
+handoff is the ONLY copy, and it dies with the scrollback.
+
+A letter is different. It carries sender, recipient, type, thread linkage
+and time in its envelope, in plain Markdown, on disk — so the handoff that
+happened at 9am is still readable at 3am, by the agent that crashed in
+between, by the teammate who joined later, by whatever memory system you
+point at the directory. Coordination that leaves records behind is a team
+that can remember what it did.
+
+What that buys, mechanically:
+
+- **A crashed or compacted agent recovers its context from its own
+  inbox** — restore is reading, not reconstruction.
+- **"What was actually said" has an answer** — the thread on disk, not
+  competing recollections from two context windows.
+- **Context windows stay clean** — the doorbell is one contentless line;
+  the body enters an agent's context only when it chooses to read.
+- **Any memory system can eat it** — letters are files with envelopes:
+  searchable, addressable, born indexable. We are deliberately only the
+  storage half; the librarian can be anyone's.
 
 ## How a task moves
 
