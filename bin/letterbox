@@ -205,25 +205,37 @@ letter_ack_state() {
 }
 
 frontmatter_value() {
+  # Strict two-fence: opening --- on line 1 and a closing --- before any
+  # field is trusted. A file with only an opening fence never parses
+  # (body-line "key: value" must not become metadata).
   awk -v wanted="$2" '
     {
       line = $0
       sub(/\r$/, "", line)
+      lines[NR] = line
     }
-    NR == 1 && line == "---" { in_frontmatter = 1; next }
-    in_frontmatter && line == "---" { exit }
-    in_frontmatter {
-      key = line; sub(/:.*/, "", key)
-      if (key == wanted) {
-        value = line; sub(/^[^:]*:[[:space:]]*/, "", value)
-        print value; exit
+    END {
+      if (NR < 1 || lines[1] != "---") exit 1
+      close_at = 0
+      for (i = 2; i <= NR; i++) {
+        if (lines[i] == "---") { close_at = i; break }
+      }
+      if (close_at == 0) exit 1
+      for (i = 2; i < close_at; i++) {
+        line = lines[i]
+        key = line; sub(/:.*/, "", key)
+        if (key == wanted) {
+          value = line; sub(/^[^:]*:[[:space:]]*/, "", value)
+          print value
+          exit 0
+        }
       }
     }
   ' "$1"
 }
 
 message_body() {
-  # Body after second ---; command-sub consumers strip trailing newlines.
+  # Body after the closing ---. No closing fence → fail closed.
   awk '
     {
       line = $0
@@ -231,6 +243,7 @@ message_body() {
     }
     line == "---" { seen++; next }
     seen >= 2 { print }
+    END { if (seen < 2) exit 1 }
   ' "$1"
 }
 

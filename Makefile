@@ -17,6 +17,7 @@ endef
 test:
 	./tests/smoke.sh
 	./tests/test_error_paths.sh
+	./tests/test_two_fence_parser.sh
 	./tests/test_no_private_data.sh
 	./tests/test_no_private_vocabulary.sh
 	./tests/test_no_private_vocabulary_mutation.sh
