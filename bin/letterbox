@@ -118,10 +118,11 @@ resolve_action_ref() {
     [[ -d "$dir" ]] || continue
     for f in "$dir"/*.md; do
       [[ -f "$f" ]] || continue
-      id="$(frontmatter_value "$f" id)"
+      id="$(frontmatter_value "$f" id)" || continue
       disp="$(display_id "$id")"
       tok="$(doorbell_token_for_id "$id")"
-      if [[ "$id" == "$arg" || "${f##*/}" == "$arg" || "${f##*/}" == "${arg}.md" || "$disp" == "$arg" ]]; then
+      # Filename is not a back door: a file the parser refuses never hits.
+      if [[ "$id" == "$arg" || "$disp" == "$arg" ]]; then
         hits+=("$f")
       elif [[ "$arg" =~ ^[0-9a-f]{8}$ && "$tok" == "$arg" ]]; then
         hits+=("$f")
@@ -603,7 +604,10 @@ check_thread() {
   for folder in inbox processed; do
     for f in "$BOX"/*/"$folder"/*.md; do
       [[ -f "$f" ]] || continue
-      id="$(frontmatter_value "$f" id)"
+      if ! id="$(frontmatter_value "$f" id)"; then
+        printf 'letterbox: MALFORMED %s (need opening and closing ---)\n' "$f" >&2
+        continue
+      fi
       tid="$(frontmatter_value "$f" thread)"
       rid="$(frontmatter_value "$f" re)"
       [[ "$tid" == "$want" || "$rid" == "$want" || "$id" == "$want" ]] || continue
@@ -646,8 +650,12 @@ cmd_check() {
   n=0
   for f in "$inbox"/*.md; do
     [[ -e "$f" ]] || break
+    if ! id="$(frontmatter_value "$f" id)"; then
+      printf 'letterbox: MALFORMED %s (need opening and closing ---)\n' "$f" >&2
+      echo "═══ MALFORMED  ${f##*/}"
+      continue
+    fi
     n=$((n + 1))
-    id="$(frontmatter_value "$f" id)"
     ep="$(activity_epoch "$f")"
     age_s=$((now - ep))
     (( age_s < 0 )) && age_s=0

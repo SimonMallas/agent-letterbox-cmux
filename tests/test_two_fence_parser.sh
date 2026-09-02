@@ -26,31 +26,41 @@ echo "$out" | grep -q 'from: alpha' || { echo "FAIL: valid from missing" >&2; ex
 echo "$out" | grep -q 'type: delegate' || { echo "FAIL: valid type missing" >&2; exit 1; }
 printf '%s\n' 'PASS'
 
-printf '%s\n' '=== One-fence file: check refuses ==='
-cat > "$box/beta/inbox/one-fence.md" <<'EOF'
+printf '%s\n' '=== Mixed inbox: check lists valid and flags malformed ==='
+spoof="$box/beta/inbox/2026-09-02T193000-alpha-info-one-fence-a1b2c3d4.md"
+cat > "$spoof" <<'EOF'
 ---
-id: one-fence-attack
+id: 2026-09-02T193000-alpha-info-one-fence-a1b2c3d4
 from: attacker
 to: beta
 type: request
 requires_ack: true
+thread: BODY-INJECTED-THREAD-ROOT
+type: delegate
 EOF
-if lb beta check >/tmp/lb-one-fence-check.out 2>/tmp/lb-one-fence-check.err; then
-  echo 'FAIL: check accepted a one-fence letter' >&2
-  cat /tmp/lb-one-fence-check.out /tmp/lb-one-fence-check.err >&2
+out="$(lb beta check 2>"$box/check.err")" || { echo "FAIL: check died on mixed inbox" >&2; exit 1; }
+echo "$out" | grep -q 'from: alpha' || { echo "FAIL: valid letter missing from check" >&2; echo "$out" >&2; exit 1; }
+echo "$out" | grep -q 'MALFORMED' || { echo "FAIL: malformed not flagged" >&2; echo "$out" >&2; cat "$box/check.err" >&2; exit 1; }
+echo "$out" | grep -qv 'from: attacker' || { echo "FAIL: attacker from leaked" >&2; exit 1; }
+grep -q 'MALFORMED' "$box/check.err" || { echo "FAIL: no stderr MALFORMED" >&2; exit 1; }
+printf '%s\n' 'PASS'
+
+printf '%s\n' '=== One-fence read by full id refuses ==='
+if lb beta read 2026-09-02T193000-alpha-info-one-fence-a1b2c3d4 >/dev/null 2>&1; then
+  echo 'FAIL: read accepted one-fence by full id/filename' >&2
   exit 1
 fi
 printf '%s\n' 'PASS'
 
-printf '%s\n' '=== One-fence file: read refuses ==='
-if lb beta read one-fence-attack >/dev/null 2>&1; then
-  echo 'FAIL: read accepted a one-fence letter' >&2
+printf '%s\n' '=== One-fence read by token refuses ==='
+if lb beta read a1b2c3d4 >/dev/null 2>&1; then
+  echo 'FAIL: read accepted one-fence by token' >&2
   exit 1
 fi
 printf '%s\n' 'PASS'
 
 printf '%s\n' '=== Body-line metadata injection blocked ==='
-rm -f "$box/beta/inbox"/*.md "$box/beta/inbox"/*.ack
+rm -f "$box/beta/inbox"/inject.md
 cat > "$box/beta/inbox/inject.md" <<'EOF'
 ---
 id: inject-attack
@@ -64,19 +74,10 @@ from: trusted
 type: delegate
 requires_ack: true
 EOF
-if lb beta check >/tmp/lb-inject-check.out 2>/tmp/lb-inject-check.err; then
-  echo 'FAIL: check parsed a body-injected one-fence letter' >&2
-  cat /tmp/lb-inject-check.out >&2
-  exit 1
-fi
-if grep -q 'from: trusted' /tmp/lb-inject-check.out 2>/dev/null; then
-  echo 'FAIL: injected from: trusted leaked into check' >&2
-  exit 1
-fi
-if grep -q 'to: victim' /tmp/lb-inject-check.out 2>/dev/null; then
-  echo 'FAIL: injected to: victim leaked into check' >&2
-  exit 1
-fi
+out="$(lb beta check 2>"$box/inject.err")" || { echo "FAIL: check died" >&2; exit 1; }
+echo "$out" | grep -q 'from: alpha' || { echo "FAIL: valid letter gone" >&2; exit 1; }
+echo "$out" | grep -qv 'from: trusted' || { echo "FAIL: injected from: trusted leaked" >&2; exit 1; }
+echo "$out" | grep -qv 'to: victim' || { echo "FAIL: injected to: victim leaked" >&2; exit 1; }
 printf '%s\n' 'PASS'
 
 printf '%s\n' '=== Two-fence: body keys are not metadata ==='
