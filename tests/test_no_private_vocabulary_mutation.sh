@@ -22,10 +22,23 @@ self_name="$(basename "$0")"
 # point inside the worktree and reintroduce self-contamination.
 tmp="$(mktemp -d /tmp/vocab-mut.XXXXXX)"
 wt=""
+fails=0
+fail() {
+  echo "FAIL: $*" >&2
+  fails=$((fails+1))
+  printf 'FAIL: %s\n' "$*" >> "$tmp/outer-fails.log"
+}
 cleanup() {
   local rc=$?
   if [[ -n "${wt:-}" ]]; then
     git -C "$root" worktree remove --force "$wt" >/dev/null 2>&1 || rm -rf "$wt"
+  fi
+  # False-green: outer FAIL lines (or a recorded fail count) cannot exit 0.
+  if [[ "$rc" -eq 0 ]]; then
+    if [[ "${fails:-0}" -ne 0 || -s "$tmp/outer-fails.log" ]]; then
+      echo "FAIL: false-green — FAIL recorded but rc=0" >&2
+      rc=1
+    fi
   fi
   rm -rf "$tmp"
   exit "$rc"
@@ -68,17 +81,17 @@ assert_uncontaminated() {
 
 GATE_RC=0
 run_gate() { # prints gate output with [mut] prefix; sets GATE_RC
+  # Capture expected nonzero with if/else. Do not toggle caller-global errexit.
   local out
   out="$(mktemp /tmp/vocab-mut-out.XXXXXX)"
-  set +e
-  ( cd "$tmp/repo" && "./tests/$gate_name" ) >"$out" 2>&1
-  GATE_RC=$?
-  set -e
+  if ( cd "$tmp/repo" && "./tests/$gate_name" ) >"$out" 2>&1; then
+    GATE_RC=0
+  else
+    GATE_RC=$?
+  fi
   sed 's/^/[mut] | /' "$out"
   rm -f "$out"
 }
-
-fails=0
 
 if ! assert_uncontaminated; then
   fails=$((fails+1))
@@ -89,8 +102,7 @@ run_gate
 if [[ "$GATE_RC" -eq 0 ]]; then
   echo "PASS: clean tree passes the gate"
 else
-  echo "FAIL: gate fails on a clean tree" >&2
-  fails=$((fails+1))
+  fail "gate fails on a clean tree"
 fi
 
 plant_and_run() { # $1 relative residue path; $2 payload. Sets GATE_RC; 2=did-not-apply.
@@ -99,8 +111,7 @@ plant_and_run() { # $1 relative residue path; $2 payload. Sets GATE_RC; 2=did-no
   printf '%s' "$payload" > "$tmp/repo/$rel"
   git -C "$tmp/repo" add -f "$rel"
   if [[ ! -f "$tmp/repo/$rel" ]] || ! git -C "$tmp/repo" ls-files --error-unmatch "$rel" >/dev/null 2>&1; then
-    echo "FAIL: mutation did not apply: $rel" >&2
-    fails=$((fails+1))
+    fail "mutation did not apply: $rel"
     rm -f "$tmp/repo/$rel"
     git -C "$tmp/repo" rm -q --cached "$rel" 2>/dev/null || true
     GATE_RC=2
@@ -122,8 +133,7 @@ for rel in "docs/visible-residue.md" ".github/workflows/residue-ci.yml" ".hidden
   if [[ "$GATE_RC" -eq 2 ]]; then
     :
   elif [[ "$GATE_RC" -eq 0 ]]; then
-    echo "FAIL: gate passed with residue at $rel" >&2
-    fails=$((fails+1))
+    fail "gate passed with residue at $rel"
   else
     echo "PASS: gate failed on residue at $rel"
   fi
@@ -135,18 +145,19 @@ mkdir -p "$tmp/repo/docs"
 printf '%s' "$wrap_payload" > "$tmp/repo/docs/wrap-residue.md"
 git -C "$tmp/repo" add -f docs/wrap-residue.md
 if ! git -C "$tmp/repo" ls-files --error-unmatch docs/wrap-residue.md >/dev/null 2>&1; then
-  echo "FAIL: mutation did not apply: docs/wrap-residue.md" >&2
-  fails=$((fails+1))
+  fail "mutation did not apply: docs/wrap-residue.md"
 else
-  wrap="$(cd "$tmp/repo" && "./tests/$gate_name" 2>&1)" && wrap_rc=0 || wrap_rc=$?
+  if wrap="$(cd "$tmp/repo" && "./tests/$gate_name" 2>&1)"; then
+    wrap_rc=0
+  else
+    wrap_rc=$?
+  fi
   echo "[mut] --- wrap residue → gate rc=$wrap_rc ---"
   printf '%s\n' "$wrap" | sed 's/^/[mut] | /'
   if [[ "$wrap_rc" -eq 0 ]]; then
-    echo "FAIL: gate passed with wrapped private phrase" >&2
-    fails=$((fails+1))
+    fail "gate passed with wrapped private phrase"
   elif [[ "$wrap" != *"docs/wrap-residue.md:"* ]]; then
-    echo "FAIL: wrap hit missing file:line" >&2
-    fails=$((fails+1))
+    fail "wrap hit missing file:line"
   else
     echo "PASS: gate failed on wrapped phrase"
   fi
@@ -159,16 +170,18 @@ mkdir -p "$tmp/repo/docs"
 printf '%s' "$tele_payload" > "$tmp/repo/docs/visible-residue.md"
 git -C "$tmp/repo" add -f docs/visible-residue.md
 if ! git -C "$tmp/repo" ls-files --error-unmatch docs/visible-residue.md >/dev/null 2>&1; then
-  echo "FAIL: mutation did not apply: docs/visible-residue.md" >&2
-  fails=$((fails+1))
+  fail "mutation did not apply: docs/visible-residue.md"
 else
-  hit="$(cd "$tmp/repo" && "./tests/$gate_name" 2>&1 || true)"
+  if hit="$(cd "$tmp/repo" && "./tests/$gate_name" 2>&1)"; then
+    :
+  else
+    :
+  fi
   if [[ "$hit" == *"docs/visible-residue.md:1:"* ]]; then
     echo "PASS: hit carries file:line"
   else
     printf '%s\n' "$hit" | sed 's/^/[mut] | /'
-    echo "FAIL: hit missing file:line" >&2
-    fails=$((fails+1))
+    fail "hit missing file:line"
   fi
 fi
 git -C "$tmp/repo" rm -q --cached docs/visible-residue.md 2>/dev/null || true
@@ -179,8 +192,20 @@ run_gate
 if [[ "$GATE_RC" -eq 0 ]]; then
   echo "PASS: clean tree passes the gate after mutations"
 else
-  echo "FAIL: gate fails on a clean tree after mutations" >&2
-  fails=$((fails+1))
+  fail "gate fails on a clean tree after mutations"
+fi
+
+# Normalizer error must fail the gate (never swallowed).
+if [[ -f "$tmp/repo/tests/vocab_normalized.py" ]]; then
+  cp "$tmp/repo/tests/vocab_normalized.py" "$tmp/vocab_normalized.py.good"
+  printf '%s\n' 'import sys' 'sys.exit(1)' > "$tmp/repo/tests/vocab_normalized.py"
+  run_gate
+  if [[ "$GATE_RC" -eq 0 ]]; then
+    fail "gate passed while normalizer exited 1"
+  else
+    echo "PASS: gate failed on normalizer error"
+  fi
+  cp "$tmp/vocab_normalized.py.good" "$tmp/repo/tests/vocab_normalized.py"
 fi
 
 if ! assert_uncontaminated; then
@@ -201,25 +226,23 @@ if [[ -z "${VOCAB_MUT_SKIP_WORKTREE_SMOKE:-}" ]]; then
       cp "$root/tests/vocab_normalized.py" "$wt/tests/vocab_normalized.py"
       chmod +x "$wt/tests/vocab_normalized.py"
     fi
-    set +e
-    VOCAB_MUT_SKIP_WORKTREE_SMOKE=1 "$wt/tests/$self_name" >/dev/null 2>&1
-    wt_rc=$?
-    set -e
+    if VOCAB_MUT_SKIP_WORKTREE_SMOKE=1 "$wt/tests/$self_name" >/dev/null 2>&1; then
+      wt_rc=0
+    else
+      wt_rc=$?
+    fi
     git -C "$root" worktree remove --force "$wt" >/dev/null 2>&1 || rm -rf "$wt"
     wt=""
     after_wt="$(git -C "$root" status --porcelain)"
     if [[ "$wt_rc" -ne 0 ]]; then
-      echo "FAIL: linked-worktree smoke: harness rc=$wt_rc" >&2
-      fails=$((fails+1))
+      fail "linked-worktree smoke: harness rc=$wt_rc"
     elif [[ "$after_wt" != "$before" ]]; then
-      echo "FAIL: linked-worktree smoke mutated source index" >&2
-      fails=$((fails+1))
+      fail "linked-worktree smoke mutated source index"
     else
       echo "PASS: linked-worktree smoke (source index unchanged)"
     fi
   else
-    echo "FAIL: linked-worktree smoke: git worktree add failed" >&2
-    fails=$((fails+1))
+    fail "linked-worktree smoke: git worktree add failed"
     rm -rf "$wt"
     wt=""
   fi
@@ -229,13 +252,11 @@ after="$(git -C "$root" status --porcelain)"
 if [[ "$after" == "$before" ]]; then
   echo "PASS: real worktree/index untouched by harness"
 else
-  echo "FAIL: worktree/index changed by harness:" >&2
+  fail "worktree/index changed by harness"
   diff <(printf '%s\n' "$before") <(printf '%s\n' "$after") >&2 || true
-  fails=$((fails+1))
 fi
 if printf '%s\n' "$after" | grep -q "residue"; then
-  echo "FAIL: residue path present in real worktree status" >&2
-  fails=$((fails+1))
+  fail "residue path present in real worktree status"
 fi
 
 if [[ "$fails" -ne 0 ]]; then
