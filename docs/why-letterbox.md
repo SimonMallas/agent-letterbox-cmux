@@ -57,6 +57,11 @@ while making the actual task durable:
 keep the message safe, inspectable, and recoverable
 ```
 
+Letterbox is that thin shared layer — correspondence, handoffs, decisions,
+ACKs/RESULTs, recoverable history. It is not a memory intelligence system:
+no summarization, embeddings, ranking, promotion, or interpretation. A
+separate layer may use the records.
+
 > **Ring the bell. Keep the message.**
 
 If an agent is offline, the letter is not lost. If the bell arrives, the agent can respond immediately. That is the point of the system.

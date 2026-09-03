@@ -1,10 +1,15 @@
 # Agent Letterbox for cmux
 
-## Ring the bell. Create the team. Keep the record.
+## Ring the bell. Create the team. Build the memories.
 
 ![Eight coding agents handing work to each other over Agent Letterbox — panes ring as letters land](assets/hero/letterbox-team.gif)
 
+
+**Letterbox gives an agent team a durable place to build memory together.**
+
 **Agent Letterbox for cmux turns separate coding-agent terminals into a live team — and every message between them into a durable record.**
+
+
 
 ## What it is
 
@@ -50,6 +55,12 @@ Read the full comparison in [Why Letterbox?](docs/why-letterbox.md).
 
 ## More memory than message
 
+Letterbox is a thin shared memory layer for an agent team: durable
+correspondence, handoffs, decisions, ACKs and RESULTs, and recoverable
+history sitting on disk between separate context windows and a shared
+brain. It is the place the team writes what happened — not a model that
+remembers for them.
+
 When one agent types into another's terminal, the message is spent the
 moment it lands: the pane scrolls, the session compacts, and nothing
 remains. Between agents there is no phone keeping a copy — an injected
@@ -59,8 +70,7 @@ A letter is different. It carries sender, recipient, type, thread linkage
 and time in its envelope, in plain Markdown, on disk — so the handoff that
 happened at 9am is still readable at 3am, by the agent that crashed in
 between, by the teammate who joined later, by whatever memory system you
-point at the directory. Coordination that leaves records behind is a team
-that can remember what it did.
+point at the directory.
 
 What that buys, mechanically:
 
@@ -71,8 +81,12 @@ What that buys, mechanically:
 - **Context windows stay clean** — the doorbell is one contentless line;
   the body enters an agent's context only when it chooses to read.
 - **Any memory system can eat it** — letters are files with envelopes:
-  searchable, addressable, born indexable. We are deliberately only the
-  storage half; the librarian can be anyone's.
+  searchable, addressable, born indexable.
+
+Letterbox is not a memory intelligence system. It does not summarize,
+embed, rank, promote, or interpret. A separate memory layer may use
+these records as ground truth. We keep the letter; the librarian can be
+anyone's.
 
 ## How a task moves
 
