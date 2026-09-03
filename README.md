@@ -4,12 +4,9 @@
 
 ![Eight coding agents handing work to each other over Agent Letterbox — panes ring as letters land](assets/hero/letterbox-team.gif)
 
-
 **Letterbox gives an agent team a durable place to build memory together.**
 
 **Agent Letterbox for cmux turns separate coding-agent terminals into a live team — and every message between them into a durable record.**
-
-
 
 ## What it is
 
@@ -52,13 +49,11 @@ archive      → recipient processed history
 
 Read the full comparison in [Why Letterbox?](docs/why-letterbox.md).
 
-
 ## More memory than message
 
 Letterbox is a thin shared memory layer for an agent team: durable
 correspondence, handoffs, decisions, ACKs and RESULTs, and recoverable
-history sitting on disk between separate context windows and a shared
-brain. It is the place the team writes what happened — not a model that
+history sitting on disk between separate context windows. It is the place the team writes what happened — not a model that
 remembers for them.
 
 When one agent types into another's terminal, the message is spent the
