@@ -4,6 +4,9 @@
 Line-based grep misses 'shared\\nbrain'. Collapse all whitespace to a single
 space, then search. Line number is the first line containing the phrase's
 first word (so mutation gates still see file:line).
+
+Exit 0 on a successful scan (hits print to stdout; no hits is silent).
+Exit 1 on errors. Callers must not swallow a non-zero exit.
 """
 from __future__ import annotations
 
@@ -11,13 +14,14 @@ import re
 import sys
 
 
-def scan(path: str, patterns: list[str]) -> None:
+def scan(path: str, patterns: list[str]) -> int:
     try:
         raw = open(path, "rb").read()
-    except OSError:
-        return
+    except OSError as exc:
+        print(f"{path}:0:error {exc}", file=sys.stderr)
+        return 1
     if b"\0" in raw[:8192]:
-        return
+        return 0
     text = raw.decode("utf-8", "replace")
     norm = re.sub(r"\s+", " ", text).lower()
     lines = text.splitlines()
@@ -31,9 +35,14 @@ def scan(path: str, patterns: list[str]) -> None:
                 ln = i
                 break
         print(f"{path}:{ln}:{pat}")
+    return 0
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         sys.exit(0)
-    scan(sys.argv[1], sys.argv[2:])
+    try:
+        sys.exit(scan(sys.argv[1], sys.argv[2:]))
+    except Exception as exc:
+        print(f"{sys.argv[1]}:0:error {exc}", file=sys.stderr)
+        sys.exit(1)
