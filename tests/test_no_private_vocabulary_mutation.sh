@@ -44,6 +44,30 @@ for rel in "docs/visible-residue.md" ".github/workflows/residue-ci.yml" ".hidden
   plant_and_run "$rel"
 done
 
+# Line wrap must not evade the gate (two-word private phrase split by newline).
+wrap_rel="docs/wrap-residue.md"
+mkdir -p "$tmp/repo/docs"
+printf 'residue shared''\n''brain here\n' > "$tmp/repo/$wrap_rel"
+git -C "$tmp/repo" add -f "$wrap_rel"
+wrap_out="$(mktemp)"
+set +e
+( cd "$tmp/repo" && "./tests/$gate_name" ) >"$wrap_out" 2>&1
+wrap_rc=$?
+set -e
+echo "[mut] --- wrap residue at $wrap_rel → gate rc=$wrap_rc ---"
+sed 's/^/[mut] /' "$wrap_out"
+if [[ "$wrap_rc" -eq 0 ]]; then
+  echo "FAIL: [mut] gate passed with wrapped private phrase at $wrap_rel" >&2
+  fails=$((fails + 1))
+elif ! grep -Fq "$wrap_rel:" "$wrap_out"; then
+  echo "FAIL: [mut] wrap hit missing file:line for $wrap_rel" >&2
+  fails=$((fails + 1))
+else
+  echo "PASS: [mut] gate failed with file:line for wrapped phrase at $wrap_rel"
+fi
+git -C "$tmp/repo" rm -q --cached "$wrap_rel" 2>/dev/null || true
+rm -f "$tmp/repo/$wrap_rel" "$wrap_out"
+
 # Clean tree must pass, or every assertion above is meaningless.
 if (cd "$tmp/repo" && "./tests/$gate_name" >/dev/null 2>&1); then
   echo "PASS: gate passes on a clean tree"

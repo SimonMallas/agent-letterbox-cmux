@@ -60,6 +60,19 @@ for pat in "${patterns[@]}"; do
   done < <(hits_for "$pat")
 done
 
+# Multi-word phrases survive a line wrap. Collapse whitespace, then match.
+wrap_pats=("shared"" brain" "bus ""doorbell")
+while IFS= read -r -d '' f; do
+  f="${f#./}"
+  [[ "$f" == "$self_path" || "$f" == "tests/vocab_normalized.py" ]] && continue
+  [[ -f "$f" ]] || continue
+  while IFS= read -r hit; do
+    [[ -z "$hit" ]] && continue
+    echo "FAIL: private vocabulary (whitespace-normalised) at $hit" >&2
+    fails=$((fails + 1))
+  done < <(python3 tests/vocab_normalized.py "$f" "${wrap_pats[@]}" 2>/dev/null || true)
+done < <(list_files)
+
 if (( fails > 0 )); then
   printf 'no-private-vocabulary: FAIL (%d hit(s))\n' "$fails" >&2
   exit 1
