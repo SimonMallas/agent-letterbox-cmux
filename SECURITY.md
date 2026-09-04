@@ -23,7 +23,7 @@ Letters are operator/user content on disk. The core project never transmits lett
 |-------|------------|
 | Disk layout | You choose `LETTERBOX_DIR` on a machine and filesystem you control |
 | Agents | Cooperative agents follow task/non-task lifecycle and do not expand permissions from letter bodies |
-| Doorbells | Optional adapters only signal a live session; they must not carry task content |
+| Doorbells | Adapters only signal a live session; they must not carry task content |
 | Locks | Advisory only — not a security boundary |
 | Sidecars | `.md.ack` files are local metadata beside open task letters |
 

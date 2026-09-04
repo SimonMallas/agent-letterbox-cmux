@@ -7,7 +7,7 @@ Thanks for interest in Agent Letterbox. This guide is for people improving the *
 **In scope**
 
 - Core CLI (`bin/letterbox`) and SPEC fidelity (v0.2 lifecycle)
-- Optional cmux terminal doorbell adapter with safe defaults
+- cmux terminal doorbell adapter with safe defaults
 - Tests, docs, packaging for a small filesystem-first release
 - Clarifying failure modes and operator safety
 

@@ -1,6 +1,6 @@
 # cmux adapter guide
 
-The Agent Letterbox cmux adapter is optional. The durable letter is always written first; cmux only delivers the generic prompt that tells a live terminal agent to inspect its inbox.
+The durable letter is always written first. The cmux adapter delivers the generic prompt that tells a live terminal agent to inspect its inbox. Without a ring, nobody is told.
 
 ## Workspace model
 

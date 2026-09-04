@@ -22,7 +22,7 @@ One page for the four verbs that change a letter's state.
    processed/
 ```
 
-Doorbell (optional) = wake-up only. Inbox file = source of truth.
+Doorbell = wake-up only. Without a bell, nobody is told. Inbox file = source of truth.
 
 ## Verbs
 

@@ -140,7 +140,7 @@ For ownership replies the helper order is:
 
 1. **Publish** the reply into the sender's inbox (atomic).
 2. **Local state** — stamp `.md.ack` (for `ack`) or move the original to `processed/` and clear the sidecar (for `nack`/`result`).
-3. **Doorbell** — optional best-effort wake-up of the sender when `--now` was used.
+3. **Doorbell** — best-effort wake-up of the sender when `--now` was used. Without a bell, nobody is told.
 
 A crash after publish but before archive can leave a duplicate-safe retry. Duplicates are safer than silent loss. Deduplicate by `id` and `re`.
 
