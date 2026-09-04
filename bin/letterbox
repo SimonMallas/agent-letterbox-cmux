@@ -929,7 +929,7 @@ cmd_token() {
   f="${matches[0]}"
   folder="$(basename "$(dirname "$f")")"
   if [[ "$folder" == "processed" ]]; then
-    echo "already filed — dismiss knock"
+    echo "already filed — dismiss bell"
   else
     echo "unhandled — check"
   fi
