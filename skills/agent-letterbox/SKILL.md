@@ -31,11 +31,11 @@ Accept **both** public shapes (prefix/pattern only — **never** require exact f
 - Public grammar only: `<letterbox>/<agent>/inbox/` — no private host paths
 - Token is opaque 8-hex — never slug, body, path, secret, or full id
 
-On match: `letterbox check` (summary). Optionally `letterbox read <id-or-display-id>`. Do not claim read/handled from the knock.
+On match: `letterbox check` (summary). Optionally `letterbox read <id-or-display-id>`. Do not claim read/handled from the doorbell.
 
 `submitted` / `pasted_not_submitted` / `no_live_surface` are doorbell **outcomes**. They never mean the letter was read or that a turn started.
 
-When a knock appears in your live terminal, check the inbox now.
+When a doorbell appears in your live terminal, check the inbox now.
 
 ## Startup and resume
 

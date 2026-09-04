@@ -22,6 +22,6 @@ Agent Letterbox for cmux is a filesystem-first coordination layer for live multi
 ## Deferred / out of scope
 
 - Customer messaging apps remain native and independent of Letterbox.
-- Any external messaging or external-knock transport requires a separate, app-neutral charter.
+- Any external messaging or external-doorbell transport requires a separate, app-neutral charter.
 - Auto-registration, machine read receipts, automatic reassignment, and guaranteed wake claims remain out of scope.
 - Cross-host transport, message signing, and external agent-runtime adapters require separate evidence-led work.
