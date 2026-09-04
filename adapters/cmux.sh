@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Optional cmux doorbell adapter.
+# cmux doorbell adapter. The letter is already durable; this rings a live surface.
 # Prefer self-registered live surfaces in LETTERBOX_CMUX_REGISTRY; fall back to
 # LETTERBOX_CMUX_PATTERNS (agent<TAB>title-substring) for legacy/static agents.
 set -euo pipefail
