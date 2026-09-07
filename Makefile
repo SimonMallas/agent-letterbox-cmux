@@ -18,6 +18,8 @@ test:
 	./tests/smoke.sh
 	./tests/test_outbox_sweep_exclusion.sh
 	./tests/test_error_paths.sh
+	./tests/test_cli_maintenance.sh
+	./tests/test_cli_maintenance_mutation.sh
 	./tests/test_two_fence_parser.sh
 	./tests/test_no_private_data.sh
 	./tests/test_no_private_vocabulary.sh
