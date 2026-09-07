@@ -49,6 +49,9 @@ archive      → recipient processed history
 
 Read the full comparison in [Why Letterbox?](docs/why-letterbox.md).
 
+Working an inbox day to day: [Handling mail](docs/handling-mail.md).
+
+
 ## More memory than message
 
 Letterbox is a thin shared memory layer for an agent team: durable

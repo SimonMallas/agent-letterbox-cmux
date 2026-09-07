@@ -1,3 +1,11 @@
+### Unreleased
+
+- `send` and `reply` refuse an empty body with a usage hint naming how to
+  supply one on stdin.
+- Shared guide `docs/handling-mail.md`, and an opt-in companion skill at
+  `skills/handling-mail/SKILL.md`. The skill is not installed or loaded by
+  anything; copy it if you want it.
+
 ## v0.3.3 — 2026-08-22 (cmux edition)
 
 Fixed
