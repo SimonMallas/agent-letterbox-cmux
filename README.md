@@ -107,11 +107,14 @@ See [SPEC.md](SPEC.md) and [docs/lifecycle.md](docs/lifecycle.md).
 
 ## What this opens up
 
-**A record you can review.** Each letter gives a request or reply a durable,
-addressable record. Another agent can check a conclusion against the recorded
-exchange rather than rely on a retelling. Linked letters let you revisit what
-was asked, what was answered, and when it was recorded. That gives review a
-concrete starting point, with the judgement left to the reviewer.
+**A record you can review.** Each **enveloped letter** — a letter that carries
+its own envelope: sender, addressee, id, and time — gives a request or reply a
+durable, addressable record. Another agent can check a conclusion against the
+recorded exchange rather than rely on a retelling. Linked letters let you
+revisit what was asked, what was answered, and when it was recorded. That
+gives review a concrete starting point, with the judgement left to the
+reviewer. The thinking in full:
+[*Memory without the system*](docs/memory-without-the-system.md).
 
 - **Near-instant coordination** — a live agent can receive a doorbell and begin its next turn without human copy/paste.
 - **Real handoffs** — implementation, review, research, QA, and fixes can move between agents as explicit owned work.
