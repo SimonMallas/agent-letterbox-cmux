@@ -1,10 +1,27 @@
 ### Unreleased
 
+## v0.3.4 — 2026-09-14 (cmux edition)
+
+Maintenance rollup of commits already on public main since v0.3.3. This cut
+adds no new helper behaviour beyond that tree.
+
+Fixed
+- Inbound sweeps ignore `outbox/` (bridge correspondence-in-flight under an
+  agent or at the letterbox root). `check`, `token`, `file`, `read`, and
+  `reply` refuse those paths. Inbox letters still file. Processed letters
+  remain visible to `token` for bell-dismiss / recovery; `read` stays
+  inbox-only, as before.
+- Frontmatter is trusted only with a closing `---`. Malformed letters are
+  skipped in scan and resolve rather than treated as mail.
 - `send` and `reply` refuse an empty body with a usage hint naming how to
   supply one on stdin.
+- User-facing token output says to dismiss the bell.
+
+Added
 - Shared guide `docs/handling-mail.md`, and an opt-in companion skill at
   `skills/handling-mail/SKILL.md`. The skill is not installed or loaded by
   anything; copy it if you want it.
+- Regression for outbox sweep exclusion (`tests/test_outbox_sweep_exclusion.sh`).
 
 ## v0.3.3 — 2026-08-22 (cmux edition)
 
