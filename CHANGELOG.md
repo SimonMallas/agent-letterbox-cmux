@@ -1,9 +1,7 @@
-### Unreleased
+## v0.3.4 — 2026-09-15 (cmux edition)
 
-## v0.3.4 — 2026-09-14 (cmux edition)
-
-Maintenance rollup of commits already on public main since v0.3.3. This cut
-adds no new helper behaviour beyond that tree.
+Maintenance rollup of commits already on public main since v0.3.3, plus a
+whitespace-only body refusal for `send` and `reply`.
 
 Fixed
 - Inbound sweeps ignore `outbox/` (bridge correspondence-in-flight under an
@@ -13,8 +11,10 @@ Fixed
   inbox-only, as before.
 - Frontmatter is trusted only with a closing `---`. Malformed letters are
   skipped in scan and resolve rather than treated as mail.
-- `send` and `reply` refuse an empty body with a usage hint naming how to
-  supply one on stdin.
+- `send` and `reply` refuse an empty or whitespace-only body (spaces, tabs,
+  CR, LF) with a usage hint naming how to supply one on stdin. Non-blank
+  bodies keep their surrounding whitespace; the emptiness check does not
+  rewrite the stored body.
 - User-facing token output says to dismiss the bell.
 
 Added

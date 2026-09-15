@@ -143,4 +143,65 @@ if find "$box/beta/inbox" -name '*empty-ack*' -print -quit | grep -q .; then
 fi
 pass "empty reply refuses with stdin hint (no closure, no lock)"
 
+# --- whitespace-only send/reply (predicate-only; stored body unchanged) ---
+: > "$ringlog"
+assert_ws_send_refused() {
+  local label="$1" payload="$2" sout src
+  set +e
+  sout="$(printf '%s' "$payload" | lb alpha send beta info "ws-$label" 2>&1)"
+  src=$?
+  set -e
+  [[ $src -ne 0 ]] || fail "whitespace send ($label) accepted"
+  echo "$sout" | grep -q 'empty message body' || fail "whitespace send ($label) missing refusal: $sout"
+  if find "$box/beta/inbox" -name "*ws-$label*" -print -quit | grep -q .; then
+    fail "whitespace send ($label) published a letter"
+  fi
+  [[ ! -s "$ringlog" ]] || fail "whitespace send ($label) rang doorbell"
+}
+
+assert_ws_send_refused spaces "   "
+assert_ws_send_refused tabs $'\t\t'
+assert_ws_send_refused cr $'\r'
+assert_ws_send_refused lf $'\n\n'
+pass "whitespace-only send refuses (spaces/tabs/CR/LF; no publication, no ring)"
+
+printf 'please do y\n' | lb beta send alpha request needs-ws-reply --ack >/dev/null
+shopt -s nullglob
+wreq=("$box/alpha/inbox/"*needs-ws-reply*.md)
+shopt -u nullglob
+[[ ${#wreq[@]} -eq 1 ]] || fail "setup ws-request count ${#wreq[@]}"
+wreq_id="$(awk -F': ' '$1 == "id" { print $2; exit }' "${wreq[0]}")"
+src_copy="$(mktemp "$box/srccopy.XXXXXX")"
+cp "${wreq[0]}" "$src_copy"
+set +e
+wrout="$(printf ' \t \n' | lb alpha reply "$wreq_id" ack ws-ack 2>&1)"
+wrrc=$?
+set -e
+[[ $wrrc -ne 0 ]] || fail "whitespace reply accepted"
+echo "$wrout" | grep -q 'empty reply body' || fail "whitespace reply missing refusal: $wrout"
+cmp -s "$src_copy" "${wreq[0]}" || fail "whitespace reply mutated the source letter"
+[[ -f "${wreq[0]}" ]] || fail "whitespace reply closed the letter"
+if find "$box" -name '*.lifecycle.lock' -print -quit | grep -q .; then
+  fail "whitespace reply left a lifecycle lock"
+fi
+if find "$box/beta/inbox" -name '*ws-ack*' -print -quit | grep -q .; then
+  fail "whitespace reply published"
+fi
+[[ ! -s "$ringlog" ]] || fail "whitespace reply rang doorbell"
+pass "whitespace-only reply refuses (no closure, no lock, source unchanged, no ring)"
+
+printf '  hello  \n' | lb alpha send beta info keep-ws >/dev/null
+shopt -s nullglob
+kept=("$box/beta/inbox/"*keep-ws*.md)
+shopt -u nullglob
+[[ ${#kept[@]} -eq 1 ]] || fail "keep-ws count ${#kept[@]}"
+# Surrounding spaces survive; trailing newline is stripped as before.
+python3 -c "
+import pathlib, sys
+text = pathlib.Path(sys.argv[1]).read_text()
+body = text.split('---', 2)[-1].lstrip('\n')
+assert body == '  hello  \n', repr(body)
+" "${kept[0]}" || fail "keep-ws body not preserved"
+pass "nonblank body with surrounding whitespace is preserved"
+
 echo "cli-maintenance: PASS"

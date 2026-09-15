@@ -576,7 +576,8 @@ cmd_send() {
   local body
   if ! IFS= read -r -d '' body < <(cat; printf '\0'); then die 'cannot read message body'; fi
   body="$(printf '%s' "$body")"
-  [[ -n "$body" ]] || die 'empty message body; pipe the body via stdin (letterbox send <to> <type> <slug> [--now])'
+  # Predicate-only: refuse empty and whitespace-only; do not alter stored body.
+  [[ -n "${body//[[:space:]]/}" ]] || die 'empty message body; pipe the body via stdin (letterbox send <to> <type> <slug> [--now])'
   local final; final="$(publish_message "$to" "$type" "$slug" "$priority" "$requires_ack" "$re" "$deadline" "$body" "$thread")"
   printf 'sent: %s\n' "$final"
   [[ "$priority" == now ]] && ring_doorbell "$to" "$type" "$(frontmatter_value "$final" id)"
@@ -785,7 +786,8 @@ cmd_reply() {
   local body
   if ! IFS= read -r -d '' body < <(cat; printf '\0'); then die 'cannot read reply body'; fi
   body="$(printf '%s' "$body")"
-  [[ -n "$body" ]] || die 'empty reply body; pipe the reply body via stdin (letterbox reply <id> <ack|nack|result> <slug> [--now])'
+  # Predicate-only: refuse empty and whitespace-only; do not alter stored body.
+  [[ -n "${body//[[:space:]]/}" ]] || die 'empty reply body; pipe the reply body via stdin (letterbox reply <id> <ack|nack|result> <slug> [--now])'
   acquire_lifecycle_lock "$msg"
   trap 'release_lifecycle_lock' EXIT
   if [[ ! -f "$msg" ]]; then

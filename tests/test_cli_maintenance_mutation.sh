@@ -54,10 +54,17 @@ if token == src:
     raise SystemExit("token dispatch mutation did not apply")
 (work / "letterbox.notoken").write_text(token)
 (work / "letterbox.notoken").chmod(0o755)
+
+ws = src.replace('[[ -n "${body//[[:space:]]/}" ]]', '[[ -n "$body" ]]')
+if ws == src:
+    raise SystemExit("whitespace-guard mutation did not apply")
+(work / "letterbox.nows").write_text(ws)
+(work / "letterbox.nows").chmod(0o755)
 PY
 
 run_mut "strip-stdin-hint" "$work/letterbox.nohint" "empty message body"
 run_mut "strip-token-dispatch" "$work/letterbox.notoken" "cmd_token"
+run_mut "strip-whitespace-guard" "$work/letterbox.nows" '[[ -n "${body//[[:space:]]/}" ]]'
 
 if [[ "$fails" -ne 0 ]]; then
   echo "cli-maintenance mutation: FAIL ($fails)" >&2
