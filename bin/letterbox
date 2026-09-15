@@ -168,14 +168,14 @@ iso_to_epoch() { # $1=compact YYYY-mm-ddTHHMMSS or ISO Z
   python3 -c 'import datetime,sys; t=sys.argv[1]; print(int(datetime.datetime.strptime(t,"%Y-%m-%dT%H%M%S").replace(tzinfo=datetime.timezone.utc).timestamp()))' "$compact" 2>/dev/null
 }
 # Capture a mtime probe. GNU `stat -f` is filesystem mode and can exit 0
-# while printing "  File: …"; only a whole-line unsigned integer is an epoch.
+# while printing "  File: …". Nonzero exit discards stdout. Remaining
+# captured text (command substitution already drops trailing newlines)
+# must be canonical decimal: optional minus, then 0 or a leading-nonzero
+# integer, so $(( )) never treats 08 as octal. No first-line chop.
 mtime_epoch_probe() {
   local out
   out="$("$@" 2>/dev/null)" || return 1
-  out="${out%%$'\n'*}"
-  out="${out#"${out%%[![:space:]]*}"}"
-  out="${out%"${out##*[![:space:]]}"}"
-  [[ "$out" =~ ^[0-9]+$ ]] || return 1
+  [[ "$out" =~ ^-?(0|[1-9][0-9]*)$ ]] || return 1
   printf '%s\n' "$out"
 }
 
