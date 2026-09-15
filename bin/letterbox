@@ -167,14 +167,32 @@ iso_to_epoch() { # $1=compact YYYY-mm-ddTHHMMSS or ISO Z
   date -u -d "${compact:0:4}-${compact:5:2}-${compact:8:2} ${compact:11:2}:${compact:13:2}:${compact:15:2} UTC" +%s 2>/dev/null && return 0
   python3 -c 'import datetime,sys; t=sys.argv[1]; print(int(datetime.datetime.strptime(t,"%Y-%m-%dT%H%M%S").replace(tzinfo=datetime.timezone.utc).timestamp()))' "$compact" 2>/dev/null
 }
+# Capture a mtime probe. GNU `stat -f` is filesystem mode and can exit 0
+# while printing "  File: …"; only a whole-line unsigned integer is an epoch.
+mtime_epoch_probe() {
+  local out
+  out="$("$@" 2>/dev/null)" || return 1
+  out="${out%%$'\n'*}"
+  out="${out#"${out%%[![:space:]]*}"}"
+  out="${out%"${out##*[![:space:]]}"}"
+  [[ "$out" =~ ^[0-9]+$ ]] || return 1
+  printf '%s\n' "$out"
+}
+
 letter_epoch() {
-  local id="$1" file="${2:-}"
+  local id="$1" file="${2:-}" ep
   if [[ "$id" =~ ^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}) ]]; then
     iso_to_epoch "${BASH_REMATCH[1]}" && return 0
   fi
   if [[ -n "$file" && -f "$file" ]]; then
-    stat -f %m "$file" 2>/dev/null && return 0
-    stat -c %Y "$file" 2>/dev/null && return 0
+    if ep="$(mtime_epoch_probe stat -f %m "$file")"; then
+      printf '%s\n' "$ep"
+      return 0
+    fi
+    if ep="$(mtime_epoch_probe stat -c %Y "$file")"; then
+      printf '%s\n' "$ep"
+      return 0
+    fi
   fi
   date -u +%s
 }

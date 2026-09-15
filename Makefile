@@ -21,6 +21,7 @@ test:
 	./tests/test_cli_maintenance.sh
 	./tests/test_cli_maintenance_mutation.sh
 	./tests/test_two_fence_parser.sh
+	./tests/test_letter_epoch_stat.sh
 	./tests/test_no_private_data.sh
 	./tests/test_no_private_vocabulary.sh
 	./tests/test_no_private_vocabulary_mutation.sh

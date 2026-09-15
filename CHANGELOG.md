@@ -15,6 +15,8 @@ Fixed
   CR, LF) with a usage hint naming how to supply one on stdin. Non-blank
   bodies keep their surrounding whitespace; the emptiness check does not
   rewrite the stored body.
+- `letter_epoch` uses a mtime probe only when it prints a numeric epoch, so
+  GNU `stat -f` filesystem text cannot leak into `check` arithmetic.
 - User-facing token output says to dismiss the bell.
 
 Added
