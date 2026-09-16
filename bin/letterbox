@@ -261,15 +261,22 @@ frontmatter_value() {
 }
 
 message_body() {
-  # Body after the closing ---. No closing fence → fail closed.
+  # Opening --- plus its closing ---; further --- lines are body.
   awk '
     {
       line = $0
       sub(/\r$/, "", line)
+      lines[NR] = line
     }
-    line == "---" { seen++; next }
-    seen >= 2 { print }
-    END { if (seen < 2) exit 1 }
+    END {
+      if (NR < 1 || lines[1] != "---") exit 1
+      close_at = 0
+      for (i = 2; i <= NR; i++) {
+        if (lines[i] == "---") { close_at = i; break }
+      }
+      if (close_at == 0) exit 1
+      for (i = close_at + 1; i <= NR; i++) print lines[i]
+    }
   ' "$1"
 }
 

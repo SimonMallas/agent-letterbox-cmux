@@ -1,3 +1,9 @@
+## v0.3.5 — 2026-09-16 (cmux edition)
+
+`message_body` keeps `---` lines after the envelope close, so an identical
+ACK retry with a fenced body matches the stored letter. A different body
+still collides.
+
 ## v0.3.4 — 2026-09-15 (cmux edition)
 
 Maintenance rollup of commits already on public main since v0.3.3, plus a
