@@ -1,0 +1,22 @@
+# line	outcome	reason	target
+doorbell-outcome v=1 outcome=submitted reason=- target=surface:1	submitted	-	surface:1
+doorbell-outcome v=1 outcome=submitted reason=- target=%1	submitted	-	%1
+doorbell-outcome v=1 outcome=submitted reason=- target=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee	submitted	-	aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=enter_failed target=surface:1	pasted_not_submitted	enter_failed	surface:1
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=enter_failed target=%1	pasted_not_submitted	enter_failed	%1
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=enter_failed target=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee	pasted_not_submitted	enter_failed	aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=- target=surface:1	pasted_not_submitted	-	surface:1
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=- target=%1	pasted_not_submitted	-	%1
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=- target=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee	pasted_not_submitted	-	aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+doorbell-outcome v=1 outcome=no_live_surface reason=unknown_participant target=-	no_live_surface	unknown_participant	-
+doorbell-outcome v=1 outcome=no_live_surface reason=adapter_unavailable target=-	no_live_surface	adapter_unavailable	-
+doorbell-outcome v=1 outcome=no_live_surface reason=surface_not_found target=-	no_live_surface	surface_not_found	-
+doorbell-outcome v=1 outcome=no_live_surface reason=identity_mismatch target=-	no_live_surface	identity_mismatch	-
+doorbell-outcome v=1 outcome=no_live_surface reason=send_failed target=-	no_live_surface	send_failed	-
+doorbell-outcome v=1 outcome=no_live_surface reason=helper_timeout target=-	no_live_surface	helper_timeout	-
+doorbell-outcome v=1 outcome=no_live_surface reason=restore_window target=-	no_live_surface	restore_window	-
+doorbell-outcome v=1 outcome=no_live_surface reason=pid_dead target=-	no_live_surface	pid_dead	-
+doorbell-outcome v=1 outcome=no_live_surface reason=notify_only target=-	no_live_surface	notify_only	-
+doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-	no_live_surface	unconfirmed	-
+doorbell-outcome v=1 outcome=no_live_surface reason=future_token target=-	no_live_surface	future_token	-
+doorbell-outcome v=1 outcome=submitted reason=- target=%12	submitted	-	%12

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Mutation: the doorbell-docs drift gate must fail when the adapter is gone,
-# when the token moves ahead of the tail, and when the short README shape is
-# planted in README / SPEC / SKILL. Inner output is [mut]-prefixed.
+# when the token moves ahead of the tail, when the adapter emits a from-dash
+# sender, and when the short README shape is planted in README / SPEC / SKILL.
+# Inner output is [mut]-prefixed.
 # Clean-tree PASS is required or the plants prove nothing.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -55,34 +56,20 @@ plat = sys.argv[2]
 t = p.read_text()
 pairs = {
     "cmux": (
-        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/ — please check"\n'
-        'if [[ "$token" =~ ^[0-9a-f]{8}$ ]]; then\n'
-        '  line="$line · $token"\n'
-        'fi',
-        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/"\n'
-        'if [[ "$token" =~ ^[0-9a-f]{8}$ ]]; then\n'
-        '  line="$line · $token"\n'
-        'fi\n'
-        'line="$line — please check"',
+        'line="$line · $token"',
+        'line="${line% — please check} · $token — please check"',
     ),
     "tmux": (
-        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/ — please check"\n'
-        '[ -n "$tok" ] && line="$line · $tok"',
-        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/"\n'
-        '[ -n "$tok" ] && line="$line · $tok"\n'
-        'line="$line — please check"',
+        'line="$line · $tok"',
+        'line="${line% — please check} · $tok — please check"',
     ),
     "herdr": (
-        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/ — please check"\n'
-        '# Additive v0.3 token suffix; the token is opaque (never slug/body/path).\n'
-        '[[ "$token" =~ ^[0-9a-f]{8}$ ]] && line="$line · $token"',
-        'line="📬 letterbox doorbell: unacked $type in ${LETTERBOX_DIR:?set LETTERBOX_DIR}/$to/inbox/"\n'
-        '[[ "$token" =~ ^[0-9a-f]{8}$ ]] && line="$line · $token"\n'
-        'line="$line — please check"',
+        'line="$line · $token"',
+        'line="${line% — please check} · $token — please check"',
     ),
     "zellij": (
-        '  line="${prefix}${type} in ${root}/${to}/inbox/${tail} · ${tok}"',
-        '  line="${prefix}${type} in ${root}/${to}/inbox/ · ${tok}${tail}"',
+        'line="${line} · ${tok}"',
+        'line="${line% — please check} · ${tok} — please check"',
     ),
 }
 old, new = pairs[plat]
@@ -100,6 +87,38 @@ then
   fi
 else
   echo "FAIL: [mut] token-ahead mutation did not apply" >&2
+  fails=$((fails + 1))
+fi
+cp "$root/$adpt" "$tmp/repo/$adpt"
+
+echo "[mut] --- emit a from-dash sender ---"
+if python3 - "$tmp/repo/$adpt" "$plat" <<'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1])
+plat = sys.argv[2]
+t = p.read_text()
+pairs = {
+    "cmux": (' from $from in ', ' from - in '),
+    "tmux": (' from $line_from in ', ' from - in '),
+    "herdr": (' from $line_from in ', ' from - in '),
+    "zellij": (' from ${line_from} in ', ' from - in '),
+}
+old, new = pairs[plat]
+if old not in t:
+    raise SystemExit(3)
+p.write_text(t.replace(old, new, 1))
+PY
+then
+  run_gate
+  if [[ "$LAST_RC" -eq 0 ]]; then
+    echo "FAIL: [mut] gate passed with a from-dash sender emitted" >&2
+    fails=$((fails + 1))
+  else
+    echo "PASS: [mut] from-dash sender fails the gate"
+  fi
+else
+  echo "FAIL: [mut] from-dash mutation did not apply" >&2
   fails=$((fails + 1))
 fi
 cp "$root/$adpt" "$tmp/repo/$adpt"

@@ -1,0 +1,43 @@
+# line	why
+  doorbell-outcome v=1 outcome=submitted reason=- target=surface:1	leading space
+📬 letterbox doorbell: unacked info in inbox/ — please check	doorbell-line grammar, not an outcome
+📬 letterbox doorbell: unacked info in inbox/ — please check · deadbeef	doorbell-line grammar with token
+cmux notification sent for agent; set LETTERBOX_CMUX_SUBMIT=1 to inject the doorbell	notify-only is not submitted; emit notify_only
+doorbell submitted	bare substring
+doorbell-outcome  v=1 outcome=submitted reason=- target=surface:1	double space after prefix
+doorbell-outcome v=1 outcome=delivered reason=- target=surface:1	unknown outcome
+doorbell-outcome v=1 outcome=submitted reason=-	missing target
+DOORBELL-OUTCOME v=1 outcome=submitted reason=- target=surface:1	wrong case
+doorbell-outcome v=1 outcome=submitted reason=- target=surface:1 extra=1	v=1 closed
+doorbell-outcome v=1 outcome=submitted reason=- target=surface:1; rm -rf /	illegal value charset
+doorbell-outcome v=1 outcome=submitted reason=because it worked target=surface:1	space in value
+doorbell-outcome v=2 outcome=submitted reason=- target=surface:1	unknown version
+herdr doorbell deferred: herdr is unavailable	legacy prose, not in the three outcomes
+letterbox: doorbell no_live_surface surface_not_found timeout=3s for agent	legacy; timeout= is config
+letterbox: doorbell submitted to agent on surface:1	legacy prose
+tmux doorbell submitted to agent on %1	legacy prose
+doorbell-outcome v=1 outcome=submitted reason=- target=-	submitted requires target != -
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=enter_failed target=-	pasted_not_submitted requires target != -
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=- target=-	pasted_not_submitted requires target != -
+doorbell-outcome v=1 outcome=no_live_surface reason=unknown_participant target=surface:1	no_live_surface requires target=-
+doorbell-outcome v=1 outcome=no_live_surface reason=adapter_unavailable target=surface:1	no_live_surface requires target=-
+doorbell-outcome v=1 outcome=no_live_surface reason=surface_not_found target=surface:1	no_live_surface requires target=-
+doorbell-outcome v=1 outcome=no_live_surface reason=identity_mismatch target=surface:1	no_live_surface requires target=-
+doorbell-outcome v=1 outcome=no_live_surface reason=send_failed target=surface:1	no_live_surface requires target=-
+doorbell-outcome v=1 outcome=no_live_surface reason=helper_timeout target=surface:1	no_live_surface requires target=-
+doorbell-outcome v=1 outcome=no_live_surface reason=restore_window target=surface:1	no_live_surface requires target=-
+doorbell-outcome v=1 outcome=no_live_surface reason=pid_dead target=surface:1	no_live_surface requires target=-
+doorbell-outcome v=1 outcome=no_live_surface reason=notify_only target=surface:1	no_live_surface requires target=-
+doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=surface:1	no_live_surface requires target=-
+doorbell-outcome v=1 outcome=no_live_surface reason=- target=-	no_live_surface requires a named reason
+doorbell-outcome v=1 outcome=submitted reason=enter_failed target=surface:1	submitted reason must be -
+doorbell-outcome v=1 outcome=submitted reason=send_failed target=surface:1	submitted reason must be -
+doorbell-outcome v=1 outcome=submitted reason=notify_only target=surface:1	submitted reason must be -
+doorbell-outcome v=1 outcome=submitted reason=helper_timeout target=surface:1	submitted reason must be -
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=send_failed target=surface:1	pasted_not_submitted reason not in {enter_failed,-}
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=notify_only target=surface:1	pasted_not_submitted reason not in {enter_failed,-}
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=helper_timeout target=surface:1	pasted_not_submitted reason not in {enter_failed,-}
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=adapter_unavailable target=surface:1	pasted_not_submitted reason not in {enter_failed,-}
+doorbell-outcome v=1 outcome=submitted reason=- target=%	% alone is not a pane id (rev3 boundary)
+doorbell-outcome v=1 outcome=submitted reason=- target=%1%	stray % (rev3 boundary)
+doorbell-outcome v=1 outcome=no_live_surface reason=%1 target=-	% is for targets, not reasons (rev3 boundary)

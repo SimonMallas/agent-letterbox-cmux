@@ -1,0 +1,20 @@
+# stdout_escaped	stderr_escaped	exit	expected	retry	note
+log: starting\ndoorbell-outcome v=1 outcome=submitted reason=- target=surface:1\ndone		0	submitted	no	noisy stdout around one line
+doorbell-outcome v=1 outcome=submitted reason=- target=surface:1\ndoorbell-outcome v=1 outcome=submitted reason=- target=surface:1		0	unparseable	no	duplicate identical stdout lines
+doorbell-outcome v=1 outcome=submitted reason=- target=surface:1\ndoorbell-outcome v=1 outcome=no_live_surface reason=send_failed target=-		0	unparseable	no	duplicate conflicting stdout lines
+	doorbell-outcome v=1 outcome=submitted reason=- target=surface:1	0	unparseable	no	contract-looking stderr, empty stdout
+doorbell-outcome v=1 outcome=submitted reason=- target=surface:1	doorbell-outcome v=1 outcome=no_live_surface reason=send_failed target=-	0	submitted	no	stderr bait ignored; stdout wins
+letterbox: doorbell submitted to agent on surface:1		0	unparseable	no	legacy public prose on stdout is not a contract line
+doorbell-outcome v=1 outcome=submitted reason=- target=surface:1		1	unconfirmed	no	valid submitted line then nonzero exit
+doorbell-outcome v=1 outcome=submitted reason=- target=surface:1		timeout	unconfirmed	no	valid submitted line then caller timeout
+doorbell-outcome v=1 outcome=no_live_surface reason=helper_timeout target=-		0	helper_timeout	yes	pre-inject timeout; retryable
+doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-		timeout	unconfirmed	no	timeout after inject started
+doorbell-outcome v=1 outcome=no_live_surface reason=future_token target=-		0	future_token	no	unknown charset-legal reason; record, no retry
+		timeout	unconfirmed	no	empty stdout, caller timeout
+doorbell-outcome v=1 outcome=no_live_surface reason=notify_only target=-		0	notify_only	no	notify-without-inject
+doorbell-outcome v=1 outc		timeout	unconfirmed	no	partial contract stdout + caller timeout
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=enter_failed target=surface:1		0	pasted_not_submitted	no	enter reported fail
+doorbell-outcome v=1 outcome=pasted_not_submitted reason=enter_failed target=surface:1		1	unconfirmed	no	pasted line then nonzero
+doorbell-outcome v=1 outcome=no_live_surface reason=send_failed target=-		0	send_failed	no	text send reported fail
+doorbell-outcome v=1 outcome=no_live_surface reason=adapter_unavailable target=-		0	adapter_unavailable	no	adapter missing as a line
+		0	unparseable	no	silent exit 0 with no contract line

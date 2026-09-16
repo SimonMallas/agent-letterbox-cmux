@@ -1,0 +1,10 @@
+# line	why
+doorbell-outcome v=1 outcome=submitted reason=- target=surface:1	outcome grammar, not a doorbell line
+📬 letterbox doorbell: unacked result from agent/../etc in inbox/ — please check	path-shaped sender
+📬 letterbox doorbell: unacked result from agent:1 in inbox/ — please check	colon in sender
+📬 letterbox doorbell: unacked result from  in inbox/ — please check	empty sender
+📬 letterbox doorbell: unacked result from agent name in inbox/ — please check	space in sender
+📬 letterbox doorbell: unacked result from agent\nin inbox/ — please check	control character
+📬 letterbox doorbell: unacked result from - in inbox/ — please check	placeholder is not a sender
+📬 letterbox doorbell: unacked result from 1agent in inbox/ — please check	must start with a letter
+letterbox: doorbell submitted to agent on surface:1	outcome prose, not a doorbell line

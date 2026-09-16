@@ -50,6 +50,20 @@ doorbell_token_for_id() {
   fi
   printf '%s' "$id" | shasum -a 256 | awk '{print substr($1,1,8)}'
 }
+
+# Ruling 5: the typed line may name the durable letter's sender. Resolve from
+# the exact letter the wrapper was asked to ring — never ME/LETTERBOX_AGENT.
+# Prints the sender only when it passes the safe-identifier regex; else nothing
+# (the clause is omitted, never emitted as "from -").
+doorbell_from_for_id() { # $1=to $2=id
+  local to="$1" id="$2" letter from
+  letter="$(inbox_path "$to")/$id.md"
+  [[ -f "$letter" ]] || return 0
+  from="$(frontmatter_value "$letter" from 2>/dev/null || true)"
+  if [[ "$from" =~ ^[A-Za-z][A-Za-z0-9._-]{0,31}$ ]]; then
+    printf '%s\n' "$from"
+  fi
+}
 display_id() {
   local id="$1" ts="unknown"
   if [[ "$id" =~ ^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}) ]]; then
@@ -75,25 +89,50 @@ confirm_label() {
 # Public doorbell grammar. Prefix/pattern only; exact full-line equality is a cutover BLOCK.
 V02_DOORBELL_PREFIX="📬 letterbox doorbell: unacked "
 V02_DOORBELL_TAIL=" — please check"
-format_doorbell_line() { # $1=to $2=type $3=id — never slug/body/full-id
-  local to="$1" type="$2" id="$3"
-  printf '%s%s in <letterbox>/%s/inbox/%s · %s\n' \
-    "$V02_DOORBELL_PREFIX" "$type" "$to" "$V02_DOORBELL_TAIL" "$(doorbell_token_for_id "$id")"
+DOORBELL_SENDER_RE='^[A-Za-z][A-Za-z0-9._-]{0,31}$'
+format_doorbell_line() { # $1=to $2=type $3=id [$4=from] — never slug/body/full-id
+  local to="$1" type="$2" id="$3" from="${4:-}"
+  if [[ "$from" =~ $DOORBELL_SENDER_RE ]]; then
+    printf '%s%s from %s in <letterbox>/%s/inbox/%s · %s\n' \
+      "$V02_DOORBELL_PREFIX" "$type" "$from" "$to" "$V02_DOORBELL_TAIL" "$(doorbell_token_for_id "$id")"
+  else
+    printf '%s%s in <letterbox>/%s/inbox/%s · %s\n' \
+      "$V02_DOORBELL_PREFIX" "$type" "$to" "$V02_DOORBELL_TAIL" "$(doorbell_token_for_id "$id")"
+  fi
 }
-parse_doorbell_line() { # $1=line → v02 | v03 <token> | reject
-  local line="$1" rest tok
+parse_doorbell_line() { # $1=line → v02 | v03 <token> | v04 <sender> [token] | reject
+  local line="$1" body rest tok="" middle type sender=""
   case "$line" in
-    "$V02_DOORBELL_PREFIX"*"$V02_DOORBELL_TAIL") printf 'v02\n'; return 0;;
+    "$V02_DOORBELL_PREFIX"*"$V02_DOORBELL_TAIL")
+      body="${line%"$V02_DOORBELL_TAIL"}";;
     "$V02_DOORBELL_PREFIX"*"$V02_DOORBELL_TAIL · "*)
       rest="${line#*"$V02_DOORBELL_TAIL · "}"
       tok="${rest%%$'\n'*}"
-      if [[ "$tok" =~ ^[0-9a-f]{8}$ ]]; then
-        printf 'v03 %s\n' "$tok"
-        return 0
-      fi
-      ;;
+      [[ "$tok" =~ ^[0-9a-f]{8}$ ]] || return 1
+      body="${line%"$V02_DOORBELL_TAIL · "*}";;
+    *) return 1;;
   esac
-  return 1
+  middle="${body#"$V02_DOORBELL_PREFIX"}"
+  if [[ "$middle" == *" from "* ]]; then
+    # v04 middle insert: <type> from <sender> in <inbox>. A bad sender clause
+    # rejects the whole line — it is never silently treated as v02.
+    type="${middle%%" from "*}"
+    rest="${middle#*" from "}"
+    [[ "$rest" == *" in "* ]] || return 1
+    sender="${rest%%" in "*}"
+    [[ -n "$type" ]] || return 1
+    [[ "$sender" =~ $DOORBELL_SENDER_RE ]] || return 1
+    if [[ -n "$tok" ]]; then
+      printf 'v04 %s %s\n' "$sender" "$tok"
+    else
+      printf 'v04 %s\n' "$sender"
+    fi
+  elif [[ -n "$tok" ]]; then
+    printf 'v03 %s\n' "$tok"
+  else
+    printf 'v02\n'
+  fi
+  return 0
 }
 message_arg_is_path() { [[ -f "$1" ]]; }
 
@@ -453,10 +492,106 @@ cmd_init() {
 
 ring_doorbell() {
   local to="$1" type="$2" id_or_slug="$3" token
-  [[ -n "${LETTERBOX_DOORBELL:-}" ]] || return 0
-  [[ -x "$LETTERBOX_DOORBELL" ]] || die "doorbell is not executable: $LETTERBOX_DOORBELL"
+  # The wrapper is the SOLE stdout owner for doorbell-outcome v=1: the
+  # adapter's stdout is a private pipe (captured, never forwarded raw), and
+  # exactly one contract line is emitted here.
+  if [[ -z "${LETTERBOX_DOORBELL:-}" ]]; then
+    emit_outcome no_live_surface adapter_unavailable -
+    return 0
+  fi
+  if [[ ! -x "$LETTERBOX_DOORBELL" ]]; then
+    emit_outcome no_live_surface adapter_unavailable -
+    return 0
+  fi
   token="$(doorbell_token_for_id "$id_or_slug")"
-  "$LETTERBOX_DOORBELL" "$to" "$type" "$token"
+  local from
+  from="$(doorbell_from_for_id "$to" "$id_or_slug")"
+  local child_out child_rc=0
+  child_out="$(LETTERBOX_DOORBELL_FROM="$from" "$LETTERBOX_DOORBELL" "$to" "$type" "$token")" || child_rc=$?
+  report_doorbell_outcome "$child_out" "$child_rc"
+  return 0
+}
+
+# doorbell-outcome v=1: exactly one line, validated before printing.
+# outcome ∈ {submitted, pasted_not_submitted, no_live_surface}; reason/target
+# cross-checked per the contract (no_live_surface always target=-; submitted
+# and pasted always target=<pinned pane>, reason=- or enter_failed|-).
+emit_outcome() { # $1=outcome $2=reason $3=target
+  local outcome="$1" reason="$2" target="$3"
+  case "$outcome" in
+    submitted)
+      [[ "$reason" == "-" && "$target" != "-" ]] || return 1
+      [[ "$target" =~ ^[A-Za-z0-9._:+-]+$ || "$target" =~ ^%[0-9]+$ ]] || return 1
+      ;;
+    pasted_not_submitted)
+      case "$reason" in enter_failed|-) ;; *) return 1;; esac
+      [[ "$target" != "-" ]] || return 1
+      [[ "$target" =~ ^[A-Za-z0-9._:+-]+$ || "$target" =~ ^%[0-9]+$ ]] || return 1
+      ;;
+    no_live_surface)
+      [[ "$reason" != "-" && "$reason" =~ ^[A-Za-z0-9._:+-]+$ ]] || return 1
+      [[ "$target" == "-" ]] || return 1
+      ;;
+    *) return 1;;
+  esac
+  printf 'doorbell-outcome v=1 outcome=%s reason=%s target=%s\n' \
+    "$outcome" "$reason" "$target"
+}
+
+# A full contract line: exact prefix, exactly four key=value tokens in v=1
+# order, and cross-field validity. Prints nothing; 0 valid / 1 not.
+valid_contract_line() { # $1=line
+  local line="$1"
+  [[ "$line" =~ ^doorbell-outcome\ v=1\ outcome=([A-Za-z0-9._:%+-]+)\ reason=([A-Za-z0-9._:%+-]+|-)\ target=([A-Za-z0-9._:%+-]+|-)$ ]] || return 1
+  local o="${BASH_REMATCH[1]}" r="${BASH_REMATCH[2]}" t="${BASH_REMATCH[3]}"
+  # Field rules identical to emit_outcome: % only ever leads a %<digits>
+  # target pane id; reasons never contain %.
+  case "$o" in
+    submitted)
+      [[ "$r" == "-" && "$t" != "-" ]] || return 1
+      [[ "$t" =~ ^[A-Za-z0-9._:+-]+$ || "$t" =~ ^%[0-9]+$ ]] || return 1
+      ;;
+    pasted_not_submitted)
+      case "$r" in enter_failed|-) ;; *) return 1;; esac
+      [[ "$t" != "-" ]] || return 1
+      [[ "$t" =~ ^[A-Za-z0-9._:+-]+$ || "$t" =~ ^%[0-9]+$ ]] || return 1
+      ;;
+    no_live_surface)
+      [[ "$r" != "-" && "$r" =~ ^[A-Za-z0-9._:+-]+$ ]] || return 1
+      [[ "$t" == "-" ]] || return 1
+      ;;
+    *) return 1;;
+  esac
+  return 0
+}
+
+# Sole-emission classifier: the child produced stdout (captured) and an exit
+# code; the wrapper emits exactly one line.
+report_doorbell_outcome() { # $1=child stdout $2=child exit code
+  local out="$1" rc="$2" line n=0 first_valid=""
+  while IFS= read -r line; do
+    if [[ "$line" == doorbell-outcome\ * ]]; then
+      n=$((n + 1))
+      if [[ -z "$first_valid" ]] && valid_contract_line "$line"; then
+        first_valid="$line"
+      fi
+    fi
+  done <<< "$out"
+  if (( n == 1 )) && [[ -n "$first_valid" ]]; then
+    # Exactly one contract line and it validates: forward through the
+    # validator — the wrapper re-prints, the child never owns stdout.
+    local o r t
+    o="$(printf '%s' "$first_valid" | sed -E 's/.*outcome=([^ ]+).*/\1/')"
+    r="$(printf '%s' "$first_valid" | sed -E 's/.*reason=([^ ]+).*/\1/')"
+    t="$(printf '%s' "$first_valid" | sed -E 's/.*target=(.*)$/\1/')"
+    emit_outcome "$o" "$r" "$t"
+    return 0
+  fi
+  # Zero valid lines, or two or more contract-looking lines: never forward;
+  # report the honest state (the consumer's unparseable verdict is its own,
+  # not ours to emit). Injection cannot be established from a silent,
+  # timed-out, or failed child — never from its prose.
+  emit_outcome no_live_surface unconfirmed -
 }
 
 publish_message() { # to type slug priority requires_ack re deadline body [thread]
@@ -920,7 +1055,7 @@ cmd_nudge() {
 cmd_doorbell_line() {
   local to="${1:?usage: letterbox doorbell-line <to> <type> <id>}"
   local type="${2:?missing type}" id="${3:?missing id}"
-  format_doorbell_line "$to" "$type" "$id"
+  format_doorbell_line "$to" "$type" "$id" "$(doorbell_from_for_id "$to" "$id")"
 }
 cmd_doorbell_parse() {
   local line="${1:-}"

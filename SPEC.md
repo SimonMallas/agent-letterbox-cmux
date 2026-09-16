@@ -9,9 +9,13 @@ Prefix/pattern matching only. Exact full-line equality is a cutover **BLOCK**.
 ```text
 📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check
 📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check · <8hex>
+📬 letterbox doorbell: unacked <type> from <sender> in <letterbox>/<agent>/inbox/ — please check
+📬 letterbox doorbell: unacked <type> from <sender> in <letterbox>/<agent>/inbox/ — please check · <8hex>
 ```
 
 The optional ` · <8hex>` is additive. The token is never a slug, body, path, or secret. `submitted` / `pasted_not_submitted` / `no_live_surface` are ring outcomes, not proof of read.
+
+The optional ` from <sender>` middle insert names the durable letter's sender (`^[A-Za-z][A-Za-z0-9._-]{0,31}$`). A malformed ` from ` clause rejects the line; it is never re-accepted as the no-sender shape.
 
 ## Principle
 
@@ -184,6 +188,8 @@ Letters are durable without a ring; the bell is how anyone is told. Without a be
 ```text
 📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check
 📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check · <8hex>
+📬 letterbox doorbell: unacked <type> from <sender> in <letterbox>/<agent>/inbox/ — please check
+📬 letterbox doorbell: unacked <type> from <sender> in <letterbox>/<agent>/inbox/ — please check · <8hex>
 ```
 
 Rules:

@@ -1,0 +1,6 @@
+# line	shape	note
+📬 letterbox doorbell: unacked info in inbox/ — please check	v02	old shape still accepted on the receiver
+📬 letterbox doorbell: unacked info in inbox/ — please check · deadbeef	v03	old token suffix
+📬 letterbox doorbell: unacked result from agent in inbox/ — please check	v04	sender clause, no token
+📬 letterbox doorbell: unacked result from agent in inbox/ — please check · deadbeef	v04	sender clause plus token
+📬 letterbox doorbell: unacked delegate from agent-2 in inbox/ — please check · abcdef01	v04	hyphen in safe sender

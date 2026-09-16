@@ -21,12 +21,15 @@ Accept **both** public shapes (prefix/pattern only — **never** require exact f
 ```text
 📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check
 📬 letterbox doorbell: unacked <type> in <letterbox>/<agent>/inbox/ — please check · <8-lowercase-hex>
+📬 letterbox doorbell: unacked <type> from <sender> in <letterbox>/<agent>/inbox/ — please check
+📬 letterbox doorbell: unacked <type> from <sender> in <letterbox>/<agent>/inbox/ — please check · <8-lowercase-hex>
 ```
 
 - MUST start with `📬 letterbox doorbell: unacked `
 - MUST contain ` — please check`
 - OPTIONAL suffix: ` · ` + exactly `[0-9a-f]{8}`
 - Reject a suffix that is present but not 8 lowercase hex
+- OPTIONAL middle insert ` from <sender>`: `<sender>` MUST match `^[A-Za-z][A-Za-z0-9._-]{0,31}$`; a ` from ` clause with any other value rejects the line (never re-accept it as the no-sender shape)
 - **Exact full-line equality is a cutover BLOCK** (silently drops the other shape)
 - Public grammar only: `<letterbox>/<agent>/inbox/` — no private host paths
 - Token is opaque 8-hex — never slug, body, path, secret, or full id
