@@ -140,4 +140,34 @@ set -e
 echo "$ack3" | grep -q 'reply collision has different body' || { echo "FAIL: changed-body missing collision: $ack3" >&2; exit 1; }
 printf '%s\n' 'PASS'
 
+printf '%s\n' '=== CRLF body identical ACK retry preserves raw bytes ==='
+rm -f "$box/beta/inbox"/*.md "$box/alpha/inbox"/*.md
+printf 'Please review this.\n' | lb alpha send beta delegate crlf-retry --ack >/dev/null
+shopt -s nullglob
+cr=("$box/beta/inbox/"*crlf-retry*.md)
+shopt -u nullglob
+[[ ${#cr[@]} -eq 1 ]] || { echo "FAIL: crlf-retry setup count ${#cr[@]}" >&2; exit 1; }
+cr_id="$(awk -F': ' '$1 == "id" { print $2; exit }' "${cr[0]}")"
+crlf_body=$'Accepted\r\n---\r\nDetails retained\r\n'
+set +e
+c1="$(printf '%s' "$crlf_body" | lb beta reply "$cr_id" ack crlf-ack 2>&1)"
+c1rc=$?
+set -e
+[[ $c1rc -eq 0 ]] || { echo "FAIL: first CRLF ACK refused: $c1" >&2; exit 1; }
+shopt -s nullglob
+cfiles=("$box/alpha/inbox/"*"--ack.md")
+shopt -u nullglob
+[[ ${#cfiles[@]} -eq 1 ]] || { echo "FAIL: CRLF ACK not published (${#cfiles[@]})" >&2; exit 1; }
+python3 -c "
+import pathlib, sys
+data = pathlib.Path(sys.argv[1]).read_bytes()
+assert b'Accepted\r\n---\r\nDetails retained' in data, data
+" "${cfiles[0]}" || { echo "FAIL: stored ACK lost CRLF body bytes" >&2; exit 1; }
+set +e
+c2="$(printf '%s' "$crlf_body" | lb beta reply "$cr_id" ack crlf-ack 2>&1)"
+c2rc=$?
+set -e
+[[ $c2rc -eq 0 ]] || { echo "FAIL: identical CRLF ACK retry refused: $c2" >&2; exit 1; }
+printf '%s\n' 'PASS'
+
 printf '%s\n' 'two-fence parser tests: PASS'

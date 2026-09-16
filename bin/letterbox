@@ -262,8 +262,10 @@ frontmatter_value() {
 
 message_body() {
   # Opening --- plus its closing ---; further --- lines are body.
+  # Compare fences on CR-stripped lines; emit raw $0 so CRLF bodies match.
   awk '
     {
+      raw[NR] = $0
       line = $0
       sub(/\r$/, "", line)
       lines[NR] = line
@@ -275,7 +277,7 @@ message_body() {
         if (lines[i] == "---") { close_at = i; break }
       }
       if (close_at == 0) exit 1
-      for (i = close_at + 1; i <= NR; i++) print lines[i]
+      for (i = close_at + 1; i <= NR; i++) print raw[i]
     }
   ' "$1"
 }
