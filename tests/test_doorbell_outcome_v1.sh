@@ -61,6 +61,16 @@ exit 1
 SH
 chmod +x "$ROOT/garbage.sh" "$ROOT/double.sh" "$ROOT/valid-exit1.sh"
 
+# PATH farm WITH the fake cmux but WITHOUT python3: a missing runner must be
+# adapter_unavailable (non-retryable), never helper_timeout.
+mkdir -p "$ROOT/bin-nopython"
+for t in bash grep awk sed shasum od tr date mktemp ln rm cat \
+         dirname basename env sleep; do
+  src="$(command -v "$t" 2>/dev/null || true)"
+  [[ -n "$src" ]] && ln -sf "$src" "$ROOT/bin-nopython/$t"
+done
+ln -sf "$ROOT/bin/cmux" "$ROOT/bin-nopython/cmux"
+
 send_now() { # $1.. = env overrides
   env BOX="$BOX" LETTERBOX_AGENT=tester LETTERBOX_DIR="$BOX" \
     LETTERBOX_DOORBELL="$LETTERBOX_DOORBELL" LETTERBOX_CMUX_SUBMIT="$LETTERBOX_CMUX_SUBMIT" \
@@ -126,6 +136,8 @@ check "enter timeout → unconfirmed"     "CMUX_FAKE_ENTER=sleep CMUX_FAKE_SLEEP
   'doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-'
 check "notify-only (SUBMIT=0)"          "LETTERBOX_CMUX_SUBMIT=0" \
   'doorbell-outcome v=1 outcome=no_live_surface reason=notify_only target=-'
+check "missing python3 → adapter_unavailable (not helper_timeout)" "PATH=$ROOT/bin-nopython" \
+  'doorbell-outcome v=1 outcome=no_live_surface reason=adapter_unavailable target=-'
 check "wrapper: garbage child → unconfirmed" "LETTERBOX_DOORBELL=$ROOT/garbage.sh" \
   'doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-'
 check "wrapper: double line → unconfirmed" "LETTERBOX_DOORBELL=$ROOT/double.sh" \
@@ -161,4 +173,4 @@ else
 fi
 
 echo "──"
-echo "cmux edition e2e: $pass/12 PASS"
+echo "cmux edition e2e: $pass/13 PASS"

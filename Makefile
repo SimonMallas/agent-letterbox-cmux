@@ -35,5 +35,8 @@ test:
 	./tests/cmux-doorbell-safety.sh
 	./tests/test_doorbell_docs_drift.sh
 	./tests/test_doorbell_docs_drift_mutation.sh
+	./tests/test_doorbell_outcome_v1.sh
+	./tests/test_doorbell_outcome_fixtures.sh
+	./tests/test_doorbell_line_fixtures.sh
 
 ci: test
