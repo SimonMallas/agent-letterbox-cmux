@@ -615,22 +615,31 @@ report_doorbell_outcome() { # $1=child stdout $2=child exit code
       fi
     fi
   done <<< "$out"
-  if (( rc == 0 && n == 1 )) && [[ -n "$first_valid" ]]; then
-    # Exactly one contract line, it validates, and the child exited 0:
-    # forward through the validator — the wrapper re-prints, the child
-    # never owns stdout.
+  if (( n == 1 )) && [[ -n "$first_valid" ]]; then
     local o r t
     o="$(printf '%s' "$first_valid" | sed -E 's/.*outcome=([^ ]+).*/\1/')"
     r="$(printf '%s' "$first_valid" | sed -E 's/.*reason=([^ ]+).*/\1/')"
     t="$(printf '%s' "$first_valid" | sed -E 's/.*target=(.*)$/\1/')"
-    emit_outcome "$o" "$r" "$t"
-    return 0
+    if (( rc == 0 )); then
+      # Exactly one contract line, it validates, and the child exited 0:
+      # forward through the validator — the wrapper re-prints, the child
+      # never owns stdout.
+      emit_outcome "$o" "$r" "$t"
+      return 0
+    fi
+    if [[ "$o" == no_live_surface ]]; then
+      # Ruled precedence: a valid no_live_surface line keeps its named
+      # reason even on a nonzero/signal exit (helper_timeout stays
+      # retryable). Only submitted/pasted claims are downgraded by a bad
+      # exit — an unproven inject is never forwarded as claimed.
+      emit_outcome "$o" "$r" "$t"
+      return 0
+    fi
   fi
-  # Exit-status precedence: a nonzero/signal/wrapper-killed child, a success
-  # line followed by a hang, zero valid lines, or two or more
-  # contract-looking lines — never forward. Injection cannot be established
-  # from an unproven child — never from its prose. (The consumer's
-  # unparseable verdict is its own, not ours to emit.)
+  # Zero valid lines, two or more contract-looking lines, or a
+  # submitted/pasted claim after a nonzero/signal/wrapper-killed child —
+  # never forward as claimed. (The consumer's unparseable verdict is its
+  # own, not ours to emit.)
   emit_outcome no_live_surface unconfirmed -
 }
 
