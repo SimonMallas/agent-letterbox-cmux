@@ -146,6 +146,25 @@ check "notify-only (SUBMIT=0)"          "LETTERBOX_CMUX_SUBMIT=0" \
   'doorbell-outcome v=1 outcome=no_live_surface reason=notify_only target=-'
 check "missing python3 → adapter_unavailable (not helper_timeout)" "PATH=$ROOT/bin-nopython" \
   'doorbell-outcome v=1 outcome=no_live_surface reason=adapter_unavailable target=-'
+
+# Fail closed without a bounder: prompt adapter_unavailable, and the adapter
+# is NEVER invoked (invocation marker must not appear).
+cat > "$ROOT/hang-marker.sh" <<'SH'
+#!/usr/bin/env bash
+touch "${INVOKED_MARKER:?}"
+sleep 30
+SH
+chmod +x "$ROOT/hang-marker.sh"
+rm -f "$ROOT/invoked"
+out="$(send_now PATH="$ROOT/bin-nopython" LETTERBOX_DOORBELL="$ROOT/hang-marker.sh" INVOKED_MARKER="$ROOT/invoked")"
+one_line "$out"
+out="$(printf '%s\n' "$out" | grep '^doorbell-outcome ')"
+if [[ "$out" == 'doorbell-outcome v=1 outcome=no_live_surface reason=adapter_unavailable target=-' ]] \
+  && [[ ! -e "$ROOT/invoked" ]]; then
+  echo "PASS: no python3 → adapter_unavailable, adapter never invoked"; pass=$((pass+1))
+else
+  echo "FAIL: fail-closed without bounder"; echo "$out"; ls -la "$ROOT/invoked" 2>/dev/null; exit 1
+fi
 check "wrapper: garbage child → unconfirmed" "LETTERBOX_DOORBELL=$ROOT/garbage.sh" \
   'doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-'
 check "wrapper: double line → unconfirmed" "LETTERBOX_DOORBELL=$ROOT/double.sh" \
@@ -193,4 +212,4 @@ else
 fi
 
 echo "──"
-echo "cmux edition e2e: $pass/17 PASS"
+echo "cmux edition e2e: $pass/18 PASS"

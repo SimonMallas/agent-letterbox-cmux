@@ -539,11 +539,13 @@ ring_doorbell() {
   # single step.
   local t="${LETTERBOX_DOORBELL_TIMEOUT:-1}"
   [[ "$t" =~ ^[0-9]+$ ]] || t=1
-  if command -v python3 >/dev/null 2>&1; then
-    child_out="$(bounded_cmd "$((4 * t + 5))" env LETTERBOX_DOORBELL_FROM="$from" "$LETTERBOX_DOORBELL" "$to" "$type" "$token")" || child_rc=$?
-  else
-    child_out="$(LETTERBOX_DOORBELL_FROM="$from" "$LETTERBOX_DOORBELL" "$to" "$type" "$token")" || child_rc=$?
+  if ! command -v python3 >/dev/null 2>&1; then
+    # Fail closed: without the bounder a hanging adapter would hang the
+    # sender with no line at all. Never run the adapter unbounded.
+    emit_outcome no_live_surface adapter_unavailable -
+    return 0
   fi
+  child_out="$(bounded_cmd "$((4 * t + 5))" env LETTERBOX_DOORBELL_FROM="$from" "$LETTERBOX_DOORBELL" "$to" "$type" "$token")" || child_rc=$?
   report_doorbell_outcome "$child_out" "$child_rc"
   return 0
 }
