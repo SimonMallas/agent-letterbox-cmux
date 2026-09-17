@@ -41,6 +41,31 @@ refuse_outbox() {
 }
 
 # --- v0.3 core: safe ids, resolver, activity ---
+bounded_cmd() { # $1=seconds, rest=argv; 124 timeout (runner-owned: a child
+                # exiting 124 itself is remapped to 123), 127 missing (needs python3)
+  local secs="$1"; shift
+  command -v python3 >/dev/null 2>&1 || return 124
+  python3 -c '
+import os, signal, subprocess, sys
+try:
+    p = subprocess.Popen(sys.argv[2:], start_new_session=True)
+except FileNotFoundError:
+    sys.exit(127)
+try:
+    rc = p.wait(timeout=float(sys.argv[1]))
+except subprocess.TimeoutExpired:
+    try:
+        os.killpg(p.pid, signal.SIGKILL)
+    except Exception:
+        p.kill()
+    p.wait()
+    sys.exit(124)
+# The runner owns the 124 sentinel: a child that exits 124 on its own was
+# NOT killed on timeout and must not be read as one — remap to 123.
+sys.exit(123 if rc == 124 else rc)
+' "$secs" "$@"
+}
+
 doorbell_token_for_id() {
   local id="$1" tail
   tail="${id##*-}"
@@ -507,7 +532,18 @@ ring_doorbell() {
   local from
   from="$(doorbell_from_for_id "$to" "$id_or_slug")"
   local child_out child_rc=0
-  child_out="$(LETTERBOX_DOORBELL_FROM="$from" "$LETTERBOX_DOORBELL" "$to" "$type" "$token")" || child_rc=$?
+  # Best-effort: the letter is already durable. The adapter self-bounds each
+  # step at LETTERBOX_DOORBELL_TIMEOUT (default 1s — see SPEC bounds budget);
+  # the wrapper bound is only a backstop for a wedged adapter, so it covers a
+  # whole run (lookup + notify + two inject steps + startup slack), never a
+  # single step.
+  local t="${LETTERBOX_DOORBELL_TIMEOUT:-1}"
+  [[ "$t" =~ ^[0-9]+$ ]] || t=1
+  if command -v python3 >/dev/null 2>&1; then
+    child_out="$(bounded_cmd "$((4 * t + 5))" env LETTERBOX_DOORBELL_FROM="$from" "$LETTERBOX_DOORBELL" "$to" "$type" "$token")" || child_rc=$?
+  else
+    child_out="$(LETTERBOX_DOORBELL_FROM="$from" "$LETTERBOX_DOORBELL" "$to" "$type" "$token")" || child_rc=$?
+  fi
   report_doorbell_outcome "$child_out" "$child_rc"
   return 0
 }
@@ -577,9 +613,10 @@ report_doorbell_outcome() { # $1=child stdout $2=child exit code
       fi
     fi
   done <<< "$out"
-  if (( n == 1 )) && [[ -n "$first_valid" ]]; then
-    # Exactly one contract line and it validates: forward through the
-    # validator — the wrapper re-prints, the child never owns stdout.
+  if (( rc == 0 && n == 1 )) && [[ -n "$first_valid" ]]; then
+    # Exactly one contract line, it validates, and the child exited 0:
+    # forward through the validator — the wrapper re-prints, the child
+    # never owns stdout.
     local o r t
     o="$(printf '%s' "$first_valid" | sed -E 's/.*outcome=([^ ]+).*/\1/')"
     r="$(printf '%s' "$first_valid" | sed -E 's/.*reason=([^ ]+).*/\1/')"
@@ -587,10 +624,11 @@ report_doorbell_outcome() { # $1=child stdout $2=child exit code
     emit_outcome "$o" "$r" "$t"
     return 0
   fi
-  # Zero valid lines, or two or more contract-looking lines: never forward;
-  # report the honest state (the consumer's unparseable verdict is its own,
-  # not ours to emit). Injection cannot be established from a silent,
-  # timed-out, or failed child — never from its prose.
+  # Exit-status precedence: a nonzero/signal/wrapper-killed child, a success
+  # line followed by a hang, zero valid lines, or two or more
+  # contract-looking lines — never forward. Injection cannot be established
+  # from an unproven child — never from its prose. (The consumer's
+  # unparseable verdict is its own, not ours to emit.)
   emit_outcome no_live_surface unconfirmed -
 }
 

@@ -24,17 +24,20 @@ if [[ "$*" == *"tree --all"* ]]; then
   case "${CMUX_FAKE_TREE:-ok}" in
     ok)    printf '{"windows":[{"id":"w1","workspaces":[{"id":"ws1","panes":[{"id":"pane:1","surface":"surface:7"}]}]}]}\n';;
     sleep) sleep "${CMUX_FAKE_SLEEP:-5}";;
+    exit124) exit 124;;
   esac
   exit 0
 fi
 case "${1:-}" in
   send)     case "${CMUX_FAKE_SEND:-ok}" in
-              ok) exit 0;; fail) exit 1;; sleep) sleep "${CMUX_FAKE_SLEEP:-5}";;
+              ok) exit 0;; fail) exit 1;; sleep) sleep "${CMUX_FAKE_SLEEP:-5}";; exit124) exit 124;;
             esac;;
   send-key) case "${CMUX_FAKE_ENTER:-ok}" in
               ok) exit 0;; fail) exit 1;; sleep) sleep "${CMUX_FAKE_SLEEP:-5}";;
             esac;;
-  notify) exit 0;;
+  notify)   case "${CMUX_FAKE_NOTIFY:-ok}" in
+              ok) :;; sleep) sleep "${CMUX_FAKE_SLEEP:-5}";;
+            esac;;
 esac
 exit 0
 CMUX
@@ -59,7 +62,12 @@ cat > "$ROOT/valid-exit1.sh" <<'SH'
 echo 'doorbell-outcome v=1 outcome=submitted reason=- target=surface:7'
 exit 1
 SH
-chmod +x "$ROOT/garbage.sh" "$ROOT/double.sh" "$ROOT/valid-exit1.sh"
+cat > "$ROOT/line-hang.sh" <<'SH'
+#!/usr/bin/env bash
+echo 'doorbell-outcome v=1 outcome=submitted reason=- target=surface:7'
+sleep 30
+SH
+chmod +x "$ROOT/garbage.sh" "$ROOT/double.sh" "$ROOT/valid-exit1.sh" "$ROOT/line-hang.sh"
 
 # PATH farm WITH the fake cmux but WITHOUT python3: a missing runner must be
 # adapter_unavailable (non-retryable), never helper_timeout.
@@ -142,7 +150,19 @@ check "wrapper: garbage child → unconfirmed" "LETTERBOX_DOORBELL=$ROOT/garbage
   'doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-'
 check "wrapper: double line → unconfirmed" "LETTERBOX_DOORBELL=$ROOT/double.sh" \
   'doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-'
-check "wrapper: valid line + exit 1 forwards" "LETTERBOX_DOORBELL=$ROOT/valid-exit1.sh" \
+# Exit-status precedence: a valid line after a NONZERO exit is never forwarded.
+check "wrapper: valid line + nonzero exit → unconfirmed" "LETTERBOX_DOORBELL=$ROOT/valid-exit1.sh" \
+  'doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-'
+# Runner-owned sentinel: a child exiting 124 on its own is NOT a timeout.
+check "child exit 124 in lookup → surface_not_found (not helper_timeout)" "CMUX_FAKE_TREE=exit124" \
+  'doorbell-outcome v=1 outcome=no_live_surface reason=surface_not_found target=-'
+check "child exit 124 in send → send_failed (not unconfirmed)" "CMUX_FAKE_SEND=exit124" \
+  'doorbell-outcome v=1 outcome=no_live_surface reason=send_failed target=-'
+# A success line followed by a hang: the wrapper backstop kills, line or not.
+check "wrapper: valid line then hang → unconfirmed" "LETTERBOX_DOORBELL=$ROOT/line-hang.sh LETTERBOX_DOORBELL_TIMEOUT=1" \
+  'doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-'
+# Bounded notify: a hung notify never holds the inject path hostage.
+check "hung notify still submits" "CMUX_FAKE_NOTIFY=sleep CMUX_FAKE_SLEEP=5" \
   'doorbell-outcome v=1 outcome=submitted reason=- target=surface:7'
 
 # Ruling 5 provenance: the from clause names the durable letter's sender,
@@ -173,4 +193,4 @@ else
 fi
 
 echo "──"
-echo "cmux edition e2e: $pass/13 PASS"
+echo "cmux edition e2e: $pass/17 PASS"
