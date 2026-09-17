@@ -1,3 +1,37 @@
+## v0.4.0 — 2026-09-17 (cmux edition)
+
+Release 2 doorbell contract. The ring now reports exactly one
+`doorbell-outcome v=1` line per attempt — `submitted`,
+`pasted_not_submitted`, or `no_live_surface` with a named reason — owned by
+the helper wrapper, never by adapter prose. The typed doorbell line may
+name the durable letter's sender.
+
+- The wrapper is the sole outcome owner: the adapter's stdout is a private
+  pipe; exactly one valid contract line on exit 0 forwards, anything else
+  reports `unconfirmed` (`unparseable` is the consumer's verdict, never an
+  emitter token).
+- Two-step bounded inject (text, then Enter), each step bounded and
+  classified: `send_failed`, `pasted_not_submitted enter_failed`,
+  post-inject `unconfirmed`; only a proven pre-injection timeout is
+  `helper_timeout` (the one retryable class).
+- Runner-owned timeout sentinel: a child exiting 124 on its own is
+  remapped and can never be misread as a timeout. Verified-runner check:
+  missing python3 or platform CLI is `adapter_unavailable`
+  (non-retryable), and without the bounder the wrapper fails closed — the
+  adapter is never run unbounded.
+- Ruled exit-status precedence: `submitted`/`pasted` claims after a
+  nonzero exit downgrade to `unconfirmed`; a valid `no_live_surface` line
+  keeps its named reason.
+- Ruling-5 sender clause resolved from the durable letter (never
+  `LETTERBOX_AGENT`), omitted when invalid — never `from -`.
+  `doorbell-parse` accepts v02/v03/v04; a malformed ` from ` clause
+  rejects the line.
+- Bounds budget documented in SPEC: 1s step budget, 4×step+5s wrapper
+  backstop (9s at default), strictly inside the caller's 10s deadline.
+- Canonical `doorbell-outcome v=1` conformance fixtures vendored in
+  `conformance/doorbell-outcome-v1/` with `SHA256SUMS`; other editions
+  and Bridge vendor a frozen snapshot of these exact bytes.
+
 ## v0.3.5 — 2026-09-16 (cmux edition)
 
 `message_body` keeps `---` lines after the envelope close, so an identical
