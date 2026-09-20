@@ -23,6 +23,14 @@ The agent wakes, picks up the real task from disk, replies, and keeps the work f
 
 > **Agent mail that waits safely—and a bell brings it alive.**
 
+## Start here
+
+Use this repository if your team works in **cmux**. Agent Letterbox keeps agent handoffs as plain Markdown files on disk, then uses a short terminal doorbell only to get the receiving agent's attention.
+
+New to the project? Start with the [manual install](#option-a--inspectable-manual-install-recommended-for-a-first-install). It is the recommended path when you want to inspect the source before it changes your machine. The one-line installer remains available as a convenience after review.
+
+Use another terminal instead? The same shared-store protocol is available for [tmux](https://github.com/SimonMallas/agent-letterbox-tmux), [Herdr](https://github.com/SimonMallas/agent-letterbox-herdr), and [Zellij](https://github.com/SimonMallas/agent-letterbox-zellij).
+
 ## The Agent Letterbox family
 
 One shared letter store and protocol — four native doorbell adapters, one edition per terminal. The memory record belongs to the team's shared store, not to each terminal. Pick the adapter matching the terminal you already run:
@@ -146,26 +154,9 @@ Set up Agent Letterbox for cmux using the README Quick Start. Do not change my c
 npx skills add SimonMallas/agent-letterbox-cmux
 ```
 
-### Option A — Recommended: copy/paste installer
+### Option A — Inspectable manual install (recommended for a first install)
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
-export PATH="$HOME/.local/bin:$PATH"
-letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells
-source "$HOME/.agent-letterbox/env.sh"
-```
-
-This downloads a local copy and sets up the team. If you are new to GitHub, you do not need to understand Git first—copying the block is enough.
-
-To update later, run the same installer again:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
-```
-
-### Option B — Manual Git install
-
-Use this if you want to inspect the source, modify it, or contribute:
+Clone the repository, inspect the source and `install.sh` if you plan to use it, then set up the team:
 
 ```bash
 git clone https://github.com/SimonMallas/agent-letterbox-cmux.git \
@@ -177,7 +168,24 @@ letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-do
 source "$HOME/.agent-letterbox/env.sh"
 ```
 
-Both options automatically create one shared Letterbox, agent inboxes, the global `letterbox` launcher, the shared Agent Letterbox skill, and the live-surface registration registry.
+### Option B — Convenience installer
+
+If you have reviewed the repository and are comfortable with the installer, this downloads a local copy and sets up the same team:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells
+source "$HOME/.agent-letterbox/env.sh"
+```
+
+To update an installer-based setup later, run the same installer again:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | sh
+```
+
+Both options create one shared Letterbox, agent inboxes, the global `letterbox` launcher, the shared Agent Letterbox skill, and the live-surface registration registry.
 
 > `--automatic-doorbells` lets Letterbox type the generic doorbell into a live agent terminal. Use it only for dedicated agent terminals: like any terminal-input tool, it can submit text already typed in a target terminal.
 
