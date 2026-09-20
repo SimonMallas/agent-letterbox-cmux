@@ -25,7 +25,11 @@ The agent wakes, picks up the real task from disk, replies, and keeps the work f
 
 ## Start here
 
-Use this repository if your team works in **cmux**. Agent Letterbox keeps agent handoffs as plain Markdown files on disk, then uses a short terminal doorbell only to get the receiving agent's attention.
+**Agent Letterbox turns separate coding agents into a dynamic team.** The bell creates the live team in the moment; **enveloped letters** give that team durable memory.
+
+A doorbell gets the right agent's attention. The handoff itself is a plain Markdown letter on disk, with sender, recipient, time, thread, and lifecycle context. It survives scrollback, compaction, restarts, and changing terminal layouts.
+
+This is **durable memory without a memory system**: no hidden database or proprietary brain required. The letter record stays inspectable, searchable, and available to whatever memory or orchestration layer the team chooses later.
 
 New to the project? Start with the [manual install](#option-a--inspectable-manual-install-recommended-for-a-first-install). It is the recommended path when you want to inspect the source before it changes your machine. The one-line installer remains available as a convenience after review.
 
