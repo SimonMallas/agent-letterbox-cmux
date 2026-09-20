@@ -27,7 +27,7 @@ The agent wakes, picks up the real task from disk, replies, and keeps the work f
 
 **Agent Letterbox turns separate coding agents into a dynamic team.** The bell creates the live team in the moment; **enveloped letters** give that team durable memory.
 
-A doorbell gets the right agent's attention. The handoff itself is a plain Markdown letter on disk, with sender, recipient, time, thread, and lifecycle context. It survives scrollback, compaction, restarts, and changing terminal layouts.
+A doorbell gets the right agent's attention. The handoff itself is an **enveloped letter**: a Markdown-native upgrade with a human-readable body and a durable structured envelope for sender, recipient, identity, time, thread, and lifecycle. It survives scrollback, compaction, restarts, and changing terminal layouts.
 
 This is **durable memory without a memory system**: no hidden database or proprietary brain required. The letter record stays inspectable, searchable, and available to whatever memory or orchestration layer the team chooses later.
 
