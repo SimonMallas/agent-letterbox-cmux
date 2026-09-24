@@ -60,8 +60,10 @@ exceeding it denies completeness, rather than claiming no matches.
 
 Compatibility output uses source-reference order, not chronological order.
 Only an explicit valid `sent` supplies publication time. An ID or filesystem
-timestamp is not a substitute. Letters produced by an older writer without
-`sent` therefore have unknown time; time-filter matches may be indeterminate.
+timestamp is not a substitute. New v0.5.0 sends and replies provide `sent`;
+letters produced by an older writer without it therefore have unknown time,
+and their time-filter matches may be indeterminate. A reply's `sent` is its own
+publication time even though its stable id embeds the parent's timestamp.
 Cards distinguish selected from indeterminate rows, and diagnostics remain
 visible even when a display predicate excludes other cards.
 
@@ -89,7 +91,11 @@ query or incomplete scan.
 - Header reads are bounded and stop at the closing delimiter. Compatibility mode
   additionally reports observed directory/leaf changes. Neither mode is an atomic
   snapshot, a global-absence proof, or a transport-delivery receipt.
-- No writer validation or send-side behavior is added by this command.
+- Query itself never writes. The v0.5.0 writer separately adds `sent` and
+  `send --supersedes <id>` with bounded reference validation. See the
+  [publication timestamp and supersession rules](../SPEC.md#publication-timestamps-and-supersession-v050).
+  Supersession is an annotation, not authorization: no sender-ownership lookup
+  is performed, and a reference does not rewrite its predecessor.
 
 Validation uses disposable synthetic mailboxes, including refusal and negative
 controls. Passing these tests does not qualify a live adapter, a private corpus,

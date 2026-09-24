@@ -3,14 +3,21 @@
 - Add read-only `letterbox query`: strict-v1 envelope cards by default and
   explicit `--compat-v2` JSON with diagnostics and scoped completeness.
 - Query requires Python 3.9+ (standard library only), with an explicit refusal
-  when unavailable. Existing send/reply/registration and bounded doorbell
-  behavior is unchanged.
+  when unavailable. Registration and bounded doorbell behavior is unchanged.
+- New send and reply envelopes include UTC `sent`. A send's id and header share
+  one clock snapshot; stable parent-derived reply ids retain their lineage while
+  `sent` records each reply's own publication time. Identical retries preserve it.
+- Add `send --supersedes <id>` as a syntax-validated reference, without ownership
+  lookup. Both this option and explicit `--thread` refuse malformed or overlong
+  values rather than sanitising them. Existing letters are unchanged.
 - Add synthetic query tests to `make ci`, with Python 3.9 and 3.13 on the Ubuntu
   and macOS workflow matrix. Matrix configuration is not a claim of a passed run.
 - Distinguish symlinked root components from non-directory components. Add
   separate mutation witnesses for no-follow opens, symlink recognition, and
   pre/post-open leaf type guards.
-- No archive traversal, archive verb, or send-side validation expansion.
+- No archive traversal or archive verb. Writer changes are limited to `sent`,
+  `--supersedes` and bounded explicit relation-id validation; other writer
+  validation and transport changes are outside this release's scope.
   See [query contracts and limitations](docs/query.md).
 
 ## v0.4.0 — 2026-09-17 (cmux edition)

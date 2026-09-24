@@ -47,6 +47,7 @@ Every message—including acknowledgements and results—goes to the recipient's
 ```markdown
 ---
 id: 2026-08-11T104344-planner-delegate-auth-review-a1b2c3d4
+sent: 2026-08-11T10:43:44Z
 from: planner
 to: reviewer
 type: delegate
@@ -65,10 +66,13 @@ DONE-WHEN: Report actionable correctness findings.
 | Field | Required | Notes |
 |---|---|---|
 | `id` | yes | Stable message identity |
+| `sent` | yes for new v0.5.0 letters; optional on older letters | Publication UTC, exactly `YYYY-MM-DDTHH:MM:SSZ`; see timestamp rules below |
 | `from` / `to` | yes | Lowercase agent ids |
 | `type` | yes | See types below |
 | `re` | derived on replies | Parent letter id for ownership replies |
 | `thread` | optional | Conversation root; defaults to parent id on derived replies |
+| `supersedes` | optional | A predecessor letter id supplied by `send --supersedes`; annotation, not authorization or truth |
+| `session` | optional | Sender session label from `LETTERBOX_SESSION`, when set |
 | `priority` | yes | `now`, `next`, or `whenever` |
 | `requires_ack` | yes | Decides task vs non-task handling |
 | `deadline` | optional | Operator-visible UTC deadline |
@@ -78,6 +82,41 @@ Types: `request`, `delegate`, `status`, `blocker`, `result`, `ack`, `nack`, `inf
 Publish atomically: write a hidden temporary file in the recipient inbox, then atomically create the final filename. IDs include a random suffix to avoid same-second collisions.
 
 A letter with a missing or empty `requires_ack` is malformed. Helpers must refuse both `reply` and `file` on it.
+
+### Publication timestamps and supersession (v0.5.0)
+
+- A fresh `send` obtains one UTC clock snapshot. Both the compact timestamp in
+  its new id and its `sent` header come from that same snapshot, even across a
+  second boundary. The header uses `YYYY-MM-DDTHH:MM:SSZ`.
+- A reply retains its parent-derived id (stable across retries). Its `sent` is
+  the reply's own publication UTC, not the parent's time embedded in the id.
+  The parent timestamp is lineage, not reply creation time. A retry that finds
+  an already-published identical reply retains that file's bytes and `sent`.
+- These are local wall-clock publication timestamps, not transport receipts or
+  a guarantee against clock skew. Query never substitutes filesystem mtime.
+- New `send` and derived replies emit `sent`; existing letters are unchanged.
+  Strict query retains its compact-id UTC fallback for older letters without
+  `sent`; compatibility query reports unknown time for those letters.
+- `letterbox send <to> <type> <slug> --supersedes <id>` adds the optional
+  `supersedes` field. Both explicit `--thread` and `--supersedes` values must
+  match `[A-Za-z0-9._:-]{1,128}`: 1–128 ASCII characters, no spaces, slashes,
+  control characters, or line breaks. Malformed values are refused before
+  creating any letter or temporary message; never sanitised into another id.
+  Repeated `--supersedes` flags are refused.
+- Supersession references use syntax/length validation only. The sender need
+  not own the referenced letter, and it need not exist in the scanned scope.
+  This annotation neither modifies the older letter nor confers authority or
+  truth. Queries expose sender provenance and dangling-reference diagnostics;
+  they do not enforce ownership or separately label a reference as foreign.
+  `superseded=head` selects records not superseded in the declared scope,
+  not a certified current truth. Replies do not inherit `supersedes`.
+
+```bash
+printf '%s\n' 'Updated design decision.' |
+  LETTERBOX_AGENT=planner letterbox send reviewer info revised-design --supersedes <prior-id>
+```
+
+Full query contracts, unknown facts and scope limits: [docs/query.md](docs/query.md).
 
 ## Task vs non-task
 
@@ -213,6 +252,9 @@ The cmux adapter implements this contract for live terminal agents. The shared f
 ## Compatibility
 
 - Ownership replies carry an optional additive `thread` field; existing letters remain valid.
+- v0.5.0 adds `sent` to newly published letters and optional `supersedes` on
+  sends. Existing letters are unchanged; older readers ignore unknown fields.
+  Optional `session` continues to be written when configured.
 - **ACK is non-terminal**: it marks accepted work in progress.
 - All agents in a team should run the same v0.2 helper version.
 - `.md.ack` sidecars represent accepted work in progress and must not be manually deleted.

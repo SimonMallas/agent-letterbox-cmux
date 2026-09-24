@@ -4,6 +4,8 @@ import io
 import json
 import os
 from pathlib import Path
+import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -18,7 +20,7 @@ from envelopes import HeaderError, read_header
 import scanner
 
 
-class QueryTests(unittest.TestCase):
+class MailboxCase(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -61,6 +63,8 @@ class QueryTests(unittest.TestCase):
         return {str(p.relative_to(self.box)): hashlib.sha256(p.read_bytes()).hexdigest()
                 for p in self.box.rglob("*") if p.is_file() and not p.is_symlink()}
 
+
+class QueryTests(MailboxCase):
     def test_empty_and_scope(self):
         out = self.query()
         self.assertIn("query-scope v=1 folders=inbox,processed", out)
@@ -105,6 +109,27 @@ class QueryTests(unittest.TestCase):
         self.assertIn('state: "closed"', self.query())
         card = self.query(compat=True)["cards"][0]
         self.assertEqual((card["state"], card["answered"]), ("closed", "no"))
+
+    def test_readme_open_obligations_example(self):
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+        match = re.search(r'\*\*What do I still owe\?\*\* — `([^`]+)`', text)
+        self.assertIsNotNone(match, "README must expose the obligations query")
+        args = shlex.split(match.group(1))
+        self.assertEqual(args[:2], ["letterbox", "query"])
+        self.letter("open-request")
+        self.letter("closed-request", folder="processed")
+        out = self.query(*args[2:])
+        self.assertIn("count=1 scanned=2", out)
+        self.assertIn('id: "open-request"', out)
+        self.assertNotIn('id: "closed-request"', out)
+
+    def test_strict_id_time_fallback_is_not_compat_time(self):
+        self.letter("2026-01-01T120000-alpha-request-topic-abcd1234", sent="")
+        self.assertIn("count=1", self.query("since=2026-01-01T00:00:00Z"))
+        data = self.query("since=2026-01-01T00:00:00Z", compat=True)
+        self.assertEqual(data["cards"][0]["selection"], "indeterminate")
+        self.assertIsNone(data["cards"][0]["publication_utc"])
+        self.assertEqual(data["cards"][0]["time_basis"], "id_unspecified")
 
     def test_external_route_is_not_delivery_proof(self):
         self.letter(**{"from": "external-bridge"})

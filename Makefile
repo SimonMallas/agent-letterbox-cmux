@@ -16,6 +16,7 @@ endef
 
 test:
 	python3 -B tests/test_query.py
+	python3 -B tests/test_writer_query.py
 	python3 -B tests/test_query_mutation.py
 	./tests/smoke.sh
 	./tests/test_outbox_sweep_exclusion.sh

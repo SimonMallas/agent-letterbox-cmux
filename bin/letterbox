@@ -643,17 +643,20 @@ report_doorbell_outcome() { # $1=child stdout $2=child exit code
   emit_outcome no_live_surface unconfirmed -
 }
 
-publish_message() { # to type slug priority requires_ack re deadline body [thread]
+publish_message() { # to type slug priority requires_ack re deadline body [thread] [supersedes]
   local to="$1" type="$2" slug="$3" priority="$4" requires_ack="$5" re="$6" deadline="$7" body="$8"
-  local thread="${9:-}"
-  local id="$(id_now)-$ME-$type-$slug-$(random_suffix)"
+  local thread="${9:-}" supersedes="${10:-}" sent id
+  sent="$(now)" || die 'cannot obtain UTC publication time'
+  id="${sent//:/}"
+  id="${id%Z}-$ME-$type-$slug-$(random_suffix)"
   local inbox; inbox="$(inbox_path "$to")"
   local final="$inbox/$id.md" tmp
   tmp="$(mktemp "$inbox/.${id}.tmp.XXXXXX")" || die 'cannot create temporary message'
   {
     printf '%s\n' '---'
-    printf 'id: %s\nfrom: %s\nto: %s\ntype: %s\nre: %s\n' "$id" "$ME" "$to" "$type" "$re"
+    printf 'id: %s\nsent: %s\nfrom: %s\nto: %s\ntype: %s\nre: %s\n' "$id" "$sent" "$ME" "$to" "$type" "$re"
     [[ -n "$thread" ]] && printf 'thread: %s\n' "$thread"
+    [[ -n "$supersedes" ]] && printf 'supersedes: %s\n' "$supersedes"
     printf 'priority: %s\nrequires_ack: %s\ndeadline: %s\n' "$priority" "$requires_ack" "$deadline"
     [[ -n "$SESSION" ]] && printf 'session: %s\n' "$SESSION"
     printf '%s\n%s\n' '---' "$body"
@@ -669,7 +672,7 @@ reply_file_for() { # parent_id type agent
 
 publish_derived_reply() { # parent type body priority
   local parent="$1" type="$2" body="$3" prio="$4"
-  local parent_id parent_from thread reply_id reply_file tmp existing_body existing
+  local parent_id parent_from thread reply_id reply_file tmp existing_body existing sent
   parent_id="$(frontmatter_value "$parent" id)"
   parent_from="$(frontmatter_value "$parent" from)"
   thread="$(frontmatter_value "$parent" thread)"
@@ -687,11 +690,12 @@ publish_derived_reply() { # parent type body priority
     REPLY_ALREADY=true
     return 0
   fi
+  sent="$(now)" || die 'cannot obtain UTC publication time'
   tmp="$(mktemp "$(inbox_path "$parent_from")/.${reply_id}.tmp.XXXXXX")" || die 'cannot create temporary reply'
   {
     printf '%s\n' '---'
-    printf 'id: %s\nfrom: %s\nto: %s\ntype: %s\nre: %s\nthread: %s\npriority: %s\nrequires_ack: false\ndeadline:\n' \
-      "$reply_id" "$ME" "$parent_from" "$type" "$parent_id" "$thread" "$prio"
+    printf 'id: %s\nsent: %s\nfrom: %s\nto: %s\ntype: %s\nre: %s\nthread: %s\npriority: %s\nrequires_ack: false\ndeadline:\n' \
+      "$reply_id" "$sent" "$ME" "$parent_from" "$type" "$parent_id" "$thread" "$prio"
     [[ -n "$SESSION" ]] && printf 'session: %s\n' "$SESSION"
     printf '%s\n%s\n' '---' "$body"
   } > "$tmp"
@@ -761,9 +765,14 @@ release_lifecycle_lock() {
   LIFECYCLE_LOCK=""
 }
 
+validate_relation_id() {
+  local LC_ALL=C
+  [[ "$2" =~ ^[A-Za-z0-9._:-]{1,128}$ ]] || die "bad $1: expected a letter id (1..128 ASCII letters, digits, dot, underscore, colon or hyphen)"
+}
+
 cmd_send() {
   need_me
-  local to="${1:?usage: letterbox send <to> <type> <slug> [--now] [--ack] [--re <id>] [--thread <id>] [--deadline <UTC>]}"
+  local to="${1:?usage: letterbox send <to> <type> <slug> [--now] [--ack] [--re <id>] [--thread <id>] [--supersedes <id>] [--deadline <UTC>]}"
   local type="${2:?missing type}" slug="${3:?missing slug}"; shift 3
   need_agent "$to"
   [[ -d "$(inbox_path "$to")" ]] || die "unknown recipient: $to (run init first)"
@@ -771,25 +780,29 @@ cmd_send() {
   case "$type" in ack|nack|result) die 'use letterbox reply for ownership replies';; esac
   slug="$(printf '%s' "$slug" | tr '[:upper:] ' '[:lower:]-' | tr -cd 'a-z0-9-')"
   [[ -n "$slug" ]] || die 'slug became empty'
-  local priority=next requires_ack=false re='' deadline='' thread=''
+  local priority=next requires_ack=false re='' deadline='' thread='' supersedes=''
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --now) priority=now;; --ack) requires_ack=true;;
       --re) re="${2:?missing reply id}"; shift;;
       --thread) thread="${2:?missing thread id}"; shift;;
+      --supersedes)
+        [[ -z "$supersedes" ]] || die 'repeated --supersedes'
+        supersedes="${2:?missing supersedes id}"; shift;;
       --deadline) deadline="${2:?missing deadline}"; shift;;
       *) die "unknown option: $1";;
     esac
     shift
   done
   [[ "$type" != "delegate" || "$requires_ack" == true ]] || die 'delegate letters require --ack'
-  [[ -z "$thread" || "$thread" =~ ^[A-Za-z0-9._:-]+$ ]] || die "bad thread id '$thread'"
+  [[ -z "$thread" ]] || validate_relation_id thread "$thread"
+  [[ -z "$supersedes" ]] || validate_relation_id supersedes "$supersedes"
   local body
   if ! IFS= read -r -d '' body < <(cat; printf '\0'); then die 'cannot read message body'; fi
   body="$(printf '%s' "$body")"
   # Predicate-only: refuse empty and whitespace-only; do not alter stored body.
   [[ -n "${body//[[:space:]]/}" ]] || die 'empty message body; pipe the body via stdin (letterbox send <to> <type> <slug> [--now])'
-  local final; final="$(publish_message "$to" "$type" "$slug" "$priority" "$requires_ack" "$re" "$deadline" "$body" "$thread")"
+  local final; final="$(publish_message "$to" "$type" "$slug" "$priority" "$requires_ack" "$re" "$deadline" "$body" "$thread" "$supersedes")"
   printf 'sent: %s\n' "$final"
   [[ "$priority" == now ]] && ring_doorbell "$to" "$type" "$(frontmatter_value "$final" id)"
   return 0

@@ -7,6 +7,17 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = (
+    ("send-sent-removed", "bin/letterbox",
+     "printf 'id: %s\\nsent: %s\\nfrom: %s\\nto: %s\\ntype: %s\\nre: %s\\n'",
+     "printf 'id: %s\\nstamp: %s\\nfrom: %s\\nto: %s\\ntype: %s\\nre: %s\\n'"),
+    ("reply-sent-removed", "bin/letterbox",
+     "printf 'id: %s\\nsent: %s\\nfrom: %s\\nto: %s\\ntype: %s\\nre: %s\\nthread: %s\\n",
+     "printf 'id: %s\\nstamp: %s\\nfrom: %s\\nto: %s\\ntype: %s\\nre: %s\\nthread: %s\\n"),
+    ("split-publication-clock", "bin/letterbox",
+     '  id="${sent//:/}"\n  id="${id%Z}-$ME-$type-$slug-$(random_suffix)"',
+     '  id="$(id_now)-$ME-$type-$slug-$(random_suffix)"'),
+    ("reference-validation-removed", "bin/letterbox",
+     '[[ "$2" =~ ^[A-Za-z0-9._:-]{1,128}$ ]]', ':'),
     ("file-nofollow-removed", "lib/query/scanner.py",
      'FILE_FLAGS = os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK',
      'FILE_FLAGS = os.O_RDONLY | os.O_CLOEXEC | os.O_NONBLOCK'),
@@ -31,6 +42,10 @@ CASES = (
 
 
 WITNESSES = {
+    "send-sent-removed": "test_send_has_one_utc_snapshot_for_id_and_sent",
+    "reply-sent-removed": "test_reply_own_time_parent_identity_and_retry_bytes",
+    "split-publication-clock": "test_send_has_one_utc_snapshot_for_id_and_sent",
+    "reference-validation-removed": "test_malformed_references_refuse_before_any_write",
     "file-nofollow-removed": "test_leaf_open_refuses_swapped_symlink_before_opening_target",
     "root-symlink-check-removed": "test_symlink_ancestor_has_specific_refusal",
     "leaf-binding-type-check-removed": "test_leaf_binding_type_guard_rejects_symlink_before_open",
@@ -42,7 +57,8 @@ WITNESSES = {
 
 
 def run(root):
-    return subprocess.run([sys.executable, "-B", str(root / "tests/test_query.py")],
+    return subprocess.run([sys.executable, "-B", "-m", "unittest", "discover",
+                           "-s", str(root / "tests"), "-p", "test_*query.py"],
                           capture_output=True, text=True, timeout=120)
 
 
@@ -58,8 +74,10 @@ def main():
             for folder in ("bin", "lib", "adapters"):
                 shutil.copytree(ROOT / folder, copy / folder)
             (copy / "tests").mkdir()
-            shutil.copy2(ROOT / "tests/test_query.py", copy / "tests/test_query.py")
+            for test_file in ("test_query.py", "test_writer_query.py"):
+                shutil.copy2(ROOT / "tests" / test_file, copy / "tests" / test_file)
             shutil.copy2(ROOT / "VERSION", copy / "VERSION")
+            shutil.copy2(ROOT / "README.md", copy / "README.md")
             target = copy / relative
             text = target.read_text()
             if text.count(old) != 1:
