@@ -69,13 +69,13 @@ DONE-WHEN: Report actionable correctness findings.
 | `sent` | yes for new v0.5.0 letters; optional on older letters | Publication UTC, exactly `YYYY-MM-DDTHH:MM:SSZ`; see timestamp rules below |
 | `from` / `to` | yes | Lowercase agent ids |
 | `type` | yes | See types below |
-| `re` | derived on replies | Parent letter id for ownership replies |
+| `re` | derived on replies; optional on sends | Parent/reference letter id; explicit values use the bounded identifier grammar below |
 | `thread` | optional | Conversation root; defaults to parent id on derived replies |
 | `supersedes` | optional | A predecessor letter id supplied by `send --supersedes`; annotation, not authorization or truth |
-| `session` | optional | Sender session label from `LETTERBOX_SESSION`, when set |
+| `session` | optional | Sender session label from `LETTERBOX_SESSION`, when set; `[A-Za-z0-9._:-]{1,64}` |
 | `priority` | yes | `now`, `next`, or `whenever` |
 | `requires_ack` | yes | Decides task vs non-task handling |
-| `deadline` | optional | Operator-visible UTC deadline |
+| `deadline` | optional | Empty or a calendar-valid UTC instant, exactly `YYYY-MM-DDTHH:MM:SSZ` |
 
 Types: `request`, `delegate`, `status`, `blocker`, `result`, `ack`, `nack`, `info`.
 
@@ -97,8 +97,19 @@ A letter with a missing or empty `requires_ack` is malformed. Helpers must refus
 - New `send` and derived replies emit `sent`; existing letters are unchanged.
   Strict query retains its compact-id UTC fallback for older letters without
   `sent`; compatibility query reports unknown time for those letters.
+- Every helper-written letter header value is single-line and validated.
+  New ids and copied reply linkage must fit the identifier grammar; an overlong
+  generated/derived id is refused before publication, not truncated. A reply
+  also validates its parent's sender and thread before any lifecycle lock.
+- `LETTERBOX_SESSION` must be empty (omit the field) or match
+  `[A-Za-z0-9._:-]{1,64}`. Invalid sessions are refused at send/reply entry,
+  before lock or temporary message creation. The body may still be multiline.
+- `--deadline` may be empty or exactly `YYYY-MM-DDTHH:MM:SSZ`, with a valid
+  Gregorian date, year 0001–9999, hour 00–23 and minute/second 00–59. Offsets,
+  fractional seconds, leap-second 60, CR/LF and impossible dates are refused.
+  The helper validates its generated publication timestamp with the same rule.
 - `letterbox send <to> <type> <slug> --supersedes <id>` adds the optional
-  `supersedes` field. Both explicit `--thread` and `--supersedes` values must
+  `supersedes` field. Explicit `--re`, `--thread` and `--supersedes` values must
   match `[A-Za-z0-9._:-]{1,128}`: 1–128 ASCII characters, no spaces, slashes,
   control characters, or line breaks. Malformed values are refused before
   creating any letter or temporary message; never sanitised into another id.
@@ -115,6 +126,13 @@ A letter with a missing or empty `requires_ack` is malformed. Helpers must refus
 printf '%s\n' 'Updated design decision.' |
   LETTERBOX_AGENT=planner letterbox send reviewer info revised-design --supersedes <prior-id>
 ```
+
+Older helpers could write malformed or injected headers through these inputs.
+Such letters are not rewritten: duplicate-key envelopes make strict query refuse
+and compatibility query report incomplete scope/diagnostics. A syntactically
+valid forged field in an older letter cannot be distinguished from intentional
+metadata by a reader; queries do not authenticate writer provenance. The new
+validation prevents those injection paths for future helper-written letters.
 
 Full query contracts, unknown facts and scope limits: [docs/query.md](docs/query.md).
 

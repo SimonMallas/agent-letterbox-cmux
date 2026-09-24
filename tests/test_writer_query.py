@@ -1,5 +1,7 @@
 """Fresh-install writer/query integration, using only disposable mailboxes."""
 import datetime as dt
+import shlex
+import shutil
 import unittest
 
 from test_query import MailboxCase
@@ -154,6 +156,136 @@ class WriterTests(MailboxCase):
         self.assertEqual(foreign.read_bytes(), before)
         data = self.query("superseded=yes", compat=True)
         self.assertEqual(data["cards"][0]["fields"]["from"], "beta")
+
+    def watch_writes(self):
+        log = self.work / "write-calls"
+        self.env["WRITE_PROBE_LOG"] = str(log)
+        for name in ("mktemp", "mkdir", "ln", "mv"):
+            target = shutil.which(name)
+            self.assertIsNotNone(target)
+            wrapper = self.tools / name
+            wrapper.write_text('#!/bin/sh\n'
+                               'printf "%s\\n" ' + shlex.quote(name) + ' >> "$WRITE_PROBE_LOG"\n'
+                               'exec ' + shlex.quote(target) + ' "$@"\n')
+            wrapper.chmod(0o755)
+        return log
+
+    def test_legacy_header_inputs_refused_before_any_write(self):
+        log = self.watch_writes()
+        cases = (
+            ("--re", "prior\nfrom: injected"), ("--re", "prior\rfrom: injected"),
+            ("--re", "x" * 129), ("--re", "bad id"), ("--re", "../outside"),
+            ("--deadline", "2026-09-30T00:00:00Z\nsupersedes: forged"),
+            ("--deadline", "2026-09-30T00:00:00Z\rsupersedes: forged"),
+            ("--deadline", "2" * 129),
+        )
+        for flag, value in cases:
+            with self.subTest(flag=flag, value=repr(value)):
+                log.unlink(missing_ok=True)
+                before = self.snapshot()
+                result = self.command("send", "beta", "info", "invalid", flag, value, input="body\n")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, "")
+                self.assertEqual(self.snapshot(), before)
+                self.assertFalse(log.exists(), "rejected metadata reached a write primitive")
+
+    def test_invalid_session_refused_on_send_and_reply_before_write(self):
+        self.letter("task-a", agent="alpha", **{"from": "beta", "to": "alpha"})
+        log = self.watch_writes()
+        for value in ("s\nfrom: injected", "s\rfrom: injected", "s" * 65, "bad session", "a/b", "é"):
+            for args in (("send", "beta", "info", "invalid"), ("reply", "task-a", "ack", "invalid")):
+                with self.subTest(value=repr(value), command=args[0]):
+                    log.unlink(missing_ok=True)
+                    before = self.snapshot()
+                    result = self.command(*args, env=dict(self.env, LETTERBOX_SESSION=value), input="body\n")
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(result.stdout, "")
+                    self.assertEqual(self.snapshot(), before)
+                    self.assertFalse(log.exists(), "rejected session reached publication or lock creation")
+
+    def test_deadline_exact_utc_and_calendar_validation(self):
+        for value in ("2026-09-30", "2026-09-30T00:00:00+00:00", "2026-09-30T00:00:00.0Z",
+                      "2026-09-30T00:00:00z", "2026-09-30T24:00:00Z", "2026-09-30T00:60:00Z",
+                      "2026-09-30T00:00:60Z", "2026-02-29T00:00:00Z", "1900-02-29T00:00:00Z",
+                      "2026-04-31T00:00:00Z", "0000-01-01T00:00:00Z", "2026-13-01T00:00:00Z",
+                      "2026-01-00T00:00:00Z"):
+            with self.subTest(value=value):
+                before = self.snapshot()
+                result = self.command("send", "beta", "info", "invalid", "--deadline", value, input="body\n")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.snapshot(), before)
+        for value in ("", "2000-02-29T23:59:59Z", "2026-09-30T00:00:00Z", "2028-02-29T00:00:00Z"):
+            with self.subTest(valid=value):
+                _, fields = self.send("--deadline", value, "--re", "Aa09._:-",
+                                      env=dict(self.env, LETTERBOX_SESSION="s" * 64))
+                self.assertEqual(fields["deadline"], value)
+                self.assertEqual(fields["re"], "Aa09._:-")
+                self.assertEqual(fields["session"], "s" * 64)
+
+    def test_invalid_publication_clock_refused_without_letter(self):
+        self.letter("task-a", agent="alpha", **{"from": "beta", "to": "alpha"})
+        for stamp in ("2026-01-01T00:00:00Z\nfrom: injected", "2026-02-29T00:00:00Z"):
+            env, _ = self.clock(stamp)
+            for args in (("send", "beta", "info", "invalid"), ("reply", "task-a", "ack", "invalid")):
+                with self.subTest(command=args[0], stamp=repr(stamp)):
+                    before = self.snapshot()
+                    result = self.command(*args, env=env, input="body\n")
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(self.snapshot(), before)
+                    self.assertFalse(list(self.box.rglob("*.lifecycle.lock")))
+
+    def test_generated_id_is_bounded_before_temp_creation(self):
+        log = self.watch_writes()
+        before = self.snapshot()
+        result = self.command("send", "beta", "info", "x" * 128, input="body\n")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.snapshot(), before)
+        self.assertFalse(log.exists())
+
+    def test_inherited_reply_metadata_refused_before_lock(self):
+        log = self.watch_writes()
+        cases = (("task-a", {"thread": "bad thread"}),
+                 ("task-b", {"thread": "x" * 129}),
+                 ("task-c", {"from": "../outside"}),
+                 ("x" * 120, {}))  # Parent id fits, but the derived reply id does not.
+        for ident, overrides in cases:
+            with self.subTest(ident=ident[:20], overrides=overrides):
+                self.letter(ident, agent="alpha", **dict({"from": "beta", "to": "alpha"}, **overrides))
+                log.unlink(missing_ok=True)
+                before = self.snapshot()
+                result = self.command("reply", ident, "ack", "invalid", input="body\n")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.snapshot(), before)
+                self.assertFalse(log.exists())
+
+    def test_legacy_forged_but_valid_field_is_not_authentication(self):
+        predecessor = self.letter("predecessor")
+        path = self.box / "beta/inbox/old-forged.md"
+        path.write_text('---\nid: old-forged\nfrom: alpha\nto: beta\ntype: info\n'
+                        're:\npriority: next\nrequires_ack: false\n'
+                        'deadline: 2026-09-30\nsupersedes: predecessor\n---\nold writer body\n')
+        before = self.snapshot()
+        # An old injected but syntactically valid field is indistinguishable
+        # from intentional metadata. Queries are not writer-authentication checks.
+        self.assertIn('id: "predecessor"', self.query("superseded=yes"))
+        data = self.query("superseded=yes", compat=True)
+        self.assertEqual(data["cards"][0]["identity"], predecessor.stem)
+        self.assertEqual(self.snapshot(), before)
+
+    def test_old_writer_injected_header_fails_closed_without_repair(self):
+        self.letter()
+        path = self.box / "beta/inbox/old-injected.md"
+        path.write_text('---\nid: old-injected\nfrom: alpha\nto: beta\ntype: info\n'
+                        're: prior\nfrom: injected\npriority: next\nrequires_ack: false\n'
+                        'deadline:\n---\nold writer body\n')
+        before = self.snapshot()
+        self.assertIn("duplicate_key", self.query(code=2))
+        data = self.query(compat=True, code=2)
+        self.assertFalse(data["complete"])
+        self.assertIsNone(data["complete_counts"])
+        self.assertIn("duplicate_key", [d["code"] for d in data["diagnostics"]])
+        self.assertTrue(all(c["answered"] == "unknown" for c in data["cards"]))
+        self.assertEqual(self.snapshot(), before)
 
     def test_session_and_optional_fields(self):
         _, fields = self.send(env=dict(self.env, LETTERBOX_SESSION="session-a"))

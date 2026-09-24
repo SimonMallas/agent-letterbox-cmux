@@ -97,6 +97,13 @@ query or incomplete scan.
   Supersession is an annotation, not authorization: no sender-ownership lookup
   is performed, and a reference does not rewrite its predecessor.
 
+Older writers could accept line breaks in reference, deadline, or session inputs.
+Duplicate-key envelopes from that behavior make strict mode refuse and compatibility
+mode report incomplete results; neither mode rewrites them. A syntactically valid
+forged legacy field is indistinguishable from intentional metadata: query is not
+writer authentication. Current send/reply header validation prevents these input
+injection paths for newly published letters.
+
 Validation uses disposable synthetic mailboxes, including refusal and negative
 controls. Passing these tests does not qualify a live adapter, a private corpus,
 hardware crash durability, or a platform that has not run the tests.

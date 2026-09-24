@@ -647,8 +647,10 @@ publish_message() { # to type slug priority requires_ack re deadline body [threa
   local to="$1" type="$2" slug="$3" priority="$4" requires_ack="$5" re="$6" deadline="$7" body="$8"
   local thread="${9:-}" supersedes="${10:-}" sent id
   sent="$(now)" || die 'cannot obtain UTC publication time'
+  validate_utc sent "$sent"
   id="${sent//:/}"
   id="${id%Z}-$ME-$type-$slug-$(random_suffix)"
+  validate_relation_id id "$id"
   local inbox; inbox="$(inbox_path "$to")"
   local final="$inbox/$id.md" tmp
   tmp="$(mktemp "$inbox/.${id}.tmp.XXXXXX")" || die 'cannot create temporary message'
@@ -678,6 +680,8 @@ publish_derived_reply() { # parent type body priority
   thread="$(frontmatter_value "$parent" thread)"
   [[ -n "$thread" ]] || thread="$parent_id"
   [[ -n "$parent_id" && -n "$parent_from" ]] || die "message has invalid frontmatter: $parent"
+  validate_reply_metadata "$parent_id" "$parent_from" "$thread" "$type"
+  validate_session
   [[ -d "$(inbox_path "$parent_from")" ]] || die "original sender has no inbox: $parent_from"
   reply_id="${parent_id}--${ME}--${type}"
   reply_file="$(inbox_path "$parent_from")/$(reply_file_for "$parent_id" "$type" "$ME")"
@@ -691,6 +695,7 @@ publish_derived_reply() { # parent type body priority
     return 0
   fi
   sent="$(now)" || die 'cannot obtain UTC publication time'
+  validate_utc sent "$sent"
   tmp="$(mktemp "$(inbox_path "$parent_from")/.${reply_id}.tmp.XXXXXX")" || die 'cannot create temporary reply'
   {
     printf '%s\n' '---'
@@ -770,8 +775,40 @@ validate_relation_id() {
   [[ "$2" =~ ^[A-Za-z0-9._:-]{1,128}$ ]] || die "bad $1: expected a letter id (1..128 ASCII letters, digits, dot, underscore, colon or hyphen)"
 }
 
+validate_session() {
+  local LC_ALL=C
+  [[ -z "$SESSION" || "$SESSION" =~ ^[A-Za-z0-9._:-]{1,64}$ ]] \
+    || die 'bad session: expected 1..64 ASCII letters, digits, dot, underscore, colon or hyphen'
+}
+
+validate_utc() {
+  local field="$1" value="$2" LC_ALL=C
+  [[ "$value" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})Z$ ]] \
+    || die "bad $field: expected UTC YYYY-MM-DDTHH:MM:SSZ"
+  local year=$((10#${BASH_REMATCH[1]})) month=$((10#${BASH_REMATCH[2]})) day=$((10#${BASH_REMATCH[3]}))
+  local hour=$((10#${BASH_REMATCH[4]})) minute=$((10#${BASH_REMATCH[5]})) second=$((10#${BASH_REMATCH[6]})) days
+  (( year >= 1 && month >= 1 && month <= 12 && hour < 24 && minute < 60 && second < 60 )) \
+    || die "bad $field: invalid UTC instant"
+  case "$month" in
+    4|6|9|11) days=30;;
+    2)
+      days=28
+      if (( year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) )); then days=29; fi;;
+    *) days=31;;
+  esac
+  (( day >= 1 && day <= days )) || die "bad $field: invalid UTC date"
+}
+
+validate_reply_metadata() { # parent id, sender, thread, reply type
+  validate_relation_id id "$1"
+  need_agent "$2"
+  validate_relation_id thread "${3:-$1}"
+  validate_relation_id id "$1--$ME--$4"
+}
+
 cmd_send() {
   need_me
+  validate_session
   local to="${1:?usage: letterbox send <to> <type> <slug> [--now] [--ack] [--re <id>] [--thread <id>] [--supersedes <id>] [--deadline <UTC>]}"
   local type="${2:?missing type}" slug="${3:?missing slug}"; shift 3
   need_agent "$to"
@@ -789,14 +826,16 @@ cmd_send() {
       --supersedes)
         [[ -z "$supersedes" ]] || die 'repeated --supersedes'
         supersedes="${2:?missing supersedes id}"; shift;;
-      --deadline) deadline="${2:?missing deadline}"; shift;;
+      --deadline) deadline="${2?missing deadline}"; shift;;
       *) die "unknown option: $1";;
     esac
     shift
   done
   [[ "$type" != "delegate" || "$requires_ack" == true ]] || die 'delegate letters require --ack'
+  [[ -z "$re" ]] || validate_relation_id re "$re"
   [[ -z "$thread" ]] || validate_relation_id thread "$thread"
   [[ -z "$supersedes" ]] || validate_relation_id supersedes "$supersedes"
+  [[ -z "$deadline" ]] || validate_utc deadline "$deadline"
   local body
   if ! IFS= read -r -d '' body < <(cat; printf '\0'); then die 'cannot read message body'; fi
   body="$(printf '%s' "$body")"
@@ -965,6 +1004,7 @@ archive_message() {
 
 cmd_reply() {
   need_me
+  validate_session
   local message="${1:?usage: letterbox reply <id-or-file> <ack|nack|result> <slug> [--now]}"
   local type="${2:?missing reply type}" slug="${3:?missing reply slug}"; shift 3
   case "$type" in ack|nack|result) ;; *) die 'reply type must be ack, nack, or result';; esac
@@ -976,7 +1016,7 @@ cmd_reply() {
   slug="$(printf '%s' "$slug" | tr '[:upper:] ' '[:lower:]-' | tr -cd 'a-z0-9-')"
   [[ -n "$slug" ]] || die 'slug became empty'
 
-  local msg parent_id parent_from expected_reply doorbell_to inbox_canon processed_canon req
+  local msg parent_id parent_from expected_reply doorbell_to inbox_canon processed_canon req parent_thread
   msg="$(resolve_action_ref "$message" owned 1)" || die "message not found: $(safe_id_out "$message")"
   inbox_canon="$(canonical_dir "$(inbox_path "$ME")")"
   processed_canon="$(canonical_dir "$(processed_path "$ME")")"
@@ -1006,6 +1046,9 @@ cmd_reply() {
     *) die "message has invalid requires_ack '$req' (expected true or false)";;
   esac
   doorbell_to="$(frontmatter_value "$msg" from)"
+  parent_id="$(frontmatter_value "$msg" id)"
+  parent_thread="$(frontmatter_value "$msg" thread)"
+  validate_reply_metadata "$parent_id" "$doorbell_to" "$parent_thread" "$type"
   # Body before lock: a hanging stdin must not pin the letter.
   local body
   if ! IFS= read -r -d '' body < <(cat; printf '\0'); then die 'cannot read reply body'; fi

@@ -8,16 +8,21 @@
   one clock snapshot; stable parent-derived reply ids retain their lineage while
   `sent` records each reply's own publication time. Identical retries preserve it.
 - Add `send --supersedes <id>` as a syntax-validated reference, without ownership
-  lookup. Both this option and explicit `--thread` refuse malformed or overlong
+  lookup. This option and explicit `--re`/`--thread` refuse malformed or overlong
   values rather than sanitising them. Existing letters are unchanged.
+- Refuse injected/multiline header values: session labels are bounded, deadlines
+  and publication times are calendar-valid UTC, and generated/derived ids and
+  inherited reply linkage are validated before publication. Invalid session
+  labels are refused before a reply can create a lifecycle lock. Queries never
+  silently repair malformed older envelopes.
 - Add synthetic query tests to `make ci`, with Python 3.9 and 3.13 on the Ubuntu
   and macOS workflow matrix. Matrix configuration is not a claim of a passed run.
 - Distinguish symlinked root components from non-directory components. Add
   separate mutation witnesses for no-follow opens, symlink recognition, and
   pre/post-open leaf type guards.
-- No archive traversal or archive verb. Writer changes are limited to `sent`,
-  `--supersedes` and bounded explicit relation-id validation; other writer
-  validation and transport changes are outside this release's scope.
+- No archive traversal or archive verb. Transport behavior is unchanged; header
+  validation is not a claim of authenticated metadata, exhaustive writer race
+  hardening, or hardware crash durability.
   See [query contracts and limitations](docs/query.md).
 
 ## v0.4.0 — 2026-09-17 (cmux edition)

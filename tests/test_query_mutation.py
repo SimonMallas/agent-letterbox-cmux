@@ -7,6 +7,20 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = (
+    ("re-validation-removed", "bin/letterbox",
+     '[[ -z "$re" ]] || validate_relation_id re "$re"', ':'),
+    ("deadline-validation-removed", "bin/letterbox",
+     '[[ -z "$deadline" ]] || validate_utc deadline "$deadline"', ':'),
+    ("session-validation-removed", "bin/letterbox",
+     '[[ -z "$SESSION" || "$SESSION" =~ ^[A-Za-z0-9._:-]{1,64}$ ]]', ':'),
+    ("send-clock-validation-removed", "bin/letterbox",
+     '  validate_utc sent "$sent"\n  id=', '  id='),
+    ("reply-clock-validation-removed", "bin/letterbox",
+     '  validate_utc sent "$sent"\n  tmp=', '  tmp='),
+    ("generated-id-validation-removed", "bin/letterbox",
+     '  validate_relation_id id "$id"', '  :'),
+    ("reply-prelock-validation-removed", "bin/letterbox",
+     '  validate_reply_metadata "$parent_id" "$doorbell_to" "$parent_thread" "$type"', '  :'),
     ("send-sent-removed", "bin/letterbox",
      "printf 'id: %s\\nsent: %s\\nfrom: %s\\nto: %s\\ntype: %s\\nre: %s\\n'",
      "printf 'id: %s\\nstamp: %s\\nfrom: %s\\nto: %s\\ntype: %s\\nre: %s\\n'"),
@@ -42,6 +56,13 @@ CASES = (
 
 
 WITNESSES = {
+    "re-validation-removed": "test_legacy_header_inputs_refused_before_any_write",
+    "deadline-validation-removed": "test_legacy_header_inputs_refused_before_any_write",
+    "session-validation-removed": "test_invalid_session_refused_on_send_and_reply_before_write",
+    "send-clock-validation-removed": "test_invalid_publication_clock_refused_without_letter",
+    "reply-clock-validation-removed": "test_invalid_publication_clock_refused_without_letter",
+    "generated-id-validation-removed": "test_generated_id_is_bounded_before_temp_creation",
+    "reply-prelock-validation-removed": "test_inherited_reply_metadata_refused_before_lock",
     "send-sent-removed": "test_send_has_one_utc_snapshot_for_id_and_sent",
     "reply-sent-removed": "test_reply_own_time_parent_identity_and_retry_bytes",
     "split-publication-clock": "test_send_has_one_utc_snapshot_for_id_and_sent",
