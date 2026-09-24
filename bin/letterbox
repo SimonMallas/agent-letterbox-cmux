@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# letterbox — dependency-free helper for Agent Letterbox.
+# letterbox — shell helper for Agent Letterbox; query uses Python 3.9+.
 set -euo pipefail
 
 SCRIPT_PATH="${BASH_SOURCE[0]}"
@@ -1194,6 +1194,18 @@ cmd_unlock() {
   rm "$lease" && rmdir "$lock"
   printf 'unlocked: %s\n' "$lock"
 }
+cmd_query() {
+  command -v python3 >/dev/null 2>&1 || die 'query requires Python 3.9 or newer (python3)'
+  python3 -I -B -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' 2>/dev/null \
+    || die 'query requires Python 3.9 or newer (python3)'
+  if [[ "${1:-}" == --compat-v2 ]]; then
+    shift
+    python3 -I -B "$SCRIPT_DIR/../lib/query/query.py" --root "$BOX" "$@"
+  else
+    python3 -I -B "$SCRIPT_DIR/../lib/query/strict.py" "$BOX" "$@"
+  fi
+}
+
 cmd_status() {
   need_me
   local state="${1:?usage: letterbox status <working|idle|blocked>}" note="${2:-}"
@@ -1206,10 +1218,11 @@ case "${1:-}" in
   init) shift; cmd_init "$@";; send) shift; cmd_send "$@";; check) shift; cmd_check "$@";;
   reply) shift; cmd_reply "$@";; file) shift; cmd_file "$@";; done) shift; cmd_done "$@";;
   read) shift; cmd_read "$@";; progress) shift; cmd_progress "$@";;
+  query) shift; cmd_query "$@";;
   nudge) shift; cmd_nudge "$@";; token) shift; cmd_token "$@";;
   doorbell-line) shift; cmd_doorbell_line "$@";;
   doorbell-parse) shift; cmd_doorbell_parse "$@";;
   lock) shift; cmd_lock "$@";; unlock) shift; cmd_unlock "$@";;
   status) shift; cmd_status "$@";; cmux) shift; cmd_cmux "$@";;
-  *) printf 'usage: letterbox {init|send|check|read|progress|nudge|token|reply|file|done|lock|unlock|status|cmux|--version} ...\n\ncmux: setup | run | register | unregister | status\n' >&2; exit 2;;
+  *) printf 'usage: letterbox {init|send|check|query|read|progress|nudge|token|reply|file|done|lock|unlock|status|cmux|--version} ...\n\ncmux: setup | run | register | unregister | status\n' >&2; exit 2;;
 esac

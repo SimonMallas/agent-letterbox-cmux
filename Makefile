@@ -15,6 +15,8 @@ define run_lifecycle
 endef
 
 test:
+	python3 -B tests/test_query.py
+	python3 -B tests/test_query_mutation.py
 	./tests/smoke.sh
 	./tests/test_outbox_sweep_exclusion.sh
 	./tests/test_error_paths.sh

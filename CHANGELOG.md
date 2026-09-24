@@ -1,3 +1,15 @@
+## v0.5.0 — unreleased (cmux edition)
+
+- Add read-only `letterbox query`: strict-v1 envelope cards by default and
+  explicit `--compat-v2` JSON with diagnostics and scoped completeness.
+- Query requires Python 3.9+ (standard library only), with an explicit refusal
+  when unavailable. Existing send/reply/registration and bounded doorbell
+  behavior is unchanged.
+- Add synthetic query tests to `make ci`, with Python 3.9 and 3.13 on the Ubuntu
+  and macOS workflow matrix. Matrix configuration is not a claim of a passed run.
+- No archive traversal, archive verb, or send-side validation expansion.
+  See [query contracts and limitations](docs/query.md).
+
 ## v0.4.0 — 2026-09-17 (cmux edition)
 
 Release 2 doorbell contract. The ring now reports exactly one

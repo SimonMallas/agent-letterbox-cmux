@@ -9,15 +9,21 @@ permissions:
 
 jobs:
   smoke:
-    name: smoke (${{ matrix.os }})
+    name: smoke (${{ matrix.os }}, Python ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        python: ['3.9', '3.13']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up query interpreter
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
 
       - name: Run test suite
         run: make ci

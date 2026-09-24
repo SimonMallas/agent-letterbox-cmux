@@ -132,6 +132,13 @@ This repository is purpose-built for live cmux agent teams.
 
 You need macOS or Linux, Bash, Git, and cmux. No server, database, cloud account, or custom cmux layout is required.
 
+`letterbox query` additionally needs Python 3.9 or newer (standard library
+only); the existing bounded doorbell also uses Python 3. macOS Command Line
+Tools provide Python 3 alongside Git, and many Linux
+distributions include it; check `python3 --version`. See [Queryable envelope
+memory](docs/query.md) for strict-v1 queries, explicit `--compat-v2` output, and
+scope/completeness limits.
+
 ## Step 1 — Install Agent Letterbox
 
 Open any terminal window. You can either copy/paste the commands yourself, **or simply give the prompt below to one of your existing coding agents**:
