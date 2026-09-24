@@ -35,6 +35,9 @@ def collect(root, participants=None, *, max_names=100000):
         for component in filter(None, root.split("/")):
             parent = descriptors[-1]
             binding = os.stat(component, dir_fd=parent, follow_symlinks=False)
+            if stat.S_ISLNK(binding.st_mode):
+                refusal_code = "root_component_symlink"
+                raise OSError("symlink root component")
             if not stat.S_ISDIR(binding.st_mode):
                 refusal_code = "root_component_not_directory"
                 raise OSError("unsafe root component")

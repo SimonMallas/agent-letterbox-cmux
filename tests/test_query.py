@@ -9,11 +9,13 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 CLI = ROOT / "bin/letterbox"
 sys.path.insert(0, str(ROOT / "lib/query"))
 from envelopes import HeaderError, read_header
+import scanner
 
 
 class QueryTests(unittest.TestCase):
@@ -173,6 +175,100 @@ class QueryTests(unittest.TestCase):
         (outbox / "draft.md").write_text("not an envelope")
         self.assertIn("scanned=0", self.query())
         self.assertEqual(self.query(compat=True)["observed_counts"]["scanned"], 0)
+
+    def test_symlink_ancestor_has_specific_refusal(self):
+        ancestor = self.work / "ancestor"
+        ancestor.symlink_to(self.work, target_is_directory=True)
+        self.env["LETTERBOX_DIR"] = str(ancestor / "store")
+        data = self.query(compat=True, code=2)
+        self.assertEqual([i["code"] for i in data["issues"]], ["root_component_symlink"])
+        self.assertIsNone(data["complete_counts"])
+
+    def test_nondirectory_ancestor_retains_specific_refusal(self):
+        ancestor = self.work / "not-a-directory"
+        ancestor.write_text("ordinary file")
+        self.env["LETTERBOX_DIR"] = str(ancestor / "store")
+        data = self.query(compat=True, code=2)
+        self.assertEqual([i["code"] for i in data["issues"]], ["root_component_not_directory"])
+
+    def test_leaf_open_refuses_swapped_symlink_before_opening_target(self):
+        leaf = self.letter()
+        outside = self.work / "outside.md"
+        outside.write_bytes(leaf.read_bytes())
+        real_open = os.open
+        opened = []
+
+        def swap_then_open(name, flags, *, dir_fd):
+            leaf.unlink()
+            leaf.symlink_to(outside)
+            fd = real_open(name, flags, dir_fd=dir_fd)
+            opened.append(fd)
+            return fd
+
+        parent = real_open(str(leaf.parent), scanner.DIR_FLAGS)
+        try:
+            result = scanner._Scanner(100)
+            with patch.object(scanner.os, "open", side_effect=swap_then_open):
+                result.leaf(parent, "beta/inbox", leaf.name)
+            # A later signature check is not evidence that NOFOLLOW worked.
+            # This specifically requires the kernel to refuse opening the target.
+            self.assertEqual(opened, [])
+            self.assertEqual(result.entries[0].issue, "leaf_unreadable_or_changed")
+            self.assertIsNone(result.entries[0].fields)
+        finally:
+            os.close(parent)
+
+    def test_leaf_binding_type_guard_rejects_symlink_before_open(self):
+        leaf = self.letter()
+        outside = self.work / "outside.md"
+        outside.write_bytes(leaf.read_bytes())
+        leaf.unlink()
+        leaf.symlink_to(outside)
+        parent = os.open(str(leaf.parent), scanner.DIR_FLAGS)
+        try:
+            result = scanner._Scanner(100)
+            with patch.object(scanner.os, "open", side_effect=AssertionError("opened symlink binding")):
+                result.leaf(parent, "beta/inbox", leaf.name)
+            self.assertEqual(result.entries[0].issue, "unsafe_leaf")
+            self.assertIsNone(result.entries[0].fields)
+        finally:
+            os.close(parent)
+
+    def test_opened_leaf_type_guard_rejects_swapped_fifo_before_header(self):
+        leaf = self.letter()
+        real_open = os.open
+        opened = []
+
+        def swap_then_open(name, flags, *, dir_fd):
+            leaf.unlink()
+            os.mkfifo(leaf)
+            fd = real_open(name, flags, dir_fd=dir_fd)
+            opened.append(fd)
+            return fd
+
+        parent = real_open(str(leaf.parent), scanner.DIR_FLAGS)
+        try:
+            result = scanner._Scanner(100)
+            with patch.object(scanner.os, "open", side_effect=swap_then_open), \
+                    patch.object(scanner, "read_header", side_effect=AssertionError("read special file")):
+                result.leaf(parent, "beta/inbox", leaf.name)
+            self.assertEqual(len(opened), 1)  # O_NONBLOCK allows this open.
+            # Pin the post-open type guard, not the later signature defence.
+            self.assertEqual(result.entries[0].issue, "unsafe_leaf")
+            self.assertIsNone(result.entries[0].fields)
+        finally:
+            os.close(parent)
+
+    def test_layered_leaf_guards_healthy_control(self):
+        leaf = self.letter()
+        parent = os.open(str(leaf.parent), scanner.DIR_FLAGS)
+        try:
+            result = scanner._Scanner(100)
+            result.leaf(parent, "beta/inbox", leaf.name)
+            self.assertIsNone(result.entries[0].issue)
+            self.assertEqual(result.entries[0].fields["id"], "request-a")
+        finally:
+            os.close(parent)
 
     def test_symlink_leaf_refuses_without_read(self):
         target = self.work / "outside"

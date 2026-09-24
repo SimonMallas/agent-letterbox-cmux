@@ -7,6 +7,9 @@
   behavior is unchanged.
 - Add synthetic query tests to `make ci`, with Python 3.9 and 3.13 on the Ubuntu
   and macOS workflow matrix. Matrix configuration is not a claim of a passed run.
+- Distinguish symlinked root components from non-directory components. Add
+  separate mutation witnesses for no-follow opens, symlink recognition, and
+  pre/post-open leaf type guards.
 - No archive traversal, archive verb, or send-side validation expansion.
   See [query contracts and limitations](docs/query.md).
 

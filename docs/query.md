@@ -4,7 +4,9 @@
 ring, acknowledge, file, archive, update an index, or change letters. It uses the
 same `LETTERBOX_DIR` / configured default directory as other commands. No agent
 identity is required. Use an absolute, non-symlink directory path for queries;
-compatibility mode refuses symlinks in any root path component.
+compatibility mode refuses symlinks in any root path component, reporting
+`root_component_symlink`. A regular file in that position reports
+`root_component_not_directory` instead.
 
 Query requires **Python 3.9 or newer**, using only the standard library. Other
 commands have no new Python requirement. Missing or older `python3` exits 1 with
