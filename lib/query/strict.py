@@ -9,7 +9,8 @@ import sys
 from contextlib import contextmanager
 
 PARTICIPANT = re.compile(r"[a-z][a-z0-9-]*")
-LETTER_ID = re.compile(r"[A-Za-z0-9_.:-]{1,128}")
+# ASCII bytes; 255-byte filenames minus .<id>.tmp.XXXXXX overhead.
+LETTER_ID = re.compile(r"[A-Za-z0-9_.:-]{1,243}")
 DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC | os.O_NOFOLLOW
 FILE_FLAGS = os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC | os.O_NOFOLLOW
 UTC = dt.timezone.utc

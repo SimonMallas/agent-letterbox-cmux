@@ -12,7 +12,8 @@ import re
 from types import MappingProxyType
 from typing import Mapping
 
-LETTER_ID = re.compile(r"[A-Za-z0-9_.:-]{1,128}")
+# ASCII bytes; 255-byte filenames minus .<id>.tmp.XXXXXX overhead.
+LETTER_ID = re.compile(r"[A-Za-z0-9_.:-]{1,243}")
 FIELD = re.compile(r"[A-Za-z][A-Za-z0-9_-]*")
 MAX_HEADER = 32768
 MAX_LINE = 4096

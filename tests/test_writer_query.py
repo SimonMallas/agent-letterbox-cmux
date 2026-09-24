@@ -4,7 +4,7 @@ import shlex
 import shutil
 import unittest
 
-from test_query import MailboxCase
+from test_query import MailboxCase, ROOT
 
 
 class WriterTests(MailboxCase):
@@ -118,7 +118,7 @@ class WriterTests(MailboxCase):
 
     def test_malformed_references_refuse_before_any_write(self):
         invalid = ("", "bad id", "x/y", "a\nb", "a\rb", "a\tb", "$(command)",
-                   "x" * 129, "é", "Ａ", "x\x1b[31m")
+                   "x" * 244, "é", "Ａ", "x\x1b[31m")
         for flag in ("--supersedes", "--thread"):
             for value in invalid:
                 with self.subTest(flag=flag, value=repr(value)):
@@ -137,10 +137,13 @@ class WriterTests(MailboxCase):
             self.assertEqual(self.snapshot(), before)
 
     def test_reference_charset_and_maximum_length_preserved(self):
-        for value in ("a", "Aa09._:-", "x" * 128):
-            _, fields = self.send("--supersedes", value, "--thread", value)
+        for value in ("a", "Aa09._:-", "x" * 243):
+            _, fields = self.send("--supersedes", value, "--thread", value, "--re", value)
             self.assertEqual(fields["supersedes"], value)
             self.assertEqual(fields["thread"], value)
+            self.assertEqual(fields["re"], value)
+        self.query()
+        self.assertTrue(self.query(compat=True)["complete"])
 
     def test_unknown_reference_is_diagnostic_not_writer_lookup(self):
         _, fields = self.send("--supersedes", "absent-id")
@@ -174,7 +177,7 @@ class WriterTests(MailboxCase):
         log = self.watch_writes()
         cases = (
             ("--re", "prior\nfrom: injected"), ("--re", "prior\rfrom: injected"),
-            ("--re", "x" * 129), ("--re", "bad id"), ("--re", "../outside"),
+            ("--re", "x" * 244), ("--re", "bad id"), ("--re", "../outside"),
             ("--deadline", "2026-09-30T00:00:00Z\nsupersedes: forged"),
             ("--deadline", "2026-09-30T00:00:00Z\rsupersedes: forged"),
             ("--deadline", "2" * 129),
@@ -234,20 +237,83 @@ class WriterTests(MailboxCase):
                     self.assertEqual(self.snapshot(), before)
                     self.assertFalse(list(self.box.rglob("*.lifecycle.lock")))
 
+    def test_max_slug_round_trips_ack_and_result(self):
+        # id=17-byte time + four '-' + eight hex + sender/type/slug.
+        # Reserve '--beta--result' and the 12-byte temporary-name overhead.
+        maximum = 255 - 12 - len("--beta--result") - 29 - len("alpha") - len("request")
+        parent_path, parent = self.send("--ack", kind="request", slug="s" * maximum)
+        original = parent_path.read_bytes()
+        self.assertEqual(len(parent["id"].encode("ascii")) + len("--beta--result"), 243)
+        for kind in ("ack", "result"):
+            result = self.command("reply", parent["id"], kind, "response", input=kind + "\n",
+                                  env=dict(self.env, LETTERBOX_AGENT="beta"))
+            self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
+            reply_path = self.box / "alpha/inbox" / (parent["id"] + "--beta--" + kind + ".md")
+            self.assertEqual(self.header(reply_path)["re"], parent["id"])
+        self.assertEqual((self.box / "beta/processed" / parent_path.name).read_bytes(), original)
+        self.query()
+        self.assertTrue(self.query(compat=True)["complete"])
+
+    def test_over_limit_slug_refused_before_any_write(self):
+        cases = (("alpha", "beta", "request"), ("a", "b", "info"),
+                 ("sender-long", "recipient-longer", "delegate"))
+        initialized = self.command("init", *sorted({agent for row in cases for agent in row[:2]}))
+        self.assertEqual(initialized.returncode, 0, initialized.stderr)
+        log = self.watch_writes()
+        for sender, recipient, kind in cases:
+            maximum = 255 - 12 - len("--" + recipient + "--result") - 29 - len(sender) - len(kind)
+            with self.subTest(sender=sender, recipient=recipient, kind=kind):
+                before = self.snapshot()
+                result = self.command("send", recipient, kind, "s" * (maximum + 1), "--ack",
+                                      input="body\n", env=dict(self.env, LETTERBOX_AGENT=sender))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("slug too long: max " + str(maximum) + " characters", result.stderr)
+                self.assertEqual(self.snapshot(), before)
+                self.assertFalse(log.exists())
+
+    def test_legacy_long_id_reply_reference_and_query(self):
+        # Generated with the actual public v0.4.0 writer, synthetic alpha/beta,
+        # request/--ack and a 110-character slug; deliberately has no sent field.
+        raw = (ROOT / "tests/fixtures/legacy-v040-long-id.md").read_bytes()
+        ident = next(line[4:] for line in raw.decode().splitlines() if line.startswith("id: "))
+        self.assertEqual(len(ident.encode("ascii")), 151)
+        parent_path = self.box / "beta/inbox" / (ident + ".md")
+        parent_path.write_bytes(raw)
+        for kind in ("ack", "result"):
+            result = self.command("reply", ident, kind, "response", input=kind + "\n",
+                                  env=dict(self.env, LETTERBOX_AGENT="beta"))
+            self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
+        _, fields = self.send("--re", ident, "--supersedes", ident, "--thread", ident)
+        self.assertEqual(fields["re"], ident)
+        self.assertEqual(fields["supersedes"], ident)
+        self.assertEqual(fields["thread"], ident)
+        self.assertEqual((self.box / "beta/processed" / parent_path.name).read_bytes(), raw)
+        self.assertIn('id: "' + ident + '"', self.query())
+        data = self.query(compat=True)
+        self.assertTrue(data["complete"])
+        self.assertIn(ident, [card["identity"] for card in data["cards"]])
+
     def test_generated_id_is_bounded_before_temp_creation(self):
         log = self.watch_writes()
-        before = self.snapshot()
-        result = self.command("send", "beta", "info", "x" * 128, input="body\n")
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(self.snapshot(), before)
-        self.assertFalse(log.exists())
+        for suffix in ("bad!suffix", "x" * 244):
+            # Defense at publication still matters if an external random-byte
+            # helper produces malformed output, despite a reply-safe slug.
+            tool = self.tools / "od"
+            tool.write_text('#!/bin/sh\nprintf "%s" ' + shlex.quote(suffix) + '\n')
+            tool.chmod(0o755)
+            log.unlink(missing_ok=True)
+            before = self.snapshot()
+            result = self.command("send", "beta", "info", "topic", input="body\n")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(self.snapshot(), before)
+            self.assertFalse(log.exists())
 
     def test_inherited_reply_metadata_refused_before_lock(self):
         log = self.watch_writes()
         cases = (("task-a", {"thread": "bad thread"}),
-                 ("task-b", {"thread": "x" * 129}),
+                 ("task-b", {"thread": "x" * 244}),
                  ("task-c", {"from": "../outside"}),
-                 ("x" * 120, {}))  # Parent id fits, but the derived reply id does not.
+                 ("x" * 240, {}))  # Parent id fits, but the derived reply id does not.
         for ident, overrides in cases:
             with self.subTest(ident=ident[:20], overrides=overrides):
                 self.letter(ident, agent="alpha", **dict({"from": "beta", "to": "alpha"}, **overrides))

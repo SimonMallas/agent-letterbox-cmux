@@ -7,6 +7,14 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = (
+    ("slug-budget-removed", "bin/letterbox",
+     '(( ${#slug} <= max_slug )) || die "slug too long: max $max_slug characters for this sender/recipient/type"', ':'),
+    ("strict-legacy-id-cap-regressed", "lib/query/strict.py",
+     'LETTER_ID = re.compile(r"[A-Za-z0-9_.:-]{1,243}")',
+     'LETTER_ID = re.compile(r"[A-Za-z0-9_.:-]{1,128}")'),
+    ("compat-legacy-id-cap-regressed", "lib/query/envelopes.py",
+     'LETTER_ID = re.compile(r"[A-Za-z0-9_.:-]{1,243}")',
+     'LETTER_ID = re.compile(r"[A-Za-z0-9_.:-]{1,128}")'),
     ("re-validation-removed", "bin/letterbox",
      '[[ -z "$re" ]] || validate_relation_id re "$re"', ':'),
     ("deadline-validation-removed", "bin/letterbox",
@@ -31,7 +39,7 @@ CASES = (
      '  id="${sent//:/}"\n  id="${id%Z}-$ME-$type-$slug-$(random_suffix)"',
      '  id="$(id_now)-$ME-$type-$slug-$(random_suffix)"'),
     ("reference-validation-removed", "bin/letterbox",
-     '[[ "$2" =~ ^[A-Za-z0-9._:-]{1,128}$ ]]', ':'),
+     '[[ "$2" =~ ^[A-Za-z0-9._:-]+$ && ${#2} -le $MAX_LETTER_ID ]]', ':'),
     ("file-nofollow-removed", "lib/query/scanner.py",
      'FILE_FLAGS = os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK',
      'FILE_FLAGS = os.O_RDONLY | os.O_CLOEXEC | os.O_NONBLOCK'),
@@ -56,6 +64,9 @@ CASES = (
 
 
 WITNESSES = {
+    "slug-budget-removed": "test_over_limit_slug_refused_before_any_write",
+    "strict-legacy-id-cap-regressed": "test_legacy_long_id_reply_reference_and_query",
+    "compat-legacy-id-cap-regressed": "test_legacy_long_id_reply_reference_and_query",
     "re-validation-removed": "test_legacy_header_inputs_refused_before_any_write",
     "deadline-validation-removed": "test_legacy_header_inputs_refused_before_any_write",
     "session-validation-removed": "test_invalid_session_refused_on_send_and_reply_before_write",
@@ -95,6 +106,7 @@ def main():
             for folder in ("bin", "lib", "adapters"):
                 shutil.copytree(ROOT / folder, copy / folder)
             (copy / "tests").mkdir()
+            shutil.copytree(ROOT / "tests/fixtures", copy / "tests/fixtures")
             for test_file in ("test_query.py", "test_writer_query.py"):
                 shutil.copy2(ROOT / "tests" / test_file, copy / "tests" / test_file)
             shutil.copy2(ROOT / "VERSION", copy / "VERSION")

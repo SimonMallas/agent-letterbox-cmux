@@ -101,6 +101,25 @@ A letter with a missing or empty `requires_ack` is malformed. Helpers must refus
   New ids and copied reply linkage must fit the identifier grammar; an overlong
   generated/derived id is refused before publication, not truncated. A reply
   also validates its parent's sender and thread before any lifecycle lock.
+- The id/reference limit is **243 ASCII bytes**, in both writer and query modes:
+  a 255-byte filename budget minus 12 bytes for `.<id>.tmp.XXXXXX`. This is
+  tighter than the three-byte `.md` final-name overhead. Parent ids, derived
+  reply ids and explicit reference fields share this limit, not a 128-byte cap.
+- A new send reserves `--<recipient>--result`, the longest ownership-reply
+  suffix, before accepting its normalized slug. Its maximum slug length is
+  `max(0, 243 - (recipient_length + 10) - (29 + sender_length + type_length))`.
+  The fixed 29 bytes are the 17-byte timestamp, four hyphens and eight random
+  hex characters. A nonempty slug is still required. Over-limit sends fail
+  before writing with `slug too long: max N characters for this sender/recipient/type`,
+  where N is calculated for that send. This budget also leaves room for the
+  parent's ACK/progress temporary sidecar and lifecycle-lock names.
+- Accepted new sends can receive ACK followed by RESULT (or NACK) from their
+  addressed recipient without overflowing that filename budget. This does
+  not promise unbounded nested replies to replies. Long legacy ids remain
+  referenceable/queryable, and replies that fit the v0.4.0 filename budget
+  remain supported. A legacy id whose derived reply plus temporary wrapper
+  already exceeded 255 bytes was not replyable by v0.4.0 either; it remains
+  unreplyable for that reply type. No legacy id is shortened or rewritten.
 - `LETTERBOX_SESSION` must be empty (omit the field) or match
   `[A-Za-z0-9._:-]{1,64}`. Invalid sessions are refused at send/reply entry,
   before lock or temporary message creation. The body may still be multiline.
@@ -110,7 +129,7 @@ A letter with a missing or empty `requires_ack` is malformed. Helpers must refus
   The helper validates its generated publication timestamp with the same rule.
 - `letterbox send <to> <type> <slug> --supersedes <id>` adds the optional
   `supersedes` field. Explicit `--re`, `--thread` and `--supersedes` values must
-  match `[A-Za-z0-9._:-]{1,128}`: 1–128 ASCII characters, no spaces, slashes,
+  match `[A-Za-z0-9._:-]{1,243}`: 1–243 ASCII characters, no spaces, slashes,
   control characters, or line breaks. Malformed values are refused before
   creating any letter or temporary message; never sanitised into another id.
   Repeated `--supersedes` flags are refused.

@@ -23,6 +23,8 @@ SESSION="${LETTERBOX_SESSION:-}"
 REPLY_FILE=""
 REPLY_ALREADY=false
 LIFECYCLE_LOCK=""
+# 255-byte filename minus the 12-byte .<id>.tmp.XXXXXX wrapper.
+MAX_LETTER_ID=243
 
 die() { printf 'letterbox: %s\n' "$*" >&2; exit 1; }
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
@@ -772,7 +774,7 @@ release_lifecycle_lock() {
 
 validate_relation_id() {
   local LC_ALL=C
-  [[ "$2" =~ ^[A-Za-z0-9._:-]{1,128}$ ]] || die "bad $1: expected a letter id (1..128 ASCII letters, digits, dot, underscore, colon or hyphen)"
+  [[ "$2" =~ ^[A-Za-z0-9._:-]+$ && ${#2} -le $MAX_LETTER_ID ]] || die "bad $1: expected a letter id (1..$MAX_LETTER_ID ASCII letters, digits, dot, underscore, colon or hyphen)"
 }
 
 validate_session() {
@@ -807,6 +809,7 @@ validate_reply_metadata() { # parent id, sender, thread, reply type
 }
 
 cmd_send() {
+  local LC_ALL=C
   need_me
   validate_session
   local to="${1:?usage: letterbox send <to> <type> <slug> [--now] [--ack] [--re <id>] [--thread <id>] [--supersedes <id>] [--deadline <UTC>]}"
@@ -817,6 +820,11 @@ cmd_send() {
   case "$type" in ack|nack|result) die 'use letterbox reply for ownership replies';; esac
   slug="$(printf '%s' "$slug" | tr '[:upper:] ' '[:lower:]-' | tr -cd 'a-z0-9-')"
   [[ -n "$slug" ]] || die 'slug became empty'
+  # Reserve --<recipient>--result for a terminal reply to this new send.
+  # The parent prefix/suffix use 17 time bytes, four '-', eight random hex.
+  local max_slug=$((MAX_LETTER_ID - ${#to} - 10 - 29 - ${#ME} - ${#type}))
+  (( max_slug >= 0 )) || max_slug=0
+  (( ${#slug} <= max_slug )) || die "slug too long: max $max_slug characters for this sender/recipient/type"
   local priority=next requires_ack=false re='' deadline='' thread='' supersedes=''
   while [[ $# -gt 0 ]]; do
     case "$1" in

@@ -97,6 +97,12 @@ query or incomplete scan.
   Supersession is an annotation, not authorization: no sender-ownership lookup
   is performed, and a reference does not rewrite its predecessor.
 
+Both query modes accept ids and id references of 1–243 ASCII characters from
+`[A-Za-z0-9._:-]`, matching the writer's 255-byte filename budget minus the
+12-byte temporary-name wrapper. Long v0.4.0 ids are not truncated or rewritten.
+New sends separately reserve room for the recipient's reply suffix when bounding
+their slug; see [SPEC.md](../SPEC.md) for the per-send formula and legacy limits.
+
 Older writers could accept line breaks in reference, deadline, or session inputs.
 Duplicate-key envelopes from that behavior make strict mode refuse and compatibility
 mode report incomplete results; neither mode rewrites them. A syntactically valid
