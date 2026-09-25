@@ -4,19 +4,11 @@
 
 ### The 60-second evaluation
 
-Agent Letterbox is a **cross-agent communication system for the terminal**: it gives the
-coding agents you already run the ability to talk to each other. Agents send each other
-**durable enveloped letters** — addressed Markdown files with typed headers that land in
-a teammate's inbox — and a doorbell rings to wake the recipient.
+Agent Letterbox is a cross-agent communication system for terminal CLI agents: it gives the coding agents you already run the ability to talk to each other. Agents send each other **durable, queryable, accountable letters** — each a hybrid Markdown file in an envelope with a typed address — that land in a teammate's inbox, and a doorbell rings to wake the recipient. The bell is one contentless line by design, but it is the heartbeat of the team; the letters it points to are the memory.
 
-This release introduces **Queryable Envelope Memory (QEM)** — the reason those letters are
-more than mail. Every letter carries a typed envelope — sender, addressee, type, priority,
-whether it demands an answer. Every new v0.5.0 send and reply also carries publication UTC in
-`sent`; letters can carry thread linkage and a `supersedes` reference to an earlier record.
-Existing letters are unchanged. For older letters without `sent`, strict mode retains its UTC
-timestamp-from-ID fallback; compatibility mode reports unknown time.
-No database, no embeddings, no service — the envelope is the memory. QEM makes that memory
-**queryable**, with one read-only command:
+The letterbox is the team's **episodic memory**: a write-once record of what was asked, answered, and decided — episode by episode, with provenance on every entry. Every letter carries a typed envelope — sender, addressee, type, priority, whether it demands an answer — and every new v0.5.0 send and reply also carries publication UTC in `sent`; letters can carry thread linkage and a `supersedes` reference to an earlier record. Letters are never edited in place; a correction is a new letter that supersedes the old. It is not semantic memory: nothing is summarized, embedded, ranked, or consolidated. The context window is working memory; this is the long-term store it offloads to — and ground truth for whatever memory layer you point at it later.
+
+Until now that record was **Envelope Memory**: everything kept, but to find anything you had to open the letters and read. This release upgrades it to **Queryable Envelope Memory (QEM)** — the reason those letters are more than mail, and the third retrieval lane: dense retrieval finds meaning, lexical retrieval finds strings, and **structured-metadata retrieval finds records**. Exact filters over typed envelope fields, in one read-only command:
 
 ```bash
 letterbox query                                            # newest envelopes, scope stated
@@ -26,26 +18,21 @@ letterbox query superseded=head since=2026-01-01T00:00:00Z
 ```
 
 - **What did a teammate decide?** — filter by sender, type, topic, or time.
-- **Is it still current?** — publish an update with `letterbox send ... --supersedes <prior-id>`;
-  `superseded=head` filters to envelopes not superseded in the scanned scope. Dangling
-  supersession references are reported. The envelope record, not a truth certificate.
+- **Is it still current?** — currency is bookkeeping, not inference: publish an update with
+  `letterbox send ... --supersedes <prior-id>` and the supersession is declared by the author,
+  never guessed by software. `superseded=head` filters to envelopes not superseded in the
+  scanned scope. Dangling supersession references are reported. The envelope record, not a
+  truth certificate.
 - **What do I still owe?** — `letterbox query state=open answered=no type=request` (and again
-  with `type=delegate`): open, unanswered requests recorded in the letter lifecycle.
+  with `type=delegate`): open promises derived from the letter lifecycle at scan time.
 - **Did that never happen?** — an empty answer is scoped to the folders searched, from a
   non-atomic scan — never evidence that something did not happen anywhere.
 - **Where do two accounts disagree?** — inspect a thread's envelope provenance, then read
   the letters to compare their accounts. Query does not read bodies or identify disagreements.
 
-Strict-v1 envelopes by default; `--compat-v2` explicitly for older corpora, with diagnostics
-instead of silent assumptions. Read-only: query never sends, rings, files, or changes a
-letter. No archive traversal. Runs on the Python 3.9+ standard library; macOS Command Line
-Tools provide Python 3 alongside Git, and many Linux distributions include it.
-**Durable over persistent**: letters survive agent restarts, compaction, and new sessions as
-files on disk. You can check every byte. See [query contracts and limitations](docs/query.md).
+No database, no embeddings, no service — the envelope is the memory, and query is retrieval over it, not recall: exact filters on typed fields, never similarity search. Strict-v1 envelopes by default; `--compat-v2` explicitly for older corpora, with diagnostics instead of silent assumptions — a lens over the record, not a rewrite of it. Existing letters are unchanged: older letters without `sent` keep their UTC timestamp-from-ID fallback in strict mode and report unknown time in compatibility mode. Read-only: query never sends, rings, files, or changes a letter — and nothing it returns is ever written back, so the record never eats its own output. No archive traversal. Runs on the Python 3.9+ standard library; macOS Command Line Tools provide Python 3 alongside Git, and many Linux distributions include it. **Durable over persistent**: persistent means merely kept around in a process or context; durable means letters survive agent restarts, compaction, and new sessions as files on disk. You can check every byte. See [query contracts and limitations](docs/query.md).
 
-The doorbell is deliberately the smallest part: one contentless line that tells a live
-agent to check its inbox. The letter is the message; the ring is only latency. **This edition
-rings it inside your cmux panes.**
+The doorbell is deliberately the smallest part: one contentless line that tells a live agent to check its inbox. The letter is the message; the ring is only latency. **This edition rings it inside your cmux panes.**
 
 - **Status:** active development. Tagged releases with semver; history in [CHANGELOG.md](CHANGELOG.md).
 - **License:** MIT ([LICENSE](LICENSE)).
@@ -85,10 +72,6 @@ The agent wakes, picks up the real task from disk, replies, and keeps the work f
 
 ## Start here
 
-**Agent Letterbox turns separate coding agents into a dynamic team.** The bell creates the live team in the moment; **enveloped letters** give that team durable memory.
-
-A doorbell gets the right agent's attention. The handoff itself is an **enveloped letter**: a Markdown-native upgrade with a human-readable body and a durable structured envelope for sender, recipient, identity, time, thread, and lifecycle. It survives scrollback, compaction, restarts, and changing terminal layouts.
-
 This is **durable memory without a memory system**: no hidden database or proprietary brain required. The letter record stays inspectable, searchable, and available to whatever memory or orchestration layer the team chooses later.
 
 New to the project? Start with the [manual install](#option-a--inspectable-manual-install-recommended-for-a-first-install). It is the recommended path when you want to inspect the source before it changes your machine. The one-line installer remains available as a convenience after review.
@@ -126,37 +109,33 @@ Working an inbox day to day: [Handling mail](docs/handling-mail.md).
 
 ## More memory than message
 
-Letterbox is a thin shared memory layer for an agent team: durable
-correspondence, handoffs, decisions, ACKs and RESULTs, and recoverable
-history sitting on disk between separate context windows. It is the place the team writes what happened — not a model that
-remembers for them.
+Letterbox is a thin shared memory layer for an agent team — in the field's terms, the team's **episodic memory**: durable correspondence, handoffs, decisions, ACKs and RESULTs, and recoverable history on disk between separate context windows. It is the place the team writes what happened — not a model that remembers for them.
 
-When one agent types into another's terminal, the message is spent the
-moment it lands: the pane scrolls, the session compacts, and nothing
-remains. Between agents there is no phone keeping a copy — an injected
-handoff is the ONLY copy, and it dies with the scrollback.
+When one agent types into another's terminal, the message is spent the moment it lands: the pane scrolls, the session compacts, and nothing remains. Between agents there is no phone keeping a copy — an injected handoff is the ONLY copy, and it dies with the scrollback.
 
-A letter is different. It carries sender, recipient, type, thread linkage
-and time in its envelope, in plain Markdown, on disk — so the handoff that
-happened at 9am is still readable at 3am, by the agent that crashed in
-between, by the teammate who joined later, by whatever memory system you
-point at the directory.
+A letter is different. It carries sender, recipient, type, thread linkage and time in its envelope, in plain Markdown, on disk — so the handoff that happened at 9am is still readable at 3am, by the agent that crashed in between, by the teammate who joined later, by whatever memory system you point at the directory. Every memory exists because someone wrote it, on purpose — authored, never inferred.
 
 What that buys, mechanically:
 
-- **A crashed or compacted agent recovers its context from its own
-  inbox** — restore is reading, not reconstruction.
-- **"What was actually said" has an answer** — the thread on disk, not
-  competing recollections from two context windows.
-- **Context windows stay clean** — the doorbell is one contentless line;
-  the body enters an agent's context only when it chooses to read.
-- **Any memory system can eat it** — letters are files with envelopes:
-  searchable, addressable, born indexable.
+- **A crashed or compacted agent recovers its context from its own inbox** — restore is
+  reading, not reconstruction. The context window is working memory; the letterbox is the
+  long-term store.
+- **"What was actually said" has an answer** — the thread on disk, not competing
+  recollections from two context windows. Memory is nice; a **truth layer** is the actual
+  product: one place where what was said, by whom, and what is still current is
+  answerable, with receipts.
+- **Context windows stay clean** — the doorbell is one contentless line; the body enters
+  an agent's context only when it chooses to read.
+- **Any memory system can eat it** — letters are files with envelopes: searchable,
+  addressable, born indexable.
 
-Letterbox is not a memory intelligence system. It does not summarize,
-embed, rank, promote, or interpret. A separate memory layer may use
-these records as ground truth. We keep the letter; the librarian can be
-anyone's.
+Letterbox is not a memory intelligence system. It does not summarize, embed, rank, promote, or interpret — no consolidation, and nothing is remembered that was not written. A query is a window, not a pump: its results point at letters and are never ingested, ranked, or written back — no amplification loop, no store eating its own output. A separate memory layer may use these records as ground truth. We keep the letter; the librarian can be anyone's.
+
+The honest cost: query finds what was filed, not what was known. The envelope answers only what the envelope says, and a session that understood more than it wrote down is still gone. That is a deliberate choice of failure mode. Memory with a system risks remembering something false, quietly and at volume; memory without one risks forgetting something true. Letterbox chooses the second, on purpose.
+
+## One brain, not a silo per agent
+
+Many memory systems are built per user: your assistant remembers *you*, in a silo, and a second agent on the same machine usually starts without it. Letterbox is built per **team**. Every agent reads and writes the same letter store, so what one agent learns, decides, or promises is on the record for all of them, with an author and a date attached. Not separate minds with separate memories glued together: specialists around one brain, not a silo per agent. The letters are simultaneously what the team remembers and how it talks: coordination and memory are the same files. And because the record is shared, any teammate, agent or human, can check what was said against it in seconds.
 
 ## How a task moves
 
