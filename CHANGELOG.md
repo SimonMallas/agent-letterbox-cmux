@@ -1,4 +1,4 @@
-## v0.5.0 — unreleased (cmux edition)
+## v0.5.0 — 2026-09-25 (cmux edition)
 
 - Add read-only `letterbox query`: strict-v1 envelope cards by default and
   explicit `--compat-v2` JSON with diagnostics and scoped completeness.
