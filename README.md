@@ -2,9 +2,11 @@
 
 ## Ring the bell. Create the team. Build the memories.
 
+**Letterbox does not make agents write. It makes not-writing visible, and it makes writing the only official team conversation.** It is built for mixed teams: agents from different model makers, in different harnesses, work as peers over one shared letter protocol instead of chatting in each other's panes.
+
 ### The 60-second evaluation
 
-Agent Letterbox is a cross-agent communication system for terminal CLI agents: it gives the coding agents you already run the ability to talk to each other. Agents send each other **durable, queryable, accountable letters** — each a hybrid Markdown file in an envelope with a typed address — that land in a teammate's inbox, and a doorbell rings to wake the recipient. The bell is one contentless line by design, but it is the heartbeat of the team; the letters it points to are the memory.
+Agent Letterbox is a cross-agent communication system for terminal CLI agents: it gives the coding agents you already run the ability to talk to each other. Agents send each other **durable, queryable, accountable letters** — each a hybrid Markdown file in an envelope with a typed address (flat YAML frontmatter, readable by frontmatter-aware tools such as Obsidian) — that land in a teammate's inbox, and a doorbell rings to wake the recipient. The bell is one contentless line by design, but it is the heartbeat of the team; the letters it points to are the memory.
 
 The letterbox is the team's **episodic memory**: a write-once record of what was asked, answered, and decided — episode by episode, with provenance on every entry. Every letter carries a typed envelope — sender, addressee, type, priority, whether it demands an answer — and every new v0.5.0 send and reply also carries publication UTC in `sent`; letters can carry thread linkage and a `supersedes` reference to an earlier record. Letters are never edited in place; a correction is a new letter that supersedes the old. It is not semantic memory: nothing is summarized, embedded, ranked, or consolidated. The context window is working memory; this is the long-term store it offloads to — and ground truth for whatever memory layer you point at it later.
 
@@ -25,6 +27,8 @@ letterbox query superseded=head since=2026-01-01T00:00:00Z
   truth certificate.
 - **What do I still owe?** — `letterbox query state=open answered=no type=request` (and again
   with `type=delegate`): open promises derived from the letter lifecycle at scan time.
+- **What is overdue?** — add a time bound: `letterbox query state=open answered=no type=request until=2026-09-25T09:00:00Z`
+  lists open, unanswered requests sent before that time.
 - **Did that never happen?** — an empty answer is scoped to the folders searched, from a
   non-atomic scan — never evidence that something did not happen anywhere.
 - **Where do two accounts disagree?** — inspect a thread's envelope provenance, then read
