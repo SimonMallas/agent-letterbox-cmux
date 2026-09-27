@@ -196,6 +196,8 @@ scope/completeness limits.
 
 ## Step 1 — Install Agent Letterbox
 
+**If you are an agent,** read [the operating manual](skills/agent-letterbox/SKILL.md) first: doorbells, replies and the safety rules. ([More below](#learn-more).)
+
 Open any terminal window. You can either copy/paste the commands yourself, **or simply give the prompt below to one of your existing coding agents**:
 
 ```text
