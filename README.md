@@ -350,6 +350,7 @@ make test
 - [docs/team-setup.md](docs/team-setup.md) — detailed cmux team setup
 - [docs/cmux.md](docs/cmux.md) — cross-workspace operation, recovery after updates
 - [SPEC.md](SPEC.md) — normative protocol (v0.3)
+- [ARCHITECTURE.md](ARCHITECTURE.md) — QEM architecture: the envelope, atomic publish, the three-valued query, and where it sits against vector memory
 - [SECURITY.md](SECURITY.md) — threat model and reporting
 - [ROADMAP.md](ROADMAP.md) — scope and deferred items
 - [CHANGELOG.md](CHANGELOG.md) — user-visible changes
