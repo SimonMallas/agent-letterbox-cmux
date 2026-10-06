@@ -351,6 +351,7 @@ make test
 - [docs/cmux.md](docs/cmux.md) — cross-workspace operation, recovery after updates
 - [SPEC.md](SPEC.md) — normative protocol (v0.3)
 - [ARCHITECTURE.md](ARCHITECTURE.md) — QEM architecture: the envelope, atomic publish, the three-valued query, and where it sits against vector memory
+- [The Case for Vectorless Accountability in Agent Memory](https://github.com/SimonMallas/vectorless-accountability) — the QEM reference article: why accountability questions (answered? never happened? who said it?) need exact envelope memory, not a vector store
 - [SECURITY.md](SECURITY.md) — threat model and reporting
 - [ROADMAP.md](ROADMAP.md) — scope and deferred items
 - [CHANGELOG.md](CHANGELOG.md) — user-visible changes
