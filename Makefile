@@ -15,6 +15,7 @@ define run_lifecycle
 endef
 
 test:
+	python3 -B tests/test_stale_lifecycle_lock_race.py
 	python3 -B tests/test_query.py
 	python3 -B tests/test_writer_query.py
 	python3 -B tests/test_query_mutation.py

@@ -737,25 +737,56 @@ create_ack_stamp() { # letter ack_file
   rm "$tmp"
 }
 
+lifecycle_lock_stale() { # $1 = lock dir
+  local lock="$1" pid created now_ts
+  [[ -d "$lock" ]] || return 1
+  if [[ -f "$lock/pid" ]]; then
+    pid="$(cat "$lock/pid" 2>/dev/null || true)"
+    if [[ "$pid" =~ ^[0-9]+$ ]]; then
+      ! kill -0 "$pid" 2>/dev/null
+      return
+    fi
+  fi
+  created="$(stat -c %Y "$lock" 2>/dev/null || stat -f %m "$lock" 2>/dev/null || echo 0)"
+  [[ "$created" =~ ^[0-9]+$ ]] || created=0
+  now_ts="$(date +%s)"
+  (( now_ts - created >= 2 ))
+}
+
+# Serialize stale breakers and re-check while holding the gate: a second breaker
+# must not remove a new owner's lock based on a previously observed dead PID.
+break_stale_lifecycle_lock() { # $1 = lock dir
+  local lock="$1" gate parent
+  parent="$(cd "$(dirname "$lock")" 2>/dev/null && pwd -P)" || return 1
+  gate="$parent/.letterbox-stale-lock-gate"
+  command -v perl >/dev/null 2>&1 || return 1 # fail closed if recovery is unavailable
+  perl -MFcntl=:flock -e '
+    my ($gate, $lock) = @ARGV;
+    open(my $g, ">>", $gate) or exit 1;
+    my $got = 0;
+    for (1 .. 500) { if (flock($g, LOCK_EX | LOCK_NB)) { $got = 1; last } select(undef, undef, undef, 0.01) }
+    exit 1 unless $got;
+    exit 0 unless -d $lock;
+    my $pid = "";
+    if (open(my $p, "<", "$lock/pid")) { $pid = <$p> // ""; chomp $pid; close $p }
+    my $stale;
+    if ($pid =~ /^[0-9]+$/) {
+      $stale = !kill(0, $pid) && !$!{EPERM};
+    } else {
+      my $mtime = (stat $lock)[9] // time;
+      $stale = (time - $mtime) >= 2;
+    }
+    exit 2 unless $stale;
+    unlink "$lock/pid"; rmdir $lock;
+    exit 0' "$gate" "$lock"
+}
+
 acquire_lifecycle_lock() {
-  local letter="$1" lock tries=0 pid created now_ts
+  local letter="$1" lock tries=0
   lock="${letter}.lifecycle.lock"
   while ! mkdir "$lock" 2>/dev/null; do
-    if [[ -f "$lock/pid" ]]; then
-      pid="$(cat "$lock/pid" 2>/dev/null || true)"
-      if [[ "$pid" =~ ^[0-9]+$ ]] && ! kill -0 "$pid" 2>/dev/null; then
-        rm -f "$lock/pid"
-        rmdir "$lock" 2>/dev/null || true
-        continue
-      fi
-    else
-      created="$(stat -c %Y "$lock" 2>/dev/null || stat -f %m "$lock" 2>/dev/null || echo 0)"
-      [[ "$created" =~ ^[0-9]+$ ]] || created=0
-      now_ts="$(date +%s)"
-      if (( now_ts - created >= 2 )); then
-        rmdir "$lock" 2>/dev/null || true
-        continue
-      fi
+    if lifecycle_lock_stale "$lock" && break_stale_lifecycle_lock "$lock"; then
+      continue
     fi
     tries=$((tries + 1))
     (( tries < 500 )) || die "timed out waiting for lifecycle lock: $(basename "$letter")"
