@@ -178,6 +178,21 @@ class QueryTests(MailboxCase):
         self.assertIsNone(data["complete_counts"])
         self.assertTrue(all(c["head"] == "unknown" for c in data["cards"]))
 
+    def test_invalid_encoding_is_reported_without_aborting_scan(self):
+        bad = self.letter("broken-utf8")
+        bad.write_bytes(b"---\nid: broken-utf8\nfrom: \xff\n---\n")
+        self.letter("good")
+        before = self.snapshot()
+        strict = self.query(code=2)
+        self.assertIn("completeness=incomplete", strict)
+        data = self.query(compat=True, code=2)
+        self.assertFalse(data["complete"])
+        self.assertIsNone(data["complete_counts"])
+        self.assertEqual(data["observed_counts"]["scanned"], 2)
+        self.assertIn("good", [card["identity"] for card in data["cards"]])
+        self.assertIn("invalid_encoding", json.dumps(data["diagnostics"]))
+        self.assertEqual(self.snapshot(), before)
+
     def test_missing_folder_refuses_completeness(self):
         (self.box / "beta/processed").rmdir()
         self.query(code=2)
