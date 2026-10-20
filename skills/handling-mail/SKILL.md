@@ -39,8 +39,9 @@ says work has started. Only `result` or `nack` closes it. A request with
 
 ## Filing, and why it matters
 
-A non-task letter closes only when you `letterbox file <ref>`. Nothing files
-itself.
+For a non-task letter that needs no answer, use `letterbox file <ref>`. A
+`requires_ack: false` letter can also close with a one-shot `result` or `nack`.
+Nothing files itself.
 
 **Do this as you go.** Letters that are never filed stay open forever, and an
 inbox where everything is open cannot tell you what needs you — at which point

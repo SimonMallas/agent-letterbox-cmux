@@ -1,14 +1,14 @@
 ---
 name: agent-letterbox
 description: Durable cross-agent coordination for live cmux teams. Use when receiving an Agent Letterbox doorbell, checking a Letterbox inbox, replying to another agent, registering a live cmux surface, or handling agent-to-agent work handoffs.
-version: 0.3.0
+version: 0.5.0
 author: Agent Letterbox
 license: MIT
 ---
 
 # Agent Letterbox
 
-**Helper version:** see repository `VERSION` (currently **0.3.0**). This skill documents the v0.3 doorbell, operational check, and durable-reading workflow.
+**Helper version:** see repository `VERSION`. This skill includes the v0.5 query and supersession workflow.
 
 ## Core rule
 
@@ -94,6 +94,33 @@ letterbox file <id-or-display-id-or-token>
 PATH-form inbound `result`/`nack` requires `--read`. Explicit IDs file directly.
 
 `letterbox nudge <id>` re-rings an existing **open** letter. It does not create a new letter. Filed/terminal letters refuse.
+
+## Past letters and revisions (v0.5)
+
+`letterbox query` searches envelope headers in participants' `inbox/` and `processed/`, not bodies. It is read-only and requires Python 3.9+; no agent identity is needed. Query reads the same Letterbox directory as other commands (`LETTERBOX_DIR` or the configured default). Use its physical path: compatibility mode rejects symlinks in any path component (including macOS `/tmp`). Resolve the existing box with `pwd -P` and override only this query:
+
+```bash
+(cd /path/to/existing-box && LETTERBOX_DIR="$(pwd -P)" letterbox query)
+```
+
+Do not create a replacement mailbox or change live configuration just to query.
+
+```bash
+letterbox query from=planner to=reviewer type=request state=open
+letterbox query superseded=head
+letterbox query --compat-v2 type=request answered=unknown
+```
+
+Default output is `query-scope v=1`, counts and envelope cards. `--compat-v2` returns JSON with schema `letterbox.query.compat.v2`, including diagnostics and unknown facts. Check scope, completeness and exit status before drawing conclusions: exit 2 is invalid/incomplete, not “no mail”. Neither mode proves global absence, delivery or completion; archives are not traversed. Read the actual letter before acting on a match.
+
+To annotate a replacement, use the predecessor's exact id, not a display id or token:
+
+```bash
+printf '%s\n' 'Revised design; use this proposal.' |
+  letterbox send reviewer info revised-design --supersedes <prior-id>
+```
+
+This publishes a new letter; it does not rewrite, close or authorize replacing the predecessor. Sender ownership is not checked. Add `--now` when a live bell is needed. See repository `docs/query.md` for filters, ordering, unknowns and supersession limits.
 
 ## Stdin bodies
 
