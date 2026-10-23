@@ -238,6 +238,19 @@ def main():
     selected, unknown, dangling = select(records, filters)
     scope("complete")
     print("query-result count=%d scanned=%d unknown_time=%d dangling_supersedes=%d" % (len(selected), len(records), unknown, dangling))
+    endpoints = set(participants)
+    for fields in records.values():
+        endpoints.update((fields["from"], fields["to"]))
+    known = {
+        "from": endpoints,
+        "to": endpoints,
+        "type": {"request", "delegate", "info", "status", "blocker", "result", "ack", "nack"}
+                | {r["type"] for r in records.values()},
+        "thread": set(records) | {r.get("thread", "") for r in records.values()},
+    }
+    for key in ("from", "to", "type", "thread"):
+        if key in filters and filters[key] not in known[key]:
+            print("query-warning code=unknown_value filter=" + key + " value=" + quoted(filters[key]))
     for fields in selected:
         ident = fields["id"]
         suffix = re.search(r"[0-9a-f]{8}$", ident)

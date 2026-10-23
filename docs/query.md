@@ -32,7 +32,23 @@ are inclusive. Slug substring matching is case-insensitive. Default state is
 `any`.
 
 Output starts with `query-scope v=1` and names the participants, folders,
-completeness, and non-atomic consistency. Envelope cards follow the counts.
+completeness, and non-atomic consistency. The `query-result` counts follow, then
+optional `query-warning` lines, envelope cards, or `query-empty`. Unknown `from`,
+`to`, `type`, and `thread` filter values produce warnings in that filter order:
+
+```text
+query-result count=0 scanned=4 unknown_time=0 dangling_supersedes=0
+query-warning code=unknown_value filter=to value="nobody"
+query-empty: no matching envelope in stated scope (not proof of global absence)
+```
+
+Participant folders and observed endpoints are known `from`/`to` values. Known
+types include every protocol-valid type, even if no scanned letter uses it.
+Known threads include explicit thread values and letter ids. Thus
+`thread=<root-letter-id>` does not warn, although a root without a `thread`
+header does not match that filter. Warnings are advisory and never change the
+exit code; a warned empty result remains complete and exits 0.
+
 Strict mode requires unique canonical filenames (`<id>.md`) and flat,
 two-delimiter headers with unambiguous fields and valid relation identifiers.
 An unsafe/unreadable leaf, malformed envelope, repeated identity, missing folder,

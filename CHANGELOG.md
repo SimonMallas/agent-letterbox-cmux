@@ -1,3 +1,10 @@
+## Unreleased
+
+- Strict-v1 query emits optional `query-warning code=unknown_value` lines between
+  `query-result` and any cards or `query-empty` for unknown `from`, `to`, `type`,
+  or `thread` filter values. Warnings do not change the exit code. Parsers that
+  expect cards immediately after line 2 must skip warning lines.
+
 ## v0.5.0 — 2026-09-25 (cmux edition)
 
 - Add read-only `letterbox query`: strict-v1 envelope cards by default and
