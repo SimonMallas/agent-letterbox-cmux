@@ -167,6 +167,47 @@ class QueryTests(MailboxCase):
         self.assertIn("count=1", self.query(*args))
         self.assertEqual(self.query(*args, compat=True)["observed_counts"]["selected"], 1)
 
+    def test_unknown_filter_values_warn_without_failing(self):
+        for key, value in (("to", "nobody"), ("from", "ghost"),
+                           ("type", "requst"), ("thread", "nope")):
+            with self.subTest(key=key):
+                lines = self.query(key + "=" + value).splitlines()
+                self.assertIn("count=0", lines[1])
+                self.assertEqual(lines[2], 'query-warning code=unknown_value filter='
+                                 + key + ' value="' + value + '"')
+                self.assertTrue(lines[3].startswith("query-empty:"))
+                self.assertEqual(sum("query-warning" in line for line in lines), 1)
+
+    def test_valid_participant_and_protocol_type_do_not_warn(self):
+        self.letter()
+        out = self.query("to=alpha", "type=nack")
+        self.assertIn("count=0 scanned=1", out)
+        self.assertNotIn("query-warning", out)
+
+    def test_external_bridge_endpoints_do_not_warn(self):
+        self.letter("outbound", to="external-bridge")
+        self.letter("inbound", **{"from": "external-bridge"})
+        for endpoint in ("to=external-bridge", "from=external-bridge"):
+            with self.subTest(endpoint=endpoint):
+                out = self.query(endpoint)
+                self.assertIn("count=1 scanned=2", out)
+                self.assertNotIn("query-warning", out)
+
+    def test_letter_id_is_known_thread_value(self):
+        self.letter("root-request")
+        out = self.query("thread=root-request")
+        self.assertIn("count=0 scanned=1", out)
+        self.assertIn("query-empty:", out)
+        self.assertNotIn("query-warning", out)
+
+    def test_unknown_filter_warnings_have_fixed_order(self):
+        out = self.query("thread=nope", "from=ghost")
+        warnings = [line for line in out.splitlines() if line.startswith("query-warning")]
+        self.assertEqual(warnings, [
+            'query-warning code=unknown_value filter=from value="ghost"',
+            'query-warning code=unknown_value filter=thread value="nope"',
+        ])
+
     def test_supersession_and_cycle(self):
         self.letter()
         self.letter("request-b", supersedes="request-a")
