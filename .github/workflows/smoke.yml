@@ -20,10 +20,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Bridge parser interpreter
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install hash-pinned Agent Letter Bridge 0.5.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv "${RUNNER_TEMP}/alb"
+          echo 'agent-letter-bridge==0.5.0 --hash=sha256:fd1836c4a47e0859fb61366378cd9d501b8ac8f88183238f12026b43ac3d3d35' > "${RUNNER_TEMP}/alb-req.txt"
+          "${RUNNER_TEMP}/alb/bin/python" -m pip install --require-hashes --only-binary=:all: -r "${RUNNER_TEMP}/alb-req.txt"
+          echo "ALB_PYTHON=${RUNNER_TEMP}/alb/bin/python" >> "${GITHUB_ENV}"
+
       - name: Set up query interpreter
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
 
       - name: Run test suite
-        run: make ci
+        shell: bash
+        run: |
+          set -euo pipefail
+          make ci 2>&1 | tee "${RUNNER_TEMP}/ci.log"
+          if grep -F 'test: SKIP Bridge parser smoke' "${RUNNER_TEMP}/ci.log"; then
+            echo "Bridge parser smoke skipped in CI" >&2
+            exit 1
+          fi

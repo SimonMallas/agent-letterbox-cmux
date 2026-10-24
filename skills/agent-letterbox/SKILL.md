@@ -40,6 +40,10 @@ On match: `letterbox check` (summary). Optionally `letterbox read <id-or-display
 
 When a doorbell appears in your live terminal, check the inbox now.
 
+## Agent Letter Bridge integrated mode
+
+If Agent Letter Bridge is configured with this public helper as `ALB_BUS_BINARY`, it calls `letterbox ring <recipient> <type> <letter-id>` only after it has written the durable relay letter. `ring` validates that the matching regular letter is in the recipient inbox before it announces anything. A Bridge service that has `LETTERBOX_DIR` but not the pane environment uses the box's generated `env.sh`; an explicit doorbell setting takes precedence.
+
 ## Startup and resume
 
 1. If you are running in cmux, register your current surface (IDs change after restart):

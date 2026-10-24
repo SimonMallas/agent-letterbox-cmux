@@ -1196,6 +1196,37 @@ cmd_nudge() {
   ring_doorbell "$to" "$typ" "$id"
 }
 
+# Ring for a letter another tool already wrote. Agent Letter Bridge's integrated
+# mode invokes this bus-helper-shaped verb directly. A ring never announces a
+# missing, redirected, or envelope-mismatched letter.
+cmd_ring() {
+  local to="${1:?usage: letterbox ring <to> <type> <id>}" typ="${2:?missing type}" id="${3:?missing id}"
+  # Released Bridge setup probes this exact synthetic, non-deliverable letter.
+  # It proves the helper emits the v=1 outcome contract without announcing mail.
+  if [[ "$to" == alb-doctor-probe && "$typ" == info && "$id" == 1970-01-01T000000-alb-probe-00000000 ]]; then
+    emit_outcome no_live_surface surface_not_found -
+    return 0
+  fi
+  # Bridge services do not inherit a pane's setup environment. Use this
+  # mailbox's generated adapter configuration only when the caller supplied
+  # none; explicit service configuration remains authoritative.
+  if [[ -z "${LETTERBOX_DOORBELL:-}" && -f "$BOX/env.sh" ]]; then
+    # shellcheck disable=SC1090
+    source "$BOX/env.sh"
+    BOX="${LETTERBOX_DIR:-$BOX}"
+  fi
+  need_agent "$to"
+  case "$typ" in request|delegate|status|blocker|result|ack|nack|info) ;; *) die "invalid message type: $typ";; esac
+  [[ "$id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid letter id"
+  local dir f
+  dir="$(inbox_path "$to")"; f="$dir/$id.md"
+  [[ -f "$f" && ! -L "$f" ]] || die "letter not in $to's inbox: $(safe_id_out "$id")"
+  [[ "$(canonical_dir "$dir")" == "$(canonical_dir "$BOX")/$to/inbox" ]] || die "letter not in $to's inbox: $(safe_id_out "$id")"
+  [[ "$(frontmatter_value "$f" id)" == "$id" && "$(frontmatter_value "$f" to)" == "$to" \
+     && "$(frontmatter_value "$f" type)" == "$typ" ]] || die "letter envelope does not match: $(safe_id_out "$id")"
+  ring_doorbell "$to" "$typ" "$id"
+}
+
 cmd_doorbell_line() {
   local to="${1:?usage: letterbox doorbell-line <to> <type> <id>}"
   local type="${2:?missing type}" id="${3:?missing id}"
@@ -1313,11 +1344,12 @@ case "${1:-}" in
   init) shift; cmd_init "$@";; send) shift; cmd_send "$@";; check) shift; cmd_check "$@";;
   reply) shift; cmd_reply "$@";; file) shift; cmd_file "$@";; done) shift; cmd_done "$@";;
   read) shift; cmd_read "$@";; progress) shift; cmd_progress "$@";;
+  ring) shift; cmd_ring "$@";;
   query) shift; cmd_query "$@";;
   nudge) shift; cmd_nudge "$@";; token) shift; cmd_token "$@";;
   doorbell-line) shift; cmd_doorbell_line "$@";;
   doorbell-parse) shift; cmd_doorbell_parse "$@";;
   lock) shift; cmd_lock "$@";; unlock) shift; cmd_unlock "$@";;
   status) shift; cmd_status "$@";; cmux) shift; cmd_cmux "$@";;
-  *) printf 'usage: letterbox {init|send|check|query|read|progress|nudge|token|reply|file|done|lock|unlock|status|cmux|--version} ...\n\ncmux: setup | run | register | unregister | status\n' >&2; exit 2;;
+  *) printf 'usage: letterbox {init|send|check|query|read|progress|nudge|ring|token|reply|file|done|lock|unlock|status|cmux|--version} ...\n\ncmux: setup | run | register | unregister | status\n' >&2; exit 2;;
 esac
