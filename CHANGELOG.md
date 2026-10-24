@@ -1,4 +1,4 @@
-## Unreleased
+## v0.5.1 — 2026-10-24 (cmux edition)
 
 - Add `letterbox ring <recipient> <type> <letter-id>` for Agent Letter Bridge integrated mode. It announces only a matching durable inbox letter and loads the configured box environment when a Bridge service supplies `LETTERBOX_DIR` without a doorbell setting.
 
