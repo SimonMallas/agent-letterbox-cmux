@@ -243,6 +243,8 @@ Both options create one shared Letterbox, agent inboxes, the global `letterbox` 
 
 > `--automatic-doorbells` lets Letterbox type the generic doorbell into a live agent terminal. Use it only for dedicated agent terminals: like any terminal-input tool, it can submit text already typed in a target terminal.
 
+> Before pressing Enter, Letterbox waits `LETTERBOX_DOORBELL_ENTER_DELAY` seconds (default 2, whole seconds 0–5), because some agent apps treat an Enter sent together with the text as part of a paste and never submit it. If your agent's doorbell sits typed but unsent, raise it; if your agent never needs the pause, set it to 0.
+
 ## Step 2 — Open cmux your way
 
 Open cmux and arrange agents however the task requires:
