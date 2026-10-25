@@ -1,3 +1,7 @@
+## Unreleased (cmux edition)
+
+- Setup also links the Agent Letterbox skill into `~/.claude/skills` when Claude Code is installed. Claude Code does not read `~/.agents/skills`, so a Claude Code agent never loaded the skill. An existing `~/.claude/skills/agent-letterbox` is left alone, and `LETTERBOX_SKILLS_DIR` still takes precedence.
+
 ## v0.5.2 — 2026-10-25 (cmux edition)
 
 - `letterbox reply` to a letter whose sender has no inbox now says how to answer a person who wrote through Agent Letter Bridge (`alb --reply-to <letter-id>`), instead of only "original sender has no inbox". The generated AGENT-LETTERBOX.md, the skill and the README say the same. Nothing is read from the letter beyond its validated id.
