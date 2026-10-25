@@ -1,7 +1,7 @@
 ---
 name: agent-letterbox
 description: Durable cross-agent coordination for live cmux teams. Use when receiving an Agent Letterbox doorbell, checking a Letterbox inbox, replying to another agent, registering a live cmux surface, or handling agent-to-agent work handoffs.
-version: 0.5.1
+version: 0.5.2
 author: Agent Letterbox
 license: MIT
 ---
