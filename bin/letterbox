@@ -560,17 +560,21 @@ ring_doorbell() {
   # Best-effort: the letter is already durable. The adapter self-bounds each
   # step at LETTERBOX_DOORBELL_TIMEOUT (default 1s — see SPEC bounds budget);
   # the wrapper bound is only a backstop for a wedged adapter, so it covers a
-  # whole run (lookup + notify + two inject steps + startup slack), never a
-  # single step.
+  # whole run (lookup + notify + two inject steps + the pause before Enter +
+  # startup slack), never a single step.
   local t="${LETTERBOX_DOORBELL_TIMEOUT:-1}"
   [[ "$t" =~ ^[0-9]+$ ]] || t=1
+  # Plus the adapter's pause before Enter. An invalid value makes the adapter
+  # refuse before any step, so it adds nothing.
+  local d="${LETTERBOX_DOORBELL_ENTER_DELAY:-2}"
+  [[ "$d" =~ ^[0-5]$ ]] || d=0
   if ! command -v python3 >/dev/null 2>&1; then
     # Fail closed: without the bounder a hanging adapter would hang the
     # sender with no line at all. Never run the adapter unbounded.
     emit_outcome no_live_surface adapter_unavailable -
     return 0
   fi
-  child_out="$(bounded_cmd "$((4 * t + 5))" env LETTERBOX_DOORBELL_FROM="$from" "$LETTERBOX_DOORBELL" "$to" "$type" "$token")" || child_rc=$?
+  child_out="$(bounded_cmd "$((4 * t + 5 + d))" env LETTERBOX_DOORBELL_FROM="$from" "$LETTERBOX_DOORBELL" "$to" "$type" "$token")" || child_rc=$?
   report_doorbell_outcome "$child_out" "$child_rc"
   return 0
 }

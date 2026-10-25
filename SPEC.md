@@ -224,7 +224,7 @@ For ownership replies the helper order is:
 
 A crash after publish but before archive can leave a duplicate-safe retry. Duplicates are safer than silent loss. Deduplicate by `id` and `re`.
 
-The doorbell is the last act, never the first. Doorbell success means a wake-up was submitted to a verified live surface — not that the agent read or handled the letter.
+The doorbell is the last act, never the first. Doorbell success (`submitted`) means the multiplexer accepted the doorbell text and its Enter for a verified live surface. It cannot prove that the agent's terminal app submitted the line, and never that the agent read or handled the letter.
 
 ## Handling rules
 
@@ -277,12 +277,18 @@ Rules:
 
 Bounds budget (ring path). `LETTERBOX_DOORBELL_TIMEOUT` (default **1s**) bounds
 each mux call (lookup, liveness, notify, text, Enter). The longest legitimate
-run is 4 steps (lookup + notify/resolve + text + Enter) = 4 × step. The
-wrapper's whole-run backstop is 4 × step + 5s spawn margin = **9s** at the
-default, which with ~1s of cleanup sits strictly inside the caller's 10s
-deadline. Configuration limit: keep `LETTERBOX_DOORBELL_TIMEOUT` at 1s (integer
-seconds); raising it outruns the caller deadline unless this budget is
-re-derived.
+run is 4 steps (lookup + notify/resolve + text + Enter) = 4 × step, plus the
+pause before Enter: `LETTERBOX_DOORBELL_ENTER_DELAY` (default **2s**, whole
+seconds 0–5, 0 for no pause; any other value is refused as
+`invalid_enter_delay` before a mux call). The pause exists because an agent
+terminal app that detects pastes treats an Enter sent with the text as part of
+the paste, and the line is never submitted. The wrapper's whole-run backstop
+is 4 × step + 5s spawn margin + the pause = **11s** at the defaults. A healthy
+ring takes about the pause plus one second. Agent Letter Bridge 0.5.2 and
+earlier allow the whole ring 10s, so there a ring that is already wedged reads
+as unconfirmed slightly early. Configuration limit: keep
+`LETTERBOX_DOORBELL_TIMEOUT` at 1s (integer seconds); raising it outruns the
+caller deadline unless this budget is re-derived.
 
 The cmux adapter implements this contract for live terminal agents. The shared filesystem remains the universal transport.
 
