@@ -1,3 +1,7 @@
+## Unreleased (cmux edition)
+
+- `letterbox reply` to a letter whose sender has no inbox now says how to answer a person who wrote through Agent Letter Bridge (`alb --reply-to <letter-id>`), instead of only "original sender has no inbox". The generated AGENT-LETTERBOX.md, the skill and the README say the same. Nothing is read from the letter beyond its validated id.
+
 ## v0.5.1 — 2026-10-24 (cmux edition)
 
 - Add `letterbox ring <recipient> <type> <letter-id>` for Agent Letter Bridge integrated mode. It announces only a matching durable inbox letter and loads the configured box environment when a Bridge service supplies `LETTERBOX_DIR` without a doorbell setting.

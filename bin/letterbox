@@ -467,6 +467,10 @@ letterbox check
 
 For actionable letters, use `letterbox reply` with body text piped on stdin.
 Use `--now` on a reply only when the original letter priority is `now`.
+
+A letter from Agent Letter Bridge is a person writing from a phone, Slack or
+Discord. `letterbox reply` cannot reach them; answer with
+`alb --reply-to <letter-id> --text "..."`, then `letterbox file <letter-id>`.
 EOF
   printf 'cmux team ready: %s\n' "$BOX"
   printf 'Letterbox launcher linked: %s\n' "$launcher_target"
@@ -684,7 +688,7 @@ publish_derived_reply() { # parent type body priority
   [[ -n "$parent_id" && -n "$parent_from" ]] || die "message has invalid frontmatter: $parent"
   validate_reply_metadata "$parent_id" "$parent_from" "$thread" "$type"
   validate_session
-  [[ -d "$(inbox_path "$parent_from")" ]] || die "original sender has no inbox: $parent_from"
+  [[ -d "$(inbox_path "$parent_from")" ]] || die "original sender has no inbox: $parent_from. If a person wrote this through Agent Letter Bridge, answer with: alb --reply-to $parent_id --text \"<your answer>\""
   reply_id="${parent_id}--${ME}--${type}"
   reply_file="$(inbox_path "$parent_from")/$(reply_file_for "$parent_id" "$type" "$ME")"
   if [[ -f "$reply_file" || -f "$(processed_path "$parent_from")/$(basename "$reply_file")" ]]; then

@@ -342,6 +342,8 @@ letterbox ring <recipient> <type> <letter-id>
 
 `ring` only announces a regular letter already present in that recipient's inbox whose `id`, `to`, and `type` headers match. It loads this Letterbox's generated `env.sh` when the Bridge service supplies `LETTERBOX_DIR` but no doorbell configuration; an explicitly configured doorbell remains authoritative. The Bridge setup probe uses the same outcome contract. This requires a release containing the integrated `ring` verb.
 
+A person who wrote through the Bridge is answered with `alb --reply-to <letter-id> --text "..."`. From Bridge 0.5.2, `alb` finds the bridge that holds the letter. `letterbox reply` cannot reach a phone, so it refuses such a letter and says how to answer.
+
 ## Test the installation
 
 ```bash
