@@ -350,6 +350,23 @@ message_body() {
 
 cmux_registry_path() { printf '%s' "${LETTERBOX_CMUX_REGISTRY:-$BOX/cmux-agents.tsv}"; }
 
+# Setup runs again whenever an agent is added. Emptying the registry then
+# silenced every agent already running until each one registered again, so
+# keep the rows whose surface is still live and drop only the dead ones.
+keep_live_cmux_registrations() {
+  local registry="$1" tree tmp line surface
+  [[ -f "$registry" ]] || { : > "$registry"; return; }
+  tree="$(cmux tree --all 2>/dev/null || true)"
+  tmp="$(mktemp "$(dirname "$registry")/.cmux-agents.tmp.XXXXXX")"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    surface="$(printf '%s\n' "$line" | cut -f2)"
+    [[ "$surface" =~ ^surface:[0-9]+$ ]] || continue
+    printf '%s\n' "$tree" | grep -E "${surface}([^0-9]|$)" >/dev/null || continue
+    printf '%s\n' "$line" >> "$tmp"
+  done < "$registry"
+  mv "$tmp" "$registry"
+}
+
 cmd_cmux_register() {
   local agent="${1:?usage: letterbox cmux register <agent>}" registry surface owner tmp
   need_agent "$agent"
@@ -423,7 +440,7 @@ cmd_cmux_setup() {
   mkdir -p "$BOX" "$BOX/locks" "$(dirname "$DEFAULT_DIR_FILE")" "$launcher_dir"
   cmd_init "${agent_list[@]}" >/dev/null
   printf '%s\n' "$BOX" > "$DEFAULT_DIR_FILE"
-  : > "$BOX/cmux-agents.tsv"
+  keep_live_cmux_registrations "$BOX/cmux-agents.tsv"
   mkdir -p "$skills_dir"
   skill_target="$skills_dir/agent-letterbox"
   launcher_target="$launcher_dir/letterbox"

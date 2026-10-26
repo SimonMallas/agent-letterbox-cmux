@@ -239,6 +239,8 @@ To update an installer-based setup later, run the same installer again:
 curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | bash
 ```
 
+To add an agent later, run setup again with just its name, for example `letterbox cmux setup --agents tester --automatic-doorbells`. Agents that are already running keep their doorbells; only registrations whose pane has closed are cleared.
+
 Both options create one shared Letterbox, agent inboxes, the global `letterbox` launcher, the shared Agent Letterbox skill (also linked for Claude Code when it is installed), and the live-surface registration registry.
 
 > `--automatic-doorbells` lets Letterbox type the generic doorbell into a live agent terminal. Use it only for dedicated agent terminals: like any terminal-input tool, it can submit text already typed in a target terminal.

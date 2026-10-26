@@ -36,4 +36,14 @@ CMUX_SURFACE_ID=surface:9 "$letterbox" cmux run receiver -- bash -c '
 '
 test "$(<"$box/run-result")" = "receiver|$box|1"
 awk -F $'\t' '$1 == "receiver" && $2 == "surface:9" { found=1 } END { exit !found }' "$box/cmux-agents.tsv"
+
+# Running setup again to add an agent must not silence the agents already
+# running (an agent that updated itself this way unregistered the others,
+# 26 Oct). A registration whose surface is gone is still dropped.
+printf 'ghost\tsurface:77\t2026-01-01T00:00:00Z\n' >> "$box/cmux-agents.tsv"
+"$letterbox" cmux setup --agents adder --dir "$box" --automatic-doorbells >/dev/null
+awk -F $'\t' '$1 == "receiver" && $2 == "surface:9" { found=1 } END { exit !found }' "$box/cmux-agents.tsv" \
+  || { echo "FAIL: setup dropped a live registration" >&2; exit 1; }
+! grep -q '^ghost' "$box/cmux-agents.tsv" || { echo "FAIL: setup kept a dead registration" >&2; exit 1; }
+[[ -d "$box/adder/inbox" ]]
 printf '%s\n' 'cmux setup/run test: PASS'
