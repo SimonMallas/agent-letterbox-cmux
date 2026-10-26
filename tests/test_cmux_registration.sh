@@ -23,8 +23,15 @@ export CMUX_LOG="$tmp/cmux.log"
 export LETTERBOX_DIR="$tmp/box"
 export LETTERBOX_CMUX_REGISTRY="$tmp/box/cmux-agents.tsv"
 
-CMUX_SURFACE_ID=surface:7 "$letterbox" cmux register receiver
+out="$(env -u LETTERBOX_AGENT CMUX_SURFACE_ID=surface:7 "$letterbox" cmux register receiver)"
 awk -F $'\t' '$1 == "receiver" && $2 == "surface:7" { found=1 } END { exit !found }' "$LETTERBOX_CMUX_REGISTRY"
+# Registering a pane does not name the agent to its own commands; an agent that
+# registered itself was then refused by `letterbox file` (26 Oct). Say so.
+[[ "$out" == *"export LETTERBOX_AGENT=receiver"* ]] \
+  || { printf 'FAIL: register names the LETTERBOX_AGENT the agent needs:\n%s\n' "$out" >&2; exit 1; }
+out="$(LETTERBOX_AGENT=receiver CMUX_SURFACE_ID=surface:7 "$letterbox" cmux register receiver)"
+[[ "$out" != *"LETTERBOX_AGENT"* ]] \
+  || { printf 'FAIL: no LETTERBOX_AGENT note when it is already set:\n%s\n' "$out" >&2; exit 1; }
 
 if CMUX_SURFACE_ID=surface:7 "$letterbox" cmux register other-agent; then
   echo 'FAIL: duplicate live surface registration was accepted' >&2

@@ -396,6 +396,10 @@ cmd_cmux_register() {
   printf '%s\t%s\t%s\n' "$agent" "$surface" "$(now)" >> "$tmp"
   mv "$tmp" "$registry"
   printf 'registered: %s → %s\n' "$agent" "$surface"
+  # The registry names the pane for the doorbell. The agent's own commands
+  # (check, file, reply) still need its name; `cmux run` exports it.
+  [[ "${LETTERBOX_AGENT:-}" == "$agent" ]] ||
+    printf 'Commands from this agent need its name: export LETTERBOX_AGENT=%s\n' "$agent"
 }
 
 cmd_cmux_status() {

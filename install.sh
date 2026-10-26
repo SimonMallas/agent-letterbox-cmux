@@ -13,9 +13,11 @@ if [[ -e "$install_dir" && ! -d "$install_dir/.git" ]]; then
   fail "$install_dir exists but is not an Agent Letterbox Git checkout"
 fi
 
+updated=false
 if [[ -d "$install_dir/.git" ]]; then
   printf 'Updating Agent Letterbox for cmux in %s\n' "$install_dir"
   git -C "$install_dir" pull --ff-only
+  updated=true
 else
   printf 'Downloading Agent Letterbox for cmux...\n'
   mkdir -p "$(dirname "$install_dir")"
@@ -36,6 +38,13 @@ else
 fi
 chmod +x "$install_dir/bin/letterbox" "$install_dir/adapters"/*.sh "$install_dir/tests"/*.sh
 
+# An update changes the code only. The first-time setup below is shared by the
+# whole team, so an update must not present it as the next step.
+if [[ "$updated" == true ]]; then
+  printf '\nUpdated Agent Letterbox for cmux to %s.\n' "$(<"$install_dir/VERSION")"
+  printf 'Your Letterbox, agents and registrations are unchanged. There is nothing more to run.\n'
+  exit 0
+fi
 printf '\nInstalled Agent Letterbox for cmux.\n'
 printf 'Next run:\n\n'
 printf '  letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells\n\n'

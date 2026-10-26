@@ -44,6 +44,7 @@ test:
 	./tests/test_bridge_reply.sh
 	./tests/test_claude_skill_link.sh
 	./tests/test_doorbell_enter_delay.sh
+	./tests/test_install_update.sh
 	./tests/test_doorbell_outcome_fixtures.sh
 	./tests/test_doorbell_line_fixtures.sh
 

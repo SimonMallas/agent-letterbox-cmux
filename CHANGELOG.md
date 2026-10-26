@@ -3,6 +3,8 @@
 - The doorbell's Enter now waits `LETTERBOX_DOORBELL_ENTER_DELAY` seconds after its text (default 2; whole seconds 0–5, 0 for no pause). An agent terminal app that detects pastes (Muse Code) swallowed the Enter sent with the text, so the doorbell sat unsubmitted while the ring reported `submitted`. An invalid value is refused as `invalid_enter_delay` before any cmux command, and the ring's time budget grows by the pause. `submitted` is documented as what it is: the multiplexer accepted the text and the Enter, not proof the agent's app submitted it.
 - Setup also links the Agent Letterbox skill into `~/.claude/skills` when Claude Code is installed. Claude Code does not read `~/.agents/skills`, so a Claude Code agent never loaded the skill. An existing `~/.claude/skills/agent-letterbox` is left alone, and `LETTERBOX_SKILLS_DIR` still takes precedence.
 - Running setup again to add an agent no longer unregisters the agents already running. Setup emptied the live registration registry, so every running agent's doorbell stopped until that agent registered again. It now keeps registrations whose pane is still live and drops only the dead ones.
+- The installer says when it updated an existing copy, and no longer prints the first-time team setup on an update. That setup is shared, and an agent updating itself had to work out not to run it.
+- `register` says when the agent's own commands still need `LETTERBOX_AGENT`. Registering a pane names it for the doorbell only, so an agent that registered itself was refused by `letterbox file` until the variable was set. `run` sets it, and then nothing is printed.
 
 ## v0.5.2 — 2026-10-25 (cmux edition)
 
