@@ -42,6 +42,18 @@ chmod +x "$install_dir/bin/letterbox" "$install_dir/adapters"/*.sh "$install_dir
 # whole team, so an update must not present it as the next step.
 if [[ "$updated" == true ]]; then
   printf '\nUpdated Agent Letterbox for cmux to %s.\n' "$(<"$install_dir/VERSION")"
+  # Since 0.5.3 setup also links the Agent Letterbox skill into ~/.claude/skills,
+  # because Claude Code does not read ~/.agents/skills; a team set up earlier
+  # never got that link. Make it where setup would have: the shared skill is
+  # this installation's, Claude Code is installed, and nothing is there yet.
+  skill_source="$(cd "$install_dir/bin" && pwd)/../skills/agent-letterbox"
+  claude_skill="$HOME/.claude/skills/agent-letterbox"
+  if [[ -z "${LETTERBOX_SKILLS_DIR:-}" && -d "$HOME/.claude" && ! -e "$claude_skill" && ! -L "$claude_skill" \
+        && "$(readlink "$HOME/.agents/skills/agent-letterbox" || true)" == "$skill_source" ]]; then
+    mkdir -p "$HOME/.claude/skills"
+    ln -s "$skill_source" "$claude_skill"
+    printf 'Agent Letterbox skill linked for Claude Code: %s\n' "$claude_skill"
+  fi
   printf 'Your Letterbox, agents and registrations are unchanged. There is nothing more to run.\n'
   exit 0
 fi

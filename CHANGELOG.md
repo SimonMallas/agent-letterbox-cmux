@@ -1,3 +1,8 @@
+## Unreleased (cmux edition)
+
+- An update by the installer now adds the Agent Letterbox skill link that setup has made since v0.5.3, so a team set up earlier gets it without running setup again. The link is made only where setup would make it, and anything already there is left alone.
+- The README has an Updating section: how to check your version, and how to update an installer, Git or `npx skills` install.
+
 ## v0.5.3 — 2026-10-26 (cmux edition)
 
 - The doorbell's Enter now waits `LETTERBOX_DOORBELL_ENTER_DELAY` seconds after its text (default 2; whole seconds 0–5, 0 for no pause). An agent terminal app that detects pastes (Muse Code) swallowed the Enter sent with the text, so the doorbell sat unsubmitted while the ring reported `submitted`. An invalid value is refused as `invalid_enter_delay` before any cmux command, and the ring's time budget grows by the pause. `submitted` is documented as what it is: the multiplexer accepted the text and the Enter, not proof the agent's app submitted it.

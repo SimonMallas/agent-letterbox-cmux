@@ -7,6 +7,8 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
+export HOME="$tmp/home"
+mkdir -p "$HOME"
 git clone -q "$root" "$tmp/source"
 export AGENT_LETTERBOX_REPO="$tmp/source"
 export AGENT_LETTERBOX_INSTALL_DIR="$tmp/install"
@@ -22,5 +24,55 @@ version="$(<"$tmp/install/VERSION")"
   || { printf 'FAIL: an update says it updated:\n%s\n' "$again" >&2; exit 1; }
 [[ "$again" != *"setup --agents"* ]] \
   || { printf 'FAIL: an update prints the first-time setup:\n%s\n' "$again" >&2; exit 1; }
+
+# Since 0.5.3 setup also links the Agent Letterbox skill into ~/.claude/skills,
+# but an update says there is nothing more to run, so a team set up earlier
+# never got the link (28 Oct).
+# The update makes it where setup would have, and nowhere else.
+mkdir -p "$tmp/stub"
+for b in tmux cmux zellij herdr; do printf '#!/bin/sh\nexit 0\n' > "$tmp/stub/$b"; chmod +x "$tmp/stub/$b"; done
+bad() { printf 'FAIL: %s\n' "$1" >&2; exit 1; }
+install() { # home [extra env...]
+  local home="$1"; shift
+  env -i HOME="$home" PATH="/usr/bin:/bin" AGENT_LETTERBOX_REPO="$tmp/source" \
+    AGENT_LETTERBOX_INSTALL_DIR="$home/install" AGENT_LETTERBOX_BIN_DIR="$home/bin" "$@" \
+    bash "$root/install.sh" 2>&1
+}
+set_up() { # home: install, then the team setup, before Claude Code is there
+  mkdir -p "$1"
+  install "$1" >/dev/null
+  env -i HOME="$1" PATH="$tmp/stub:/usr/bin:/bin" \
+    "$1/bin/letterbox" cmux setup --agents alpha --dir "$1/box" >/dev/null 2>&1
+}
+claude_skill=".claude/skills/agent-letterbox"
+
+H="$tmp/older-team"; set_up "$H"; mkdir -p "$H/.claude"
+out="$(install "$H")"
+[[ -L "$H/$claude_skill" ]] || bad "an update links the Agent Letterbox skill into ~/.claude/skills ($out)"
+[[ "$(readlink "$H/$claude_skill")" == "$(readlink "$H/.agents/skills/agent-letterbox")" ]] \
+  || bad "to the same skill as the shared link, so setup later sees it as its own"
+[[ "$out" == *"skill linked for Claude Code"* && "$out" == *"nothing more to run"* ]] \
+  || bad "the update says so, and that nothing more is needed ($out)"
+out="$(env -i HOME="$H" PATH="$tmp/stub:/usr/bin:/bin" "$H/bin/letterbox" cmux setup --agents alpha --dir "$H/box" 2>&1)"
+[[ "$out" != *"left alone"* ]] || bad "setup accepts the update's link ($out)"
+out="$(install "$H")"
+[[ "$out" != *"skill linked for Claude Code"* ]] || bad "a second update changes nothing ($out)"
+
+H="$tmp/own-skill"; set_up "$H"; mkdir -p "$H/$claude_skill"; printf 'mine\n' > "$H/$claude_skill/SKILL.md"
+install "$H" >/dev/null
+[[ ! -L "$H/$claude_skill" && "$(ls -A "$H/$claude_skill")" == SKILL.md && "$(cat "$H/$claude_skill/SKILL.md")" == mine ]] \
+  || bad "an existing ~/.claude skill is left alone"
+
+H="$tmp/no-claude"; set_up "$H"
+install "$H" >/dev/null
+[[ ! -e "$H/.claude" ]] || bad "nothing is created without Claude Code"
+
+H="$tmp/custom-dir"; set_up "$H"; mkdir -p "$H/.claude"
+install "$H" LETTERBOX_SKILLS_DIR="$tmp/skills" >/dev/null
+[[ ! -e "$H/$claude_skill" ]] || bad "LETTERBOX_SKILLS_DIR is respected"
+
+H="$tmp/not-set-up"; mkdir -p "$H/.claude"; install "$H" >/dev/null
+install "$H" >/dev/null
+[[ ! -e "$H/$claude_skill" ]] || bad "no link before setup has run; setup makes it"
 
 printf '%s\n' 'install update suite: PASS'
