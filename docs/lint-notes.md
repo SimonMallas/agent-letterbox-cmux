@@ -30,7 +30,8 @@ Findings (JSON uses lowercase names):
 - STALE: the existing query graph says `head=no`.
 - DANGLING: the cited envelope's supersedes target is in query's
   `dangling_supersedes` diagnostics.
-- UNCURSORED: no line starts `as-of:` within the first 20 lines. Invalid cursor
+- UNCURSORED: no whitespace-trimmed line starts `as-of:` within the first 20
+  lines (the same normalization as the map check). Invalid cursor
   values are not classified as missing; date validity belongs to the map check.
 - FORMATTING: a citation-only line immediately follows nonblank prose. Put the citation on its claim line. This is a mechanical layout
   convention, not semantic detection of what text constitutes a claim.

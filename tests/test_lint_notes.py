@@ -67,6 +67,11 @@ class LintTests(MailboxCase):
         self.assertEqual(finding["kind"], "uncursored")
         self.assertIsNone(finding["citation"])
 
+    def test_indented_cursor_is_not_uncursored(self):
+        for whitespace in ("  ", "\t", " \t "):
+            self.note(whitespace + "as-of: 2026-10-28T00:00:00Z  \nClaim\n")
+            self.assertEqual(self.lint()["findings"], [])
+
     def test_invalid_cursor_is_not_uncursored(self):
         self.note("as-of: invalid\nordinary prose\n")
         self.assertEqual(self.lint()["findings"], [])

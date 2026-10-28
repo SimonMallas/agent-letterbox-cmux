@@ -73,7 +73,7 @@ def lint(notes, graph, agent):
         if path.is_symlink() or not path.is_file():
             raise ValueError("unsafe_note")
         lines = path.read_text(encoding="utf-8").splitlines()
-        if not any(line.startswith("as-of:") for line in lines[:20]):
+        if not any(line.strip().startswith("as-of:") for line in lines[:20]):
             add(path, 1, "uncursored", None, "no as-of: header in first 20 lines")
         for number, line in enumerate(lines, 1):
             matches = citations(line, ids)
