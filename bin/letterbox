@@ -987,19 +987,29 @@ check_thread() {
   done
   shopt -u nullglob
 }
+notes_map() { # [--summary]; LETTERBOX_NOTES_DIR unset: nothing to say
+  [[ -n "${LETTERBOX_NOTES_DIR:-}" ]] || return 0
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo 'map: needs Python 3.9 or newer (python3)'
+    return 0
+  fi
+  python3 -I -B "$SCRIPT_DIR/../lib/query/maps.py" --root "$BOX" --notes "$LETTERBOX_NOTES_DIR" "$@" || true
+}
 cmd_check() {
-  local who="" recent=false thread=""
+  local who="" recent=false thread="" maps=false
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --recent) recent=true;;
       --all) ;;
       --thread) thread="${2:?usage: letterbox check --thread <id>}"; shift;;
-      --*) die "unknown flag $1 (usage: letterbox check [agent] [--recent|--thread <id>])";;
-      *) [[ -z "$who" ]] || die "usage: letterbox check [agent] [--recent|--thread <id>]"; who="$1";;
+      --maps) maps=true;;
+      --*) die "unknown flag $1 (usage: letterbox check [agent] [--recent|--thread <id>|--maps])";;
+      *) [[ -z "$who" ]] || die "usage: letterbox check [agent] [--recent|--thread <id>|--maps]"; who="$1";;
     esac
     shift
   done
   if [[ -n "$thread" ]]; then check_thread "$thread"; return 0; fi
+  if [[ "$maps" == true ]]; then notes_map; return 0; fi
   who="${who:-$ME}"
   need_agent "$who"
   local inbox; inbox="$(inbox_path "$who")"
@@ -1050,6 +1060,8 @@ cmd_check() {
       echo "letterbox: warning: orphan ACK sidecar $(safe_id_out "$oid")" >&2
     }
   done
+  # The notes are this seat's own: no map line when checking another inbox.
+  if [[ "$who" == "$ME" ]]; then notes_map --summary; fi
 }
 
 # Resolve id/path to canonical absolute path under own inbox or processed.
@@ -1375,6 +1387,11 @@ cmd_query() {
   command -v python3 >/dev/null 2>&1 || die 'query requires Python 3.9 or newer (python3)'
   python3 -I -B -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' 2>/dev/null \
     || die 'query requires Python 3.9 or newer (python3)'
+  local arg
+  # Views (view=owed) are compat-v2 presets; strict v1 has none.
+  for arg in "$@"; do
+    [[ "$arg" == view=* && "${1:-}" != --compat-v2 ]] && { set -- --compat-v2 "$@"; break; }
+  done
   if [[ "${1:-}" == --compat-v2 ]]; then
     shift
     python3 -I -B "$SCRIPT_DIR/../lib/query/query.py" --root "$BOX" "$@"

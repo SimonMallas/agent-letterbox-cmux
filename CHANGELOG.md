@@ -4,6 +4,8 @@
 - The README has an Updating section: how to check your version, and how to update an installer, Git or `npx skills` install.
 - Setup's messages and the startup note (`AGENT-LETTERBOX.md`) no longer name one agent app for the extra skill link. Setup and an update print `Agent Letterbox skill also linked: <path>`.
 - A doorbell timeout (`LETTERBOX_DOORBELL_TIMEOUT`) that is not whole seconds from 1 to 999 is now refused as `invalid_timeout` before any cmux command. A value such as `x` used to crash the step's time limit after the cmux command had started, so `cmux send` ran with no limit and could still type the doorbell while the ring reported `send_failed`. `letterbox ring` reports such a value the same way; before, a value such as `08` broke its own budget arithmetic and the ring reported `unconfirmed`.
+- Add `letterbox query view=owed to=<agent>`: the letters an agent still owes, oldest first. These are unfiled requests and letters asking for an acknowledgement, with no result or nack from that agent. Each is marked `UNACKED` or `ACCEPTED-OPEN`, with overdue and unknown-time counts, and `--limit` (default 20) marks a cut list `truncated`. It uses compatibility-v2's own answered rule. Phone letters from Agent Letter Bridge are owed until filed. When the bridge's reply file exists, the letter shows "answered (delivery unproven)".
+- `check` gains a map line when `LETTERBOX_NOTES_DIR` is set: how many notes, and how many have no `as-of:` cursor. `check --maps` shows, per note, how many letters in its `threads:` were sent after its cursor. An unset variable prints nothing. A folder that can't be read is reported.
 
 ## v0.5.3 — 2026-10-26 (cmux edition)
 

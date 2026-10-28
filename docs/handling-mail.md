@@ -31,12 +31,31 @@ That is the whole argument. File as you go.
 letterbox check                 # what is open: live first, stale last
 letterbox check --recent        # hide stale, print a hidden count
 letterbox check --thread <id>   # read-only fan-out of one thread
+letterbox check --maps          # how far the letters moved past each note
 letterbox read <ref>            # print one letter from your own inbox
 ```
 
 `check` is the operational view and the first thing to run when a doorbell
 arrives. It shows open work with live items first and stale items last,
 unacknowledged markers, and progress notes with their age.
+
+If you keep notes, set `LETTERBOX_NOTES_DIR` to their folder (in your own
+environment, not in the box's `env.sh`, which setup rewrites). Each `*.md` note
+names, in its first lines, its cursor and its threads:
+
+```text
+as-of: 2026-10-28T09:00:00Z
+threads: <letter-id>, <letter-id>
+```
+
+Your own `check` then ends with one line, for example
+`map: 3 notes, 1 uncursored · letterbox check --maps for letters since each cursor`.
+`uncursored` means a note has no `as-of:` line. `check --maps` reads every envelope header
+in the box and prints, for each note, its cursor's age and how many letters in
+its threads were sent after it. Each thread counts at most 200, and a capped
+count is marked. Letters with no `sent:` time are counted on their own. When
+the variable is unset, `check` says nothing about notes. When it names a folder
+that can't be read, `check` says so.
 
 A `<ref>` is a full id, a display id (`timestamp · token`), or a unique 8-hex
 token. `read` is scoped to your own inbox: it will not scan paths or peer

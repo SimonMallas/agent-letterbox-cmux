@@ -74,6 +74,42 @@ incomplete scan; `observed_counts` reports only observed material. Exit 0 means
 complete within this contract, not successful delivery. Exit 2 means an invalid
 query or incomplete scan.
 
+## Open loops: `view=owed`
+
+```bash
+letterbox query view=owed to=reviewer             # oldest 20
+letterbox query view=owed to=reviewer --limit 0   # all of them
+```
+
+What does this agent still owe? A compatibility-v2 preset over the same facts,
+so `view=` runs compatibility-v2 without `--compat-v2`. It is not a second
+definition of answered. A letter is **owed** when it is unfiled in the agent's
+own inbox, can obligate (`type: request`, or `requires_ack: true`), and no
+result or nack from the agent to its sender carries `re:` equal to its id. A
+reply of any other type, or anyone else's, does not answer it. `to=` names the
+agent and is the only filter the view takes; the scan is always box-wide.
+
+- **Tiers:** `UNACKED` means no `ack` letter from the agent to the sender with
+  `re:` equal to the id; `ACCEPTED-OPEN` means acknowledged but no result or
+  nack yet. Tiers come from letters, never from `.ack` sidecars. Until a dispute
+  verb exists, `UNACKED` is also the signal for work that may be contested.
+- **Phone letters:** a letter whose sender has no mailbox in the box (Agent
+  Letter Bridge writes these) or is `external-bridge` is owed whatever its type,
+  because nobody can mark a phone message as a request. Its answer never lands
+  in an inbox, so the view reads exactly one file, `<agent>/outbox/reply-<id>.md`.
+  That file, which the bridge writes before sending, makes the tier
+  `ANSWERED-UNPROVEN`, with the note "answered (delivery unproven)". It shows
+  a reply was composed, not delivered, so the letter stays listed until it is
+  filed. The outbox is never scanned as a folder, and no transport receipt is read.
+- **Time:** the envelope `sent:` only; anything else is unknown time. Cards run
+  oldest first, unknown-time letters last, and `counts.unknown_time` counts
+  them. `overdue` is `yes` when `deadline:` is strictly before `--now` (default:
+  the current UTC instant), `unknown` when the deadline does not parse.
+- **Budget:** `--limit` (default 20; 0 for no limit) cuts the oldest-first list.
+  A cut list says `truncated: true`; `counts` always covers every owed letter.
+- An incomplete scan lists candidates as `owed: unknown`, never as owed or
+  settled, and exits 2. An empty list is scoped to the folders read.
+
 ## Shared boundaries
 
 - The graph is evaluated before display filters. A hidden matching result can
