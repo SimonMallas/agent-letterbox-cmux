@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Claude Code reads ~/.claude/skills, not ~/.agents/skills. Setup links the
-# skill there too when Claude Code is installed, never replaces what is there,
-# and does nothing when Claude Code is absent or LETTERBOX_SKILLS_DIR is set.
+# Some agents read skills only from ~/.claude/skills, not ~/.agents/skills.
+# Setup links the skill there too when ~/.claude exists, never replaces what
+# is there, and does nothing when ~/.claude is absent or LETTERBOX_SKILLS_DIR
+# is set.
 set -euo pipefail
 
 EDITION="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
@@ -23,11 +24,15 @@ source_dir="$(cd "$EDITION/skills/agent-letterbox" && pwd)"
 
 H="$T/with-claude"; mkdir -p "$H/.claude"
 out="$(setup "$H")"
-[[ -L "$H/.claude/skills/agent-letterbox" ]] || bad "Claude Code gets the skill ($out)"
+[[ -L "$H/.claude/skills/agent-letterbox" ]] || bad "the skill is linked into ~/.claude/skills ($out)"
 [[ "$(cd "$H/.claude/skills/agent-letterbox" && pwd -P)" == "$(cd "$source_dir" && pwd -P)" ]] \
   || bad "the link points at the bundled skill"
-[[ "$out" == *"skill linked for Claude Code"* ]] || bad "setup says so ($out)"
-ok "linked into ~/.claude/skills when Claude Code is installed"
+[[ "$out" == *"Agent Letterbox skill also linked: $H/.claude/skills/agent-letterbox"* && "$out" != *"for Claude Code"* ]] \
+  || bad "setup says so, without naming an agent app ($out)"
+ok "linked into ~/.claude/skills when ~/.claude exists"
+[[ "$(<"$H/box/AGENT-LETTERBOX.md")" == *"~/.claude/skills/agent-letterbox"* && "$(<"$H/box/AGENT-LETTERBOX.md")" != *"Claude Code"* ]] \
+  || bad "the startup note mentions the link without naming an agent app"
+ok "the startup note names no agent app"
 setup "$H" >/dev/null || bad "running setup again is fine"
 ok "re-running setup is idempotent"
 
@@ -36,13 +41,13 @@ printf 'mine\n' > "$H/.claude/skills/agent-letterbox/SKILL.md"
 out="$(setup "$H")" || bad "setup does not fail on an existing skill ($out)"
 [[ "$(cat "$H/.claude/skills/agent-letterbox/SKILL.md")" == mine && ! -L "$H/.claude/skills/agent-letterbox" ]] \
   || bad "an existing skill is left alone"
-[[ "$out" == *"left alone"* ]] || bad "and setup says so ($out)"
+[[ "$out" == *"left alone"* && "$out" != *"Claude Code"* ]] || bad "and setup says so, without naming an agent app ($out)"
 ok "an existing ~/.claude skill is never replaced"
 
 H="$T/no-claude"; mkdir -p "$H"
 setup "$H" >/dev/null
-[[ ! -e "$H/.claude" ]] || bad "nothing is created without Claude Code"
-ok "no Claude Code, no ~/.claude"
+[[ ! -e "$H/.claude" ]] || bad "nothing is created without ~/.claude"
+ok "no ~/.claude, nothing created"
 
 H="$T/custom-dir"; mkdir -p "$H/.claude"
 setup "$H" LETTERBOX_SKILLS_DIR="$T/skills" >/dev/null

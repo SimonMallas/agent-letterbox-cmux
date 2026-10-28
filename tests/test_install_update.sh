@@ -38,7 +38,7 @@ install() { # home [extra env...]
     AGENT_LETTERBOX_INSTALL_DIR="$home/install" AGENT_LETTERBOX_BIN_DIR="$home/bin" "$@" \
     bash "$root/install.sh" 2>&1
 }
-set_up() { # home: install, then the team setup, before Claude Code is there
+set_up() { # home: install, then the team setup, before ~/.claude exists
   mkdir -p "$1"
   install "$1" >/dev/null
   env -i HOME="$1" PATH="$tmp/stub:/usr/bin:/bin" \
@@ -51,12 +51,12 @@ out="$(install "$H")"
 [[ -L "$H/$claude_skill" ]] || bad "an update links the Agent Letterbox skill into ~/.claude/skills ($out)"
 [[ "$(readlink "$H/$claude_skill")" == "$(readlink "$H/.agents/skills/agent-letterbox")" ]] \
   || bad "to the same skill as the shared link, so setup later sees it as its own"
-[[ "$out" == *"skill linked for Claude Code"* && "$out" == *"nothing more to run"* ]] \
+[[ "$out" == *"Agent Letterbox skill also linked: $H/$claude_skill"* && "$out" == *"nothing more to run"* ]] \
   || bad "the update says so, and that nothing more is needed ($out)"
 out="$(env -i HOME="$H" PATH="$tmp/stub:/usr/bin:/bin" "$H/bin/letterbox" cmux setup --agents alpha --dir "$H/box" 2>&1)"
 [[ "$out" != *"left alone"* ]] || bad "setup accepts the update's link ($out)"
 out="$(install "$H")"
-[[ "$out" != *"skill linked for Claude Code"* ]] || bad "a second update changes nothing ($out)"
+[[ "$out" != *"skill also linked"* ]] || bad "a second update changes nothing ($out)"
 
 H="$tmp/own-skill"; set_up "$H"; mkdir -p "$H/$claude_skill"; printf 'mine\n' > "$H/$claude_skill/SKILL.md"
 install "$H" >/dev/null
@@ -65,7 +65,7 @@ install "$H" >/dev/null
 
 H="$tmp/no-claude"; set_up "$H"
 install "$H" >/dev/null
-[[ ! -e "$H/.claude" ]] || bad "nothing is created without Claude Code"
+[[ ! -e "$H/.claude" ]] || bad "nothing is created without ~/.claude"
 
 H="$tmp/custom-dir"; set_up "$H"; mkdir -p "$H/.claude"
 install "$H" LETTERBOX_SKILLS_DIR="$tmp/skills" >/dev/null

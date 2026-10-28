@@ -2,6 +2,7 @@
 
 - An update by the installer now adds the Agent Letterbox skill link that setup has made since v0.5.3, so a team set up earlier gets it without running setup again. The link is made only where setup would make it, and anything already there is left alone.
 - The README has an Updating section: how to check your version, and how to update an installer, Git or `npx skills` install.
+- Setup's messages and the startup note (`AGENT-LETTERBOX.md`) no longer name one agent app for the extra skill link. Setup and an update print `Agent Letterbox skill also linked: <path>`.
 
 ## v0.5.3 — 2026-10-26 (cmux edition)
 
