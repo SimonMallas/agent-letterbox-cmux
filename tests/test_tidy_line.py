@@ -1,11 +1,11 @@
-"""Tidy reminder: once enough handled letters sit unfiled, the agent's own check says so in one line."""
+"""Tidy reminder: once enough non-task letters could be filed, the agent's own check says so in one line."""
 import os
 import sys
 import unittest
 
 from test_query import MailboxCase
 
-LINE = "%d handled letters unfiled — letterbox file to tidy."
+LINE = "%d non-task letters to review for filing — letterbox file to tidy."
 
 
 class TidyLineTests(MailboxCase):
@@ -13,7 +13,7 @@ class TidyLineTests(MailboxCase):
         result = self.command("check", *args, env=dict(self.env, LETTERBOX_AGENT=agent, **env))
         self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
         self.assertNotIn("BODY-MUST-NOT-APPEAR", result.stdout)
-        return [line for line in result.stdout.splitlines() if "unfiled" in line]
+        return [line for line in result.stdout.splitlines() if line.endswith("letterbox file to tidy.")]
 
     def info(self, count, **fields):
         for n in range(count):
@@ -30,7 +30,7 @@ class TidyLineTests(MailboxCase):
                         % (ident, re or ident), encoding="utf-8")
         return path
 
-    def test_one_line_from_the_fifth_handled_letter(self):
+    def test_one_line_from_the_fifth_letter(self):
         self.info(4)
         self.assertEqual(self.check(), [])
         self.letter("info-4", type="info", requires_ack="false")
@@ -85,7 +85,7 @@ class TidyLineTests(MailboxCase):
     def test_one_letter_is_singular(self):
         self.info(1)
         self.assertEqual(self.check(LETTERBOX_CHECK_TIDY_AT="1"),
-                         ["1 handled letter unfiled — letterbox file to tidy."])
+                         ["1 non-task letter to review for filing — letterbox file to tidy."])
 
     def test_only_for_the_agents_own_check(self):
         self.info(5)

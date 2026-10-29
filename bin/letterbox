@@ -1015,7 +1015,7 @@ header_rows() { # "<key> ..." <file>...: one \037-separated row per letter, file
     }
   ' "$@"
 }
-tidy_line() { # own inbox: one line once enough handled letters wait to be filed
+tidy_line() { # own inbox: one line once enough non-task letters could be filed
   local at="${LETTERBOX_CHECK_TIDY_AT:-5}" n=0 f id from typ req noun=letters
   local outbox="$BOX/$ME/outbox"
   local -a letters=() replies=()
@@ -1026,9 +1026,10 @@ tidy_line() { # own inbox: one line once enough handled letters wait to be filed
   letters=("$(inbox_path "$ME")"/*.md)
   shopt -u nullglob
   (( ${#letters[@]} >= at )) || return 0
-  # Handled = `file` can close it (requires_ack false) and nothing is owed:
+  # Counted = `file` can close it (requires_ack false) and nothing is owed:
   # from a mailbox here and not a request, or a phone letter (its sender has
   # no mailbox here) whose reply is composed as <me>/outbox/reply-<id>.md.
+  # check can't see reading or delivery, so the line asks for a review.
   while IFS=$'\037' read -r f id from typ req; do
     [[ "$req" == false ]] || continue
     if [[ "$from" != external-bridge && "$from" != locks && "$from" =~ ^[a-z][a-z0-9-]*$ ]] \
@@ -1046,7 +1047,7 @@ tidy_line() { # own inbox: one line once enough handled letters wait to be filed
   fi
   (( n >= at )) || return 0
   (( n == 1 )) && noun=letter
-  printf '%s handled %s unfiled — letterbox file to tidy.\n' "$n" "$noun"
+  printf '%s non-task %s to review for filing — letterbox file to tidy.\n' "$n" "$noun"
 }
 cmd_check() {
   local who="" recent=false thread="" maps=false
