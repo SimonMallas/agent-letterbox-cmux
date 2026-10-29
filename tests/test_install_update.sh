@@ -9,6 +9,9 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 export HOME="$tmp/home"
 mkdir -p "$HOME"
+# The update's git pull would start git's background maintenance, which keeps
+# writing under $tmp/install/.git while the trap above deletes it.
+export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=maintenance.auto GIT_CONFIG_VALUE_0=false
 git clone -q "$root" "$tmp/source"
 export AGENT_LETTERBOX_REPO="$tmp/source"
 export AGENT_LETTERBOX_INSTALL_DIR="$tmp/install"
