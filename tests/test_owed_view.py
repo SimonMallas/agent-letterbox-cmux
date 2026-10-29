@@ -26,20 +26,26 @@ class OwedViewTests(MailboxCase):
             "---\nid: reply-%s\nfrom: %s\nto: chat-bridge\nre: %s\n---\nsent text\n"
             % (ident, agent, re or ident), encoding="utf-8")
 
-    def test_owed_is_open_unanswered_obligating_letters_in_the_agents_inbox(self):
+    def test_owed_is_every_unfiled_obligating_letter_in_the_agents_inbox(self):
         self.letter("open-request")
         self.letter("filed-request", folder="processed")
         self.letter("plain-info", type="info", requires_ack="false")
         self.letter("info-wanting-ack", type="info", requires_ack="true")
         self.letter("someone-elses", agent="alpha", **{"from": "beta", "to": "alpha"})
-        self.letter("answered-request")
+        answered = self.letter("answered-request")
         self.letter("result-a", agent="alpha", **{"from": "beta", "to": "alpha",
                     "type": "result", "re": "answered-request"})
         data = self.owed("to=beta")
         self.assertEqual(data["view"], "owed")
         self.assertTrue(data["complete"])
-        self.assertEqual(sorted(self.ids(data)), ["info-wanting-ack", "open-request"])
-        self.assertEqual(data["counts"]["owed"], 2)
+        self.assertEqual(sorted(self.ids(data)), ["answered-request", "info-wanting-ack", "open-request"])
+        self.assertEqual(data["counts"]["owed"], 3)
+        # Answering annotates; only filing takes a letter off the view.
+        tiers = {c["identity"]: c["tier"] for c in data["cards"]}
+        self.assertEqual(tiers["answered-request"], "ANSWERED")
+        self.assertEqual(data["counts"]["answered"], 1)
+        answered.rename(self.box / "beta/processed" / answered.name)
+        self.assertEqual(sorted(self.ids(self.owed("to=beta"))), ["info-wanting-ack", "open-request"])
 
     def test_only_the_addressees_terminal_answers(self):
         self.letter()
@@ -47,10 +53,11 @@ class OwedViewTests(MailboxCase):
                     "type": "result", "re": "request-a"})
         self.letter("thanks", agent="alpha", **{"from": "beta", "to": "alpha",
                     "type": "info", "re": "request-a"})
-        self.assertEqual(self.ids(self.owed("to=beta")), ["request-a"])
+        tier = lambda: [(c["identity"], c["tier"]) for c in self.owed("to=beta")["cards"]]
+        self.assertEqual(tier(), [("request-a", "UNACKED")])
         self.letter("nack-a", agent="alpha", **{"from": "beta", "to": "alpha",
                     "type": "nack", "re": "request-a"})
-        self.assertEqual(self.ids(self.owed("to=beta")), [])
+        self.assertEqual(tier(), [("request-a", "ANSWERED")])
 
     def test_tiers_come_from_ack_letters_not_sidecars(self):
         self.letter("acked")

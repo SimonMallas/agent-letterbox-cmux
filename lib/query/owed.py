@@ -3,7 +3,8 @@
 No second definition of answered: a letter is answered only by the graph's
 eligible terminal (result or nack FROM its addressee TO its sender, re: its id).
 Owed = an unfiled letter in the agent's own inbox that can obligate (type
-request, or requires_ack true) and is not answered. Relay letters, whose sender
+request, or requires_ack true). Answered is its tier, not its removal: only
+filing takes a letter off the view. Relay letters, whose sender
 has no mailbox in the box, are answered by the bridge, not by a Letterbox
 reply: the preset reads exactly <agent>/outbox/reply-<id>.md for them, never
 the outbox as a folder. That file proves a reply was composed, not delivered.
@@ -81,8 +82,9 @@ def owed_document(graph, root, agent, *, limit, now):
         reply = None
         tier = None
         if fact.answered == "yes":
-            continue
-        if relay and graph.complete and fact.occurrence.structural_identity:
+            owed = "yes"
+            tier = "ANSWERED"
+        elif relay and graph.complete and fact.occurrence.structural_identity:
             reply = _relay_reply(root, agent, fact.occurrence.identity)
             owed = "yes"
             tier = "ANSWERED-UNPROVEN" if reply == "composed" else "UNACKED"
@@ -128,6 +130,7 @@ def owed_document(graph, root, agent, *, limit, now):
         "counts": {
             "owed": count("owed", "yes"), "owed_unknown": count("owed", "unknown"),
             "unacked": count("tier", "UNACKED"), "accepted_open": count("tier", "ACCEPTED-OPEN"),
+            "answered": count("tier", "ANSWERED"),
             "answered_unproven": count("tier", "ANSWERED-UNPROVEN"),
             "overdue": count("overdue", "yes"), "overdue_unknown": count("overdue", "unknown"),
             "unknown_time": sum(card["publication_utc"] is None for card in cards),

@@ -84,14 +84,16 @@ letterbox query view=owed to=reviewer --limit 0   # all of them
 What does this agent still owe? A compatibility-v2 preset over the same facts,
 so `view=` runs compatibility-v2 without `--compat-v2`. It is not a second
 definition of answered. A letter is **owed** when it is unfiled in the agent's
-own inbox, can obligate (`type: request`, or `requires_ack: true`), and no
-result or nack from the agent to its sender carries `re:` equal to its id. A
-reply of any other type, or anyone else's, does not answer it. `to=` names the
-agent and is the only filter the view takes; the scan is always box-wide.
+own inbox and can obligate (`type: request`, or `requires_ack: true`). Answering
+does not take it off the view; filing does. It is answered when a result or
+nack from the agent to its sender carries `re:` equal to its id. A reply of any
+other type, or anyone else's, does not answer it. `to=` names the agent and is
+the only filter the view takes; the scan is always box-wide.
 
 - **Tiers:** `UNACKED` means no `ack` letter from the agent to the sender with
   `re:` equal to the id; `ACCEPTED-OPEN` means acknowledged but no result or
-  nack yet. Tiers come from letters, never from `.ack` sidecars. Until a dispute
+  nack yet; `ANSWERED` means a result or nack answers it and it waits only to
+  be filed. Tiers come from letters, never from `.ack` sidecars. Until a dispute
   verb exists, `UNACKED` is also the signal for work that may be contested.
 - **Phone letters:** a letter whose sender has no mailbox in the box (Agent
   Letter Bridge writes these) or is `external-bridge` is owed whatever its type,
