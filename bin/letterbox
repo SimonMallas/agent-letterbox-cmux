@@ -995,6 +995,59 @@ notes_map() { # [--summary]; LETTERBOX_NOTES_DIR unset: nothing to say
   fi
   python3 -I -B "$SCRIPT_DIR/../lib/query/maps.py" --root "$BOX" --notes "$LETTERBOX_NOTES_DIR" "$@" || true
 }
+header_rows() { # "<key> ..." <file>...: one \037-separated row per letter, file first; closed headers only
+  local keys="$1"; shift
+  awk -v keys="$keys" '
+    BEGIN { nk = split(keys, k, " ") }
+    FNR == 1 { split("", v); open = 0 }
+    { line = $0; sub(/\r$/, "", line) }
+    FNR == 1 { open = (line == "---"); next }
+    open && line == "---" {
+      row = FILENAME
+      for (i = 1; i <= nk; i++) row = row "\037" v[k[i]]
+      print row
+      open = 0
+      next
+    }
+    open {
+      key = line; sub(/:.*/, "", key)
+      if (!(key in v)) { value = line; sub(/^[^:]*:[[:space:]]*/, "", value); v[key] = value }
+    }
+  ' "$@"
+}
+tidy_line() { # own inbox: one line once enough handled letters wait to be filed
+  local at="${LETTERBOX_CHECK_TIDY_AT:-5}" n=0 f id from typ req noun=letters
+  local outbox="$BOX/$ME/outbox"
+  local -a letters=() replies=()
+  [[ "$at" =~ ^[0-9]{1,6}$ ]] || at=5
+  at=$((10#$at))
+  (( at > 0 )) || return 0
+  shopt -s nullglob
+  letters=("$(inbox_path "$ME")"/*.md)
+  shopt -u nullglob
+  (( ${#letters[@]} >= at )) || return 0
+  # Handled = `file` can close it (requires_ack false) and nothing is owed:
+  # from a mailbox here and not a request, or a phone letter (its sender has
+  # no mailbox here) whose reply is composed as <me>/outbox/reply-<id>.md.
+  while IFS=$'\037' read -r f id from typ req; do
+    [[ "$req" == false ]] || continue
+    if [[ "$from" != external-bridge && "$from" != locks && "$from" =~ ^[a-z][a-z0-9-]*$ ]] \
+       && [[ -e "$BOX/$from" || -L "$BOX/$from" ]]; then
+      if [[ "$typ" != request ]]; then n=$((n + 1)); fi
+    elif [[ "$id" =~ ^[A-Za-z0-9._:-]{1,243}$ && ! -L "$outbox" && -f "$outbox/reply-$id.md" && ! -L "$outbox/reply-$id.md" ]]; then
+      replies+=("$outbox/reply-$id.md")
+    fi
+  done < <(header_rows "id from type requires_ack" "${letters[@]}")
+  if (( ${#replies[@]} > 0 )); then
+    while IFS=$'\037' read -r f id; do
+      f="${f##*/reply-}"
+      if [[ "$id" == "${f%.md}" ]]; then n=$((n + 1)); fi
+    done < <(header_rows "re" "${replies[@]}")
+  fi
+  (( n >= at )) || return 0
+  (( n == 1 )) && noun=letter
+  printf '%s handled %s unfiled — letterbox file to tidy.\n' "$n" "$noun"
+}
 cmd_check() {
   local who="" recent=false thread="" maps=false
   while [[ $# -gt 0 ]]; do
@@ -1060,8 +1113,11 @@ cmd_check() {
       echo "letterbox: warning: orphan ACK sidecar $(safe_id_out "$oid")" >&2
     }
   done
-  # The notes are this seat's own: no map line when checking another inbox.
-  if [[ "$who" == "$ME" ]]; then notes_map --summary; fi
+  # Filing and notes are this seat's own: neither line when checking another inbox.
+  if [[ "$who" == "$ME" ]]; then
+    tidy_line
+    notes_map --summary
+  fi
 }
 
 # Resolve id/path to canonical absolute path under own inbox or processed.

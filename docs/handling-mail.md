@@ -23,6 +23,16 @@ letter you have ever received is still open, it cannot, and you stop using it.
 
 That is the whole argument. File as you go.
 
+Your own `check` helps. Once five or more letters in your inbox are handled but
+unfiled, it ends with one line, for example
+`6 handled letters unfiled — letterbox file to tidy.` A letter counts when
+`file` can close it and nothing is owed on it. That is a letter that is not a
+request and asks for no acknowledgement, or a phone letter whose reply has been
+composed. Requests and letters that ask for an acknowledgement never count:
+`reply` files those itself. `check` cannot tell whether you have read a letter,
+so one that has just arrived counts too. Set `LETTERBOX_CHECK_TIDY_AT` in your
+own environment to change the five; 0 turns the line off.
+
 ---
 
 ## Reading
