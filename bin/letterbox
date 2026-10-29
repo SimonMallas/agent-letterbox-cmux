@@ -1015,7 +1015,7 @@ header_rows() { # "<key> ..." <file>...: one \037-separated row per letter, file
     }
   ' "$@"
 }
-tidy_line() { # own inbox: one line once enough non-task letters could be filed
+tidy_line() { # own inbox: one line once the count below reaches the threshold
   local at="${LETTERBOX_CHECK_TIDY_AT:-5}" n=0 f id from typ req noun=letters
   local outbox="$BOX/$ME/outbox"
   local -a letters=() replies=()
@@ -1026,9 +1026,10 @@ tidy_line() { # own inbox: one line once enough non-task letters could be filed
   letters=("$(inbox_path "$ME")"/*.md)
   shopt -u nullglob
   (( ${#letters[@]} >= at )) || return 0
-  # Counted = `file` can close it (requires_ack false) and nothing is owed:
-  # from a mailbox here and not a request, or a phone letter (its sender has
-  # no mailbox here) whose reply is composed as <me>/outbox/reply-<id>.md.
+  # Counted = requires_ack false, and either from a mailbox here and not a
+  # request, or a phone letter (its sender has no mailbox here) whose reply is
+  # composed as <me>/outbox/reply-<id>.md. That phone letter is still owed on
+  # view=owed until filed.
   # check can't see reading or delivery, so the line asks for a review.
   while IFS=$'\037' read -r f id from typ req; do
     [[ "$req" == false ]] || continue

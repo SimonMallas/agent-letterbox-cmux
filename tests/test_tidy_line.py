@@ -1,4 +1,4 @@
-"""Tidy reminder: once enough non-task letters could be filed, the agent's own check says so in one line."""
+"""Tidy reminder: once it counts enough letters to review for filing, the agent's own check says so in one line."""
 import os
 import sys
 import unittest
@@ -37,7 +37,7 @@ class TidyLineTests(MailboxCase):
         self.assertEqual(self.check(), [LINE % 5])
         self.assertEqual(self.check("--recent"), [LINE % 5])
 
-    def test_counts_only_what_file_can_close_and_nothing_still_owed(self):
+    def test_counts_non_requests_and_replied_phone_letters_only(self):
         self.info(3)
         self.letter("inbound-result", type="result", requires_ack="false", re="mine")
         self.letter("task")

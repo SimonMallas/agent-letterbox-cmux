@@ -23,14 +23,17 @@ letter you have ever received is still open, it cannot, and you stop using it.
 
 That is the whole argument. File as you go.
 
-Your own `check` helps. Once five or more letters in your inbox could be filed,
-it ends with one line, for example
-`6 non-task letters to review for filing — letterbox file to tidy.` A letter
-counts when `file` can close it and nothing is owed on it. That is a letter that
-is not a request and asks for no acknowledgement, or a phone letter whose reply
-has been composed. Requests and letters that ask for an acknowledgement never
-count: `reply` files those itself. `check` cannot tell whether you have read a
-letter, or whether a phone reply was delivered, so the line asks you to review
+Your own `check` helps. Once it counts five or more letters in your inbox, it
+ends with one line, for example
+`6 non-task letters to review for filing — letterbox file to tidy.` It counts
+two kinds of letter that ask for no acknowledgement: one from a sender with a
+mailbox here that is not a request, such as an `info` or a reply to something
+you sent, and a phone letter whose reply you have composed. A phone letter is
+owed on `query view=owed` until it is filed, even after you reply, so a replied
+phone letter is counted here and still owed there. Requests, letters that ask
+for an acknowledgement, and phone letters with no composed reply never count,
+though `file` can close some of them. `check` cannot tell whether you have read
+a letter, or whether a phone reply was delivered, so the line asks you to review
 these letters, not to file them unseen. Set `LETTERBOX_CHECK_TIDY_AT` in your
 own environment to change the five; 0 turns the line off.
 
