@@ -19,8 +19,8 @@ class TidyLineTests(MailboxCase):
         for n in range(count):
             self.letter("info-%d" % n, type="info", requires_ack="false", **fields)
 
-    def phone(self, ident, sender="chat-bridge"):
-        self.letter(ident, type="info", requires_ack="false", **{"from": sender})
+    def phone(self, ident, sender="chat-bridge", type="info"):
+        self.letter(ident, type=type, requires_ack="false", **{"from": sender})
 
     def reply_file(self, ident, *, re=None, name=None):
         outbox = self.box / "beta" / "outbox"
@@ -51,6 +51,9 @@ class TidyLineTests(MailboxCase):
         self.phone("phone-open")
         self.phone("phone-replied")
         self.reply_file("phone-replied")
+        # A phone letter counts whatever its type: nobody can mark a phone message a request.
+        self.phone("phone-request", type="request")
+        self.reply_file("phone-request")
         # Reserved names are phone letters even where they exist in the box.
         (self.box / "external-bridge").mkdir()
         (self.box / "locks").mkdir()
@@ -62,8 +65,8 @@ class TidyLineTests(MailboxCase):
         self.reply_file("phone-draft", name="draft-phone-draft.md")
         self.phone("phone-link")
         os.symlink(self.reply_file("phone-link", name="kept.md"), self.box / "beta/outbox/reply-phone-link.md")
-        # 3 info + an inbound result + the one phone letter whose reply is composed.
-        self.assertEqual(self.check(LETTERBOX_CHECK_TIDY_AT="1"), [LINE % 5])
+        # 3 info + an inbound result + the two phone letters whose reply is composed.
+        self.assertEqual(self.check(LETTERBOX_CHECK_TIDY_AT="1"), [LINE % 6])
 
     def test_a_symlinked_outbox_is_not_read(self):
         elsewhere = self.work / "elsewhere"

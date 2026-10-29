@@ -28,14 +28,15 @@ ends with one line, for example
 `6 non-task letters to review for filing — letterbox file to tidy.` It counts
 two kinds of letter that ask for no acknowledgement: one from a sender with a
 mailbox here that is not a request, such as an `info` or a reply to something
-you sent, and a phone letter whose reply you have composed. A phone letter is
-owed on `query view=owed` until it is filed, even after you reply, so a replied
-phone letter is counted here and still owed there. Requests, letters that ask
-for an acknowledgement, and phone letters with no composed reply never count,
-though `file` can close some of them. `check` cannot tell whether you have read
-a letter, or whether a phone reply was delivered, so the line asks you to review
-these letters, not to file them unseen. Set `LETTERBOX_CHECK_TIDY_AT` in your
-own environment to change the five; 0 turns the line off.
+you sent, and a phone letter of any type whose reply you have composed. A phone
+letter is owed on `query view=owed` until it is filed, even after you reply, so
+a replied phone letter is counted here and still owed there. Requests from a
+sender with a mailbox here, letters that ask for an acknowledgement, and phone
+letters with no composed reply never count, though `file` can close some of
+them. `check` cannot tell whether you have read a letter, or whether a phone
+reply was delivered, so the line asks you to review these letters, not to file
+them unseen. Set `LETTERBOX_CHECK_TIDY_AT` in your own environment to change
+the five; 0 turns the line off.
 
 ---
 
