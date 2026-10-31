@@ -3,6 +3,7 @@
 - An update by the installer now adds the Agent Letterbox skill link that setup has made since v0.5.3, so a team set up earlier gets it without running setup again. The link is made only where setup would make it, and anything already there is left alone.
 - The README has an Updating section: how to check your version, and how to update an installer, Git or `npx skills` install.
 - Setup's messages and the startup note (`AGENT-LETTERBOX.md`) no longer name one agent app for the extra skill link. Setup and an update print `Agent Letterbox skill also linked: <path>`.
+- A doorbell timeout (`LETTERBOX_DOORBELL_TIMEOUT`) that is not whole seconds from 1 to 999 is now refused as `invalid_timeout` before any cmux command. A value such as `x` used to crash the step's time limit after the cmux command had started, so `cmux send` ran with no limit and could still type the doorbell while the ring reported `send_failed`.
 
 ## v0.5.3 — 2026-10-26 (cmux edition)
 

@@ -46,12 +46,15 @@ bounded_cmd() { # $1=seconds, rest=argv
     command -v python3 >/dev/null 2>&1 || return 125
     python3 -c '
 import os, signal, subprocess, sys
+# Read the bound before starting the child, so a bad bound fails with
+# nothing running.
+secs = float(sys.argv[1])
 try:
     p = subprocess.Popen(sys.argv[2:], start_new_session=True)
 except FileNotFoundError:
     sys.exit(127)
 try:
-    rc = p.wait(timeout=float(sys.argv[1]))
+    rc = p.wait(timeout=secs)
 except subprocess.TimeoutExpired:
     try:
         os.killpg(p.pid, signal.SIGKILL)
@@ -76,6 +79,11 @@ command -v python3 >/dev/null 2>&1 || { emit_outcome no_live_surface adapter_una
 # command runs, so a bad value touches no terminal.
 enter_delay="${LETTERBOX_DOORBELL_ENTER_DELAY:-2}"
 [[ "$enter_delay" =~ ^[0-5]$ ]] || { emit_outcome no_live_surface invalid_enter_delay -; exit 0; }
+# Each mux call is bounded at LETTERBOX_DOORBELL_TIMEOUT: whole seconds 1..999,
+# default 1. Checked before any command runs, like the delay: any other value
+# used to leave a mux command running with no limit.
+bound_s="${LETTERBOX_DOORBELL_TIMEOUT:-1}"
+[[ "$bound_s" =~ ^[1-9][0-9]{0,2}$ ]] || { emit_outcome no_live_surface invalid_timeout -; exit 0; }
 
 # Ruling 5 middle insert: name the durable letter's sender, but only when the
 # wrapper supplied a value that passes the safe-identifier regex (re-checked
@@ -90,7 +98,6 @@ if [[ "$token" =~ ^[0-9a-f]{8}$ ]]; then
   line="$line · $token"
 fi
 registry="${LETTERBOX_CMUX_REGISTRY:-$LETTERBOX_DIR/cmux-agents.tsv}"
-bound_s="${LETTERBOX_DOORBELL_TIMEOUT:-1}"
 tree_ec=0
 tree="$(bounded_cmd "$bound_s" cmux tree --all 2>/dev/null)" || tree_ec=$?
 if [[ "$tree_ec" -eq 124 ]]; then

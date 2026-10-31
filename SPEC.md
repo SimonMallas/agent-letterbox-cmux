@@ -288,7 +288,8 @@ ring takes about the pause plus one second. Agent Letter Bridge 0.5.2 and
 earlier allow the whole ring 10s, so there a ring that is already wedged reads
 as unconfirmed slightly early. Configuration limit: keep
 `LETTERBOX_DOORBELL_TIMEOUT` at 1s (integer seconds); raising it outruns the
-caller deadline unless this budget is re-derived.
+caller deadline unless this budget is re-derived. A value that is not whole
+seconds from 1 to 999 is refused as `invalid_timeout` before any mux call.
 
 The cmux adapter implements this contract for live terminal agents. The shared filesystem remains the universal transport.
 
