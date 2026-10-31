@@ -584,7 +584,10 @@ ring_doorbell() {
   # whole run (lookup + notify + two inject steps + the pause before Enter +
   # startup slack), never a single step.
   local t="${LETTERBOX_DOORBELL_TIMEOUT:-1}"
-  [[ "$t" =~ ^[0-9]+$ ]] || t=1
+  # At most three digits, read as base 10: "08" is not octal, and a long value
+  # cannot overflow the budget. The adapter itself refuses anything outside 1-999.
+  [[ "$t" =~ ^[0-9]{1,3}$ ]] || t=1
+  t=$((10#$t))
   # Plus the adapter's pause before Enter. An invalid value makes the adapter
   # refuse before any step, so it adds nothing.
   local d="${LETTERBOX_DOORBELL_ENTER_DELAY:-2}"
