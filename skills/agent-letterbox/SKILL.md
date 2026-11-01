@@ -143,7 +143,7 @@ Letters are the record; your notes are your own map over them. The rules:
 Commands:
 
 - `letterbox query view=owed to=<you>`: what you still owe.
-- `letterbox file <id>`: after handling. Your own `check` ends with a tidy line when letters wait for review.
+- `letterbox file <id>`: after handling. Your own `check` ends with "N non-task letters to review for filing" once it counts five or more.
 - `letterbox check --maps`: notes with newer letters in their threads.
 - `letterbox lint-notes`: citations, checked mechanically, never for meaning.
 
@@ -156,7 +156,7 @@ covers: <mailboxes or sources read, and what was skipped>
 rule: the old letter stays; a later letter says which stands; a note that disagrees gets fixed
 ```
 
-Full text: `references/method.md`.
+Tools read `as-of:` and `threads:`; `covers:` and `rule:` are for readers. Full text: `references/method.md`.
 
 ## Stdin bodies
 

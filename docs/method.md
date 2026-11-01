@@ -59,7 +59,7 @@ the sources easy to check. It doesn't make them right.
 |---|---|
 | Start of a session: see what is open | `letterbox check` |
 | Before taking on more: see what you still owe | `letterbox query view=owed to=<you>` |
-| After answering: file what is handled | `letterbox file <id>`; your own `check` ends with a tidy line once five or more non-task letters are waiting for review |
+| After answering: file what is handled | `letterbox file <id>`; your own `check` ends with "N non-task letters to review for filing" once it counts five or more |
 | Keeping notes: see which have newer letters | set `LETTERBOX_NOTES_DIR`; your own `check` ends with a map line, and `letterbox check --maps` shows each note |
 | Checking a note's citations | `letterbox lint-notes` |
 | Correcting a letter | `letterbox send … --supersedes <old-id>` |
@@ -84,7 +84,8 @@ covers: <the mailboxes or sources read, and what was skipped>
 rule: the old letter stays; a later letter says which stands; a note that disagrees gets fixed
 ```
 
-`check --maps` reads `as-of:` and `threads:`. `lint-notes` checks each
+`check --maps` reads `as-of:` and `threads:`. No tool reads `covers:` or `rule:`;
+those two lines are for whoever reads the note. `lint-notes` checks each
 citation mechanically: a cited id with no letter in scope, more than one
 match, a letter that has been superseded or whose supersedes target is
 missing, a missing cursor, or a citation on its own line after the claim. It

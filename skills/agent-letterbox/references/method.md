@@ -44,6 +44,9 @@ covers: <mailboxes or sources read, and what was skipped>
 rule: the old letter stays; a later letter says which stands; a note that disagrees gets fixed
 ```
 
+Tools read `as-of:` and `threads:`. No tool reads `covers:` or `rule:`; they are
+for whoever reads the note.
+
 - Every factual claim cites a letter id on the same line as the claim.
 - Your own `check` ends with a map line. `letterbox check --maps` shows, per
   note, how many letters in its threads were sent after its cursor. Newer
