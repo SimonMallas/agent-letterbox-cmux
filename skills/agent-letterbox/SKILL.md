@@ -150,7 +150,7 @@ Commands:
 Notes live in `LETTERBOX_NOTES_DIR`. Each starts with this header in its first 20 lines, and each claim cites a letter id on the same line as the claim:
 
 ```text
-as-of: <newest letter id or UTC time this note has read>
+as-of: <UTC time this note has read up to, such as 2026-11-01T12:00:00Z>
 threads: <letter threads this note summarises>
 covers: <mailboxes or sources read, and what was skipped>
 rule: the old letter stays; a later letter says which stands; a note that disagrees gets fixed

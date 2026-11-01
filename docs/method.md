@@ -82,13 +82,15 @@ is composed. A request from a local sender never counts, even after its result.
 Every standing note starts with these lines, within its first 20 lines:
 
 ```text
-as-of: <the newest letter id or UTC time this note has read>
+as-of: <the UTC time this note has read up to, such as 2026-11-01T12:00:00Z>
 threads: <the letter threads this note summarises>
 covers: <the mailboxes or sources read, and what was skipped>
 rule: the old letter stays; a later letter says which stands; a note that disagrees gets fixed
 ```
 
-`check --maps` reads `as-of:` and `threads:`. No tool reads `covers:` or `rule:`;
+`check --maps` reads `as-of:` and `threads:`. `as-of:` must be an ISO-8601 UTC
+time ending in `Z` or `+00:00`; anything else, a letter id included, is
+reported as not a time. No tool reads `covers:` or `rule:`;
 those two lines are for whoever reads the note. `lint-notes` checks each
 citation mechanically: a cited id with no letter in scope, more than one
 match, a letter that has been superseded or whose supersedes target is

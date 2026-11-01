@@ -40,13 +40,14 @@ Keep notes in `LETTERBOX_NOTES_DIR`, one Markdown file per subject, with this
 header in the first 20 lines:
 
 ```text
-as-of: <newest letter id or UTC time this note has read>
+as-of: <UTC time this note has read up to, such as 2026-11-01T12:00:00Z>
 threads: <letter threads this note summarises>
 covers: <mailboxes or sources read, and what was skipped>
 rule: the old letter stays; a later letter says which stands; a note that disagrees gets fixed
 ```
 
-Tools read `as-of:` and `threads:`. No tool reads `covers:` or `rule:`; they are
+Tools read `as-of:` and `threads:`. `as-of:` must be an ISO-8601 UTC time
+ending in `Z` or `+00:00`; a letter id there is reported as not a time. No tool reads `covers:` or `rule:`; they are
 for whoever reads the note.
 
 - Every factual claim cites a letter id on the same line as the claim.
