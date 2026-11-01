@@ -38,7 +38,8 @@ bad() { printf 'FAIL: %s\n' "$1" >&2; exit 1; }
 install() { # home [extra env...]
   local home="$1"; shift
   env -i HOME="$home" PATH="/usr/bin:/bin" AGENT_LETTERBOX_REPO="$tmp/source" \
-    AGENT_LETTERBOX_INSTALL_DIR="$home/install" AGENT_LETTERBOX_BIN_DIR="$home/bin" "$@" \
+    AGENT_LETTERBOX_INSTALL_DIR="$home/install" AGENT_LETTERBOX_BIN_DIR="$home/bin" \
+    GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=maintenance.auto GIT_CONFIG_VALUE_0=false "$@" \
     bash "$root/install.sh" 2>&1
 }
 set_up() { # home: install, then the team setup, before ~/.claude exists
