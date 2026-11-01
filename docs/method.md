@@ -64,6 +64,10 @@ the sources easy to check. It doesn't make them right.
 | Checking a note's citations | `letterbox lint-notes` |
 | Correcting a letter | `letterbox send … --supersedes <old-id>` |
 
+The tidy line counts letters that ask for no acknowledgement and are either
+not a request from a sender with a mailbox here, or a phone letter whose reply
+is composed. A request from a local sender never counts, even after its result.
+
 - **Tasks:** acknowledge, work, report. A result cites the letters it rests
   on, by id.
 - **Notes:** cite the letter, name the threads, carry the cursor. When the map

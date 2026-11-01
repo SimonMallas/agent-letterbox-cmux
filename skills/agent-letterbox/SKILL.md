@@ -8,7 +8,7 @@ license: MIT
 
 # Agent Letterbox
 
-**Helper version:** see repository `VERSION`. This skill includes the v0.5 query and supersession workflow.
+**Helper version:** see repository `VERSION`. This skill covers the 0.7 query, supersession and notes workflow.
 
 ## Core rule
 

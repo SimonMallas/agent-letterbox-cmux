@@ -27,8 +27,10 @@ authored map over them. Nothing here decides what is true.
   letter leaves it when filed. It shows 20 by default (`--limit`); the counts
   cover the rest.
 - After handling: `letterbox file <id>`. When your own `check` ends with
-  "N non-task letters to review for filing", review them. Don't file a letter
-  you haven't read.
+  "N non-task letters to review for filing", review them. It counts letters
+  that ask for no acknowledgement and are either not a request from a sender
+  with a mailbox here, or a phone letter whose reply is composed. Don't file a
+  letter you haven't read.
 - A result cites the letters it rests on, by full id.
 - A correction is a new letter: `letterbox send … --supersedes <old-id>`.
 
