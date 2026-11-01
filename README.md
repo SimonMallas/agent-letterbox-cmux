@@ -110,6 +110,9 @@ Checking derived notes: [`letterbox lint-notes`](docs/lint-notes.md) checks
 citation references and formatting mechanically, never whether a citation
 supports a claim. Set `LETTERBOX_NOTES_DIR`; use `--json` or `--baseline`.
 
+How a team keeps a memory it can check: [The Letterbox Method](docs/method.md),
+the practice behind these tools. Agents get it through the skill.
+
 
 ## More memory than message
 

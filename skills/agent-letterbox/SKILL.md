@@ -128,6 +128,36 @@ printf '%s\n' 'Revised design; use this proposal.' |
 
 This publishes a new letter; it does not rewrite, close or authorize replacing the predecessor. Sender ownership is not checked. Add `--now` when a live bell is needed. See repository `docs/query.md` for filters, ordering, unknowns and supersession limits.
 
+## The Method: keeping memory checkable
+
+Letters are the record; your notes are your own map over them. The rules:
+
+1. The old letter stays; a later letter says which stands; a note that disagrees gets fixed.
+2. Never rewrite a letter. Removing one is done by hand, with a letter saying who, what, when and why.
+3. Notes must rebuild from letters.
+4. If a query answers it, don't copy it into a note.
+5. A scoped empty is not absence.
+6. The person is a seat, not a supervisor.
+7. Never destroy work you didn't create.
+
+Commands:
+
+- `letterbox query view=owed to=<you>`: what you still owe.
+- `letterbox file <id>`: after handling. Your own `check` ends with a tidy line when letters wait for review.
+- `letterbox check --maps`: notes with newer letters in their threads.
+- `letterbox lint-notes`: citations, checked mechanically, never for meaning.
+
+Notes live in `LETTERBOX_NOTES_DIR`. Each starts with this header in its first 20 lines, and each claim cites a letter id on the same line as the claim:
+
+```text
+as-of: <newest letter id or UTC time this note has read>
+threads: <letter threads this note summarises>
+covers: <mailboxes or sources read, and what was skipped>
+rule: the old letter stays; a later letter says which stands; a note that disagrees gets fixed
+```
+
+Full text: `references/method.md`.
+
 ## Stdin bodies
 
 Prefer `printf '%s\n' '…' | letterbox …`. Avoid unquoted heredocs when the body may contain `$` or backticks. Quote the delimiter if you must use a heredoc (`<<'EOF'`).
@@ -145,4 +175,5 @@ Prefer `printf '%s\n' '…' | letterbox …`. Avoid unquoted heredocs when the b
 
 - `references/cmux.md` — live cmux registration and doorbells
 - `references/protocol.md` — reply-first and priority rules
+- `references/method.md` — the Method: rules, notes and the commands for each habit
 - Repository `SPEC.md` and `docs/lifecycle.md` — normative v0.2 lifecycle
