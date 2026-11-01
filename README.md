@@ -348,7 +348,7 @@ Each agent CLI below completed the full cycle live on this repo — durable lett
 | Cursor Agent | 2026.08.11 | `AGENTS.md` |
 | GitHub Copilot CLI | 1.0.80 | `AGENTS.md` |
 
-The teach file is a short note in the working directory telling the agent what a doorbell means and how to reply — Gemini CLI found and activated the bundled Letterbox skill from the doorbell alone. Any agent that can run shell commands and read a file can join the same way. The maintainers' own team (Claude, Grok, Kimi, Pi, Hermes) runs this letter protocol daily.
+The teach file is a short note in the working directory telling the agent what a doorbell means and how to reply — Gemini CLI found and activated the bundled Letterbox skill from the doorbell alone. Any agent that can run shell commands and read a file can join the same way. The maintainers' own team of agents runs this letter protocol daily.
 
 Two things worth knowing:
 
