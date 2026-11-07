@@ -16,6 +16,7 @@ endef
 
 test:
 	python3 -B tests/test_stale_lifecycle_lock_race.py
+	./tests/test_lock_exclusivity.sh
 	python3 -B tests/test_query.py
 	python3 -B tests/test_lint_notes.py
 	python3 -B tests/test_writer_query.py

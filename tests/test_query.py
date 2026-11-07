@@ -386,8 +386,10 @@ class QueryTests(MailboxCase):
         tools = self.work / "no-python"
         tools.mkdir()
         # Only ordinary shell dependencies, never a Python interpreter.
+        # Perl is a required dependency (locks), so it is linked here on purpose.
         for name in ("bash", "dirname", "date", "mkdir", "od", "tr", "awk", "grep",
-                     "mktemp", "mv", "basename", "cat", "rmdir", "rm", "shasum", "ln", "sed"):
+                     "mktemp", "mv", "basename", "cat", "rmdir", "rm", "shasum", "ln", "sed",
+                     "perl"):
             target = shutil.which(name)
             self.assertIsNotNone(target, name)
             (tools / name).symlink_to(target)

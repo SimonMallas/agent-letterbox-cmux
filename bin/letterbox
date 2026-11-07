@@ -834,10 +834,19 @@ break_stale_lifecycle_lock() { # $1 = lock dir
     exit 0' "$gate" "$lock"
 }
 
+# Take a lock directory with the mkdir(2) syscall, never the external binary:
+# uutils coreutils 0.10.0 (Ubuntu 25.10+, 26.04 LTS) can exit 0 under a race even
+# when its mkdir(2) fails with EEXIST, and a lock that trusts that exit code is
+# held by two racers at once. Perl is a hard requirement of locking.
+lock_mkdir() { # $1 = lock dir to create
+  command -v perl >/dev/null 2>&1 || die "letterbox needs perl to take a lock (on Ubuntu it is in perl-base, preinstalled)"
+  perl -e 'mkdir($ARGV[0]) or exit 1' -- "$1"
+}
+
 acquire_lifecycle_lock() {
   local letter="$1" lock tries=0
   lock="${letter}.lifecycle.lock"
-  while ! mkdir "$lock" 2>/dev/null; do
+  while ! lock_mkdir "$lock"; do
     if lifecycle_lock_stale "$lock" && break_stale_lifecycle_lock "$lock"; then
       continue
     fi
@@ -1434,7 +1443,7 @@ cmd_lock() {
   need_me
   local target="${1:?usage: letterbox lock <path>}" lock="$BOX/locks/$(lock_name "${1:?}")"
   mkdir -p "$BOX/locks"
-  mkdir "$lock" 2>/dev/null || die "locked or being acquired: $lock"
+  lock_mkdir "$lock" || die "locked or being acquired: $lock"
   printf 'owner=%s%s taken=%s\n' "$ME" "${SESSION:+ session=$SESSION}" "$(now)" > "$lock/lease"
   printf 'locked: %s\n' "$lock"
 }

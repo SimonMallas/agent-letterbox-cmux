@@ -163,7 +163,9 @@ class WriterTests(MailboxCase):
     def watch_writes(self):
         log = self.work / "write-calls"
         self.env["WRITE_PROBE_LOG"] = str(log)
-        for name in ("mktemp", "mkdir", "ln", "mv"):
+        # perl too: locks are taken through a perl syscall, so a reply that
+        # reaches the lock shows up as a perl spawn, not an external mkdir.
+        for name in ("mktemp", "mkdir", "ln", "mv", "perl"):
             target = shutil.which(name)
             self.assertIsNotNone(target)
             wrapper = self.tools / name
