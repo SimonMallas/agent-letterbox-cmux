@@ -21,7 +21,14 @@ SCHEMA = "letterbox.lint.v1"
 
 
 class Refusal(ValueError):
-    """A named reason lint cannot give a verdict; the name is printed, nothing else."""
+    """A named reason lint cannot give a verdict, with the scanner's issue codes if any.
+
+    Both come from fixed vocabularies; nothing else is printed.
+    """
+
+    def __init__(self, reason, issues=()):
+        super().__init__(reason)
+        self.issues = sorted(set(issues))
 
 
 def token(ident):
@@ -110,18 +117,23 @@ def baseline_key(finding):
     return (finding["file"], finding["citation"], finding["kind"])
 
 
-def _moved(scan):
-    codes = [issue.code for issue in scan.scope_issues] + [e.issue for e in scan.entries if e.issue]
-    return any(code.endswith("changed") for code in codes)
+def _codes(scan):
+    return [issue.code for issue in scan.scope_issues] + [e.issue for e in scan.entries if e.issue]
 
 
 def collect_settled(root):
-    """Scan once more if mail moved during the scan; a second move is the reason given."""
+    """Scan once more if mail may have moved; say it moved only on definite evidence.
+
+    A `*_changed` code is a binding or listing seen to change. A
+    `*_unreadable_or_changed` code may be either, so it earns the retry but
+    is reported as an incomplete scan, never as moving mail.
+    """
     scan = collect(root, None)
-    if _moved(scan):
+    if any(code.endswith("changed") for code in _codes(scan)):
         scan = collect(root, None)
-        if _moved(scan):
-            raise Refusal("mail_changed_during_scan")
+        codes = _codes(scan)
+        if any(code.endswith("_changed") and not code.endswith("_or_changed") for code in codes):
+            raise Refusal("mail_changed_during_scan", codes)
     return scan
 
 
@@ -139,9 +151,10 @@ def main(argv=None):
         notes = Path(args.notes_dir)
         if notes.is_symlink() or not notes.is_dir():
             raise Refusal("notes_directory_unreadable")
-        graph = evaluate(collect_settled(args.root))
+        scan = collect_settled(args.root)
+        graph = evaluate(scan)
         if not graph.complete:
-            raise Refusal("incomplete_query_scope")
+            raise Refusal("incomplete_query_scope", _codes(scan))
         result = lint(notes, graph, args.agent)
         all_findings = result["findings"]
         baseline = notes / ".lint-baseline"
@@ -182,11 +195,14 @@ def main(argv=None):
         return 1 if result["findings"] else 0
     except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
         # The reason comes from a fixed set; paths and parser text are never echoed.
-        reason = (str(error) if isinstance(error, Refusal) else
+        reason = (error.args[0] if isinstance(error, Refusal) else
                   "note_not_utf8" if isinstance(error, UnicodeError) else
                   "read_error" if isinstance(error, OSError) else "invalid_input")
-        print(json.dumps(dict(schema=SCHEMA, complete=False, error="lint_input_unreadable_or_invalid",
-                              reason=reason)))
+        refusal = dict(schema=SCHEMA, complete=False, error="lint_input_unreadable_or_invalid",
+                       reason=reason)
+        if isinstance(error, Refusal) and error.issues:
+            refusal["issues"] = error.issues
+        print(json.dumps(refusal))
         return 2
 
 

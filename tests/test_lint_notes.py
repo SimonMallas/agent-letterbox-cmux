@@ -3,6 +3,7 @@ import contextlib
 import hashlib
 import io
 import json
+import os
 import unittest
 from unittest.mock import patch
 from test_query import MailboxCase
@@ -156,6 +157,26 @@ class LintTests(MailboxCase):
         data = self.lint(code=2)
         self.assertFalse(data["complete"])
         self.assertEqual(data["reason"], "incomplete_query_scope")
+
+    def test_a_missing_box_is_not_called_moving_mail(self):
+        # An unreadable root is ambiguous; only definite mutation evidence says mail moved.
+        self.note("as-of: now\nClaim 2026-10-28T010203-absent-0123abcd\n")
+        env = dict(self.env, LETTERBOX_DIR=str(self.work / "no-such-box"))
+        out = self.command("lint-notes", "--json", env=env)
+        self.assertEqual(out.returncode, 2, (out.stdout, out.stderr))
+        data = json.loads(out.stdout)
+        self.assertEqual((data["reason"], data["issues"]),
+                         ("incomplete_query_scope", ["root_unavailable_or_changed"]))
+
+    @unittest.skipIf(os.geteuid() == 0, "root reads a mode-000 file")
+    def test_an_unreadable_letter_is_not_called_moving_mail(self):
+        self.note("as-of: now\nClaim 2026-10-28T010203-absent-0123abcd\n")
+        self.letter().chmod(0)
+        out = self.command("lint-notes", "--json")
+        self.assertEqual(out.returncode, 2, (out.stdout, out.stderr))
+        data = json.loads(out.stdout)
+        self.assertEqual((data["reason"], data["issues"]),
+                         ("incomplete_query_scope", ["leaf_unreadable_or_changed"]))
 
     def test_a_refusal_names_its_reason(self):
         env = dict(self.env)

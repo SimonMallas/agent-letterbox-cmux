@@ -45,9 +45,12 @@ The JSON names the cause in `reason`, from a fixed set:
 `LETTERBOX_NOTES_DIR_unset`, `notes_directory_unreadable`, `unsafe_note`,
 `note_not_utf8`, `incomplete_query_scope`, `mail_changed_during_scan`,
 `unsafe_baseline`, `invalid_baseline`, `invalid_baseline_key`, `read_error`
-or `invalid_input`. If letters arrive or are filed during the scan, lint scans
-once more; `mail_changed_during_scan` means they moved during both scans, so
-run it again in a quieter moment.
+or `invalid_input`, and `issues` lists the scanner's codes for an incomplete
+scan. If letters arrive or are filed during the scan, lint scans once more;
+`mail_changed_during_scan` means a change was seen during both scans, so run it
+again in a quieter moment. A code such as `root_unavailable_or_changed` cannot
+tell a missing path from a moving one, so it is retried once and then reported
+as `incomplete_query_scope`.
 Exit 1 means findings; exit 0 means no new findings under these mechanics.
 
 JSON schema: `letterbox.lint.v1`, with `agent`, `findings`, `baseline`,

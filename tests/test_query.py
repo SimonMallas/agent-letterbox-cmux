@@ -46,8 +46,8 @@ class MailboxCase(unittest.TestCase):
                         + "---\nBODY-MUST-NOT-APPEAR\n", encoding="utf-8")
         return path
 
-    def command(self, *args, env=None, input=None):
-        result = subprocess.run(["/bin/bash", str(CLI), *args], env=env or self.env,
+    def command(self, *args, env=None, input=None, cwd=None):
+        result = subprocess.run(["/bin/bash", str(CLI), *args], env=env or self.env, cwd=cwd,
                                 input=input, capture_output=True, text=True, timeout=15)
         self.assertNotIn("Traceback", result.stderr)
         return result
@@ -238,6 +238,14 @@ class QueryTests(MailboxCase):
         self.assertEqual(data["issues"], [])
         self.assertEqual(data["complete_counts"], expected["complete_counts"])
         self.assertIn("completeness=complete", self.query())
+
+    def test_cli_box_resolution_ignores_cdpath(self):
+        # cd prints the path it found through CDPATH; that must not reach the root.
+        self.letter()
+        env = dict(self.env, LETTERBOX_DIR="store", CDPATH=str(self.work))
+        result = self.command("query", "--compat-v2", env=env, cwd=self.work)
+        self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
+        self.assertEqual(json.loads(result.stdout)["issues"], [])
 
     def test_nondirectory_ancestor_retains_specific_refusal(self):
         ancestor = self.work / "not-a-directory"
