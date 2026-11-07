@@ -217,12 +217,27 @@ class QueryTests(MailboxCase):
         self.assertEqual(self.query(compat=True)["observed_counts"]["scanned"], 0)
 
     def test_symlink_ancestor_has_specific_refusal(self):
+        # The query module pins every root component; only the CLI resolves its box.
+        ancestor = self.work / "ancestor"
+        ancestor.symlink_to(self.work, target_is_directory=True)
+        result = subprocess.run([sys.executable, "-I", "-B", str(ROOT / "lib/query/query.py"),
+                                 "--root", str(ancestor / "store")],
+                                capture_output=True, text=True, timeout=15)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual([i["code"] for i in data["issues"]], ["root_component_symlink"])
+        self.assertIsNone(data["complete_counts"])
+
+    def test_cli_resolves_a_symlinked_box(self):
+        self.letter()
+        expected = self.query(compat=True)
         ancestor = self.work / "ancestor"
         ancestor.symlink_to(self.work, target_is_directory=True)
         self.env["LETTERBOX_DIR"] = str(ancestor / "store")
-        data = self.query(compat=True, code=2)
-        self.assertEqual([i["code"] for i in data["issues"]], ["root_component_symlink"])
-        self.assertIsNone(data["complete_counts"])
+        data = self.query(compat=True)
+        self.assertEqual(data["issues"], [])
+        self.assertEqual(data["complete_counts"], expected["complete_counts"])
+        self.assertIn("completeness=complete", self.query())
 
     def test_nondirectory_ancestor_retains_specific_refusal(self):
         ancestor = self.work / "not-a-directory"

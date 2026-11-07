@@ -41,7 +41,7 @@ header in the first 20 lines:
 
 ```text
 as-of: <UTC time this note has read up to, such as 2026-11-01T12:00:00Z>
-threads: <letter threads this note summarises>
+threads: <letter threads this note summarises, comma-separated>
 covers: <mailboxes or sources read, and what was skipped>
 rule: the old letter stays; a later letter says which stands; a note that disagrees gets fixed
 ```

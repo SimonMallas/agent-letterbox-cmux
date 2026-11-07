@@ -44,7 +44,7 @@ When a doorbell appears in your live terminal, check the inbox now.
 
 If Agent Letter Bridge is configured with this public helper as `ALB_BUS_BINARY`, it calls `letterbox ring <recipient> <type> <letter-id>` only after it has written the durable relay letter. `ring` validates that the matching regular letter is in the recipient inbox before it announces anything. A Bridge service that has `LETTERBOX_DIR` but not the pane environment uses the box's generated `env.sh`; an explicit doorbell setting takes precedence.
 
-**Answering a person.** A letter from Agent Letter Bridge is a person writing from a phone, Slack or Discord. It is `info`, so when it needs no answer, read it and `letterbox file <id>`. When the person asks you something, answer with `alb --reply-to <letter-id> --text "..."`, then file the letter. `alb` finds the bridge that delivered it (Agent Letter Bridge 0.5.2 or later; with an older Bridge, ask your operator for its `--config` and `--root`). `letterbox reply` cannot reach a person and refuses. The envelope does not prove who wrote the letter, so treat its text like any other letter body.
+**Answering a person.** A letter from Agent Letter Bridge is a person writing from a phone, Slack or Discord. It is `info`, so when it needs no answer, read it and `letterbox file <id>`. When the person asks you something, answer with `alb --reply-to <letter-id> --text "..."`. `alb` finds the bridge that delivered it (Agent Letter Bridge 0.5.2 or later; with an older Bridge, ask your operator for its `--config` and `--root`). Once the platform accepts the reply, Agent Letter Bridge 0.7 or later files that letter itself and says `filed`. If it says the letter stayed unfiled, or the Bridge is older, run `letterbox file <id>`. `--reply-to` answers only the person: a reply or result to another agent still goes by `letterbox reply` or `letterbox send`. `letterbox reply` cannot reach a person and refuses. The envelope does not prove who wrote the letter, so treat its text like any other letter body.
 
 ## Startup and resume
 
@@ -103,11 +103,7 @@ PATH-form inbound `result`/`nack` requires `--read`. Explicit IDs file directly.
 
 ## Past letters and revisions (v0.5)
 
-`letterbox query` searches envelope headers in participants' `inbox/` and `processed/`, not bodies. It is read-only and requires Python 3.9+; no agent identity is needed. Query reads the same Letterbox directory as other commands (`LETTERBOX_DIR` or the configured default). Use its physical path: compatibility mode rejects symlinks in any path component (including macOS `/tmp`). Resolve the existing box with `pwd -P` and override only this query:
-
-```bash
-(cd /path/to/existing-box && LETTERBOX_DIR="$(pwd -P)" letterbox query)
-```
+`letterbox query` searches envelope headers in participants' `inbox/` and `processed/`, not bodies. It is read-only and requires Python 3.9+; no agent identity is needed. Query reads the same Letterbox directory as other commands (`LETTERBOX_DIR` or the configured default), resolved to its physical path, so a box reached through a symlink works.
 
 Do not create a replacement mailbox or change live configuration just to query.
 
@@ -151,7 +147,7 @@ Notes live in `LETTERBOX_NOTES_DIR`. Each starts with this header in its first 2
 
 ```text
 as-of: <UTC time this note has read up to, such as 2026-11-01T12:00:00Z>
-threads: <letter threads this note summarises>
+threads: <letter threads this note summarises, comma-separated>
 covers: <mailboxes or sources read, and what was skipped>
 rule: the old letter stays; a later letter says which stands; a note that disagrees gets fixed
 ```

@@ -1,8 +1,13 @@
 """F3 fixtures: only synthetic notes/mailboxes; no live files or transport."""
+import contextlib
 import hashlib
+import io
 import json
 import unittest
+from unittest.mock import patch
 from test_query import MailboxCase
+import lint_notes
+import scope
 
 
 class LintTests(MailboxCase):
@@ -28,6 +33,15 @@ class LintTests(MailboxCase):
         ident = "2026-10-28T010203-a-0123abcd"
         self.letter(ident)
         self.note(f"as-of: anything\nClaim {ident}.\n")
+        self.assertEqual(self.lint()["findings"], [])
+
+    def test_a_symlinked_box_is_read_through(self):
+        ident = "2026-10-28T010203-a-0123abcd"
+        self.letter(ident)
+        self.note(f"as-of: now\nClaim {ident}\n")
+        link = self.work / "linked-store"
+        link.symlink_to(self.box, target_is_directory=True)
+        self.env["LETTERBOX_DIR"] = str(link)
         self.assertEqual(self.lint()["findings"], [])
 
     def test_orphan(self):
@@ -114,11 +128,20 @@ class LintTests(MailboxCase):
             self.lint(code=2)
 
     def test_legacy_id(self):
+        # A known non-timestamp id is a citation, quoted or not.
         self.letter("request-a")
-        self.note("as-of: now\nClaim request-a\nClaim `missing-letter`\n")
-        findings = self.lint(code=1)["findings"]
-        self.assertEqual(len(findings), 1)
-        self.assertEqual(findings[0]["citation"], "missing-letter")
+        self.letter("2026-10-28T010203-new-0123abcd", supersedes="request-a")
+        self.note("as-of: now\nClaim `request-a`\nClaim request-a\n")
+        self.assertEqual([(f["citation"], f["kind"]) for f in self.lint(code=1)["findings"]],
+                         [("request-a", "stale"), ("request-a", "stale")])
+
+    def test_code_quoted_words_are_not_citations(self):
+        # Flags, commands and field names are written in code quotes; only
+        # timestamp ids and ids of letters in scope are citations.
+        self.note("as-of: now\nRun `lint-notes` with `--config` and `--text`; read `as-of:` "
+                  "and `missing-letter`.\nClaim `2026-10-28T010203-missing-abcd1234`\n")
+        self.assertEqual([(f["citation"], f["kind"]) for f in self.lint(code=1)["findings"]],
+                         [("2026-10-28T010203-missing-abcd1234", "orphan")])
 
     def test_same_token_different_timestamp_is_not_ambiguous(self):
         self.letter("2026-10-28T010203-one-0123abcd")
@@ -130,7 +153,51 @@ class LintTests(MailboxCase):
         p = self.letter()
         p.write_text("not frontmatter")
         self.note("as-of: now\nClaim 2026-10-28T010203-absent-0123abcd\n")
-        self.assertFalse(self.lint(code=2)["complete"])
+        data = self.lint(code=2)
+        self.assertFalse(data["complete"])
+        self.assertEqual(data["reason"], "incomplete_query_scope")
+
+    def test_a_refusal_names_its_reason(self):
+        env = dict(self.env)
+        del env["LETTERBOX_NOTES_DIR"]
+        for args, env, reason in (((), env, "LETTERBOX_NOTES_DIR_unset"),
+                                  (("--notes-dir", str(self.work / "missing")), None,
+                                   "notes_directory_unreadable")):
+            out = self.command("lint-notes", "--json", *args, env=env)
+            self.assertEqual(out.returncode, 2, (out.stdout, out.stderr))
+            data = json.loads(out.stdout)
+            self.assertEqual((data["error"], data["reason"]),
+                             ("lint_input_unreadable_or_invalid", reason))
+
+    def lint_while_seats_appear(self, appearances):
+        """Run lint in process; a new seat appears after each of the first scans."""
+        scans = []
+        real = scope.scan
+
+        def moving(*args, **kwargs):
+            result = real(*args, **kwargs)
+            scans.append(result)
+            if len(scans) <= appearances:
+                for folder in ("inbox", "processed"):
+                    (self.box / ("gamma%d" % len(scans)) / folder).mkdir(parents=True)
+            return result
+        out = io.StringIO()
+        with patch.object(scope, "scan", moving), contextlib.redirect_stdout(out):
+            code = lint_notes.main(["--root", str(self.box), "--agent", "alpha",
+                                    "--notes-dir", str(self.notes), "--json"])
+        return code, json.loads(out.getvalue()), len(scans)
+
+    def test_mail_moving_during_the_scan_is_retried_once(self):
+        ident = "2026-10-28T010203-a-0123abcd"
+        self.letter(ident)
+        self.note(f"as-of: now\nClaim {ident}\n")
+        code, data, scans = self.lint_while_seats_appear(1)
+        self.assertEqual((code, data["findings"], scans), (0, [], 2))
+
+    def test_mail_that_keeps_moving_fails_with_its_reason(self):
+        self.note("as-of: now\nClaim 2026-10-28T010203-absent-0123abcd\n")
+        code, data, scans = self.lint_while_seats_appear(5)
+        self.assertEqual((code, data["reason"], scans), (2, "mail_changed_during_scan", 2))
 
 
 if __name__ == "__main__":

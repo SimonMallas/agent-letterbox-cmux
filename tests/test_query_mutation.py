@@ -57,6 +57,8 @@ CASES = (
      'if [[ "${1:-}" == --compat-v2 ]]; then', 'if true; then'),
     ("archive-silently-ignored", "lib/query/scanner.py",
      'self.issue(ref + "/archive", "unsupported_archive_layout")', 'pass'),
+    ("cli-box-resolution-removed", "bin/letterbox",
+     '(CDPATH= cd -P -- "$BOX" 2>/dev/null && pwd -P) || printf', 'printf'),
     ("body-read", "lib/query/envelopes.py",
      'if text == "---":\n            return fields',
      'if text == "---":\n            stream.readline()\n            return fields'),
@@ -84,6 +86,7 @@ WITNESSES = {
     "opened-leaf-type-check-removed": "test_opened_leaf_type_guard_rejects_swapped_fifo_before_header",
     "compat-as-default": "test_empty_and_scope",
     "archive-silently-ignored": "test_archive_is_refused_not_read",
+    "cli-box-resolution-removed": "test_cli_resolves_a_symlinked_box",
     "body-read": "test_body_is_not_requested",
 }
 

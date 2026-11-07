@@ -20,6 +20,10 @@ QUOTED = re.compile(r"`([A-Za-z0-9_.:-]{1,243})`")
 SCHEMA = "letterbox.lint.v1"
 
 
+class Refusal(ValueError):
+    """A named reason lint cannot give a verdict; the name is printed, nothing else."""
+
+
 def token(ident):
     # Exact doorbell_token_for_id rule: lowercase 8-hex tail, otherwise SHA256.
     tail = ident.rsplit("-", 1)[-1]
@@ -37,9 +41,9 @@ def citations(line, ids):
             if any(match.start() < end and match.end() > start for start, end in occupied):
                 continue
             value = match.group(1) if mode == "quoted" else match.group()
-            # Non-timestamp legacy IDs need code quotes to distinguish them
-            # from ordinary prose. Quoted plain words are not presumed IDs.
-            if mode == "quoted" and value not in ids and "-" not in value:
+            # Code quotes hold flags, commands and field names; a quoted word
+            # without a timestamp is a citation only when it is a letter in scope.
+            if mode == "quoted" and value not in ids:
                 continue
             found.append((match.start(), match.end(), value, "full"))
             occupied.append(match.span())
@@ -71,7 +75,7 @@ def lint(notes, graph, agent):
         if path.name.startswith(".") or path.suffix != ".md":
             continue
         if path.is_symlink() or not path.is_file():
-            raise ValueError("unsafe_note")
+            raise Refusal("unsafe_note")
         lines = path.read_text(encoding="utf-8").splitlines()
         if not any(line.strip().startswith("as-of:") for line in lines[:20]):
             add(path, 1, "uncursored", None, "no as-of: header in first 20 lines")
@@ -106,6 +110,21 @@ def baseline_key(finding):
     return (finding["file"], finding["citation"], finding["kind"])
 
 
+def _moved(scan):
+    codes = [issue.code for issue in scan.scope_issues] + [e.issue for e in scan.entries if e.issue]
+    return any(code.endswith("changed") for code in codes)
+
+
+def collect_settled(root):
+    """Scan once more if mail moved during the scan; a second move is the reason given."""
+    scan = collect(root, None)
+    if _moved(scan):
+        scan = collect(root, None)
+        if _moved(scan):
+            raise Refusal("mail_changed_during_scan")
+    return scan
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", required=True)
@@ -116,29 +135,29 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if not args.notes_dir:
-            raise ValueError("LETTERBOX_NOTES_DIR_unset")
+            raise Refusal("LETTERBOX_NOTES_DIR_unset")
         notes = Path(args.notes_dir)
         if notes.is_symlink() or not notes.is_dir():
-            raise ValueError("notes_directory_unreadable")
-        graph = evaluate(collect(args.root, None))
+            raise Refusal("notes_directory_unreadable")
+        graph = evaluate(collect_settled(args.root))
         if not graph.complete:
-            raise ValueError("incomplete_query_scope")
+            raise Refusal("incomplete_query_scope")
         result = lint(notes, graph, args.agent)
         all_findings = result["findings"]
         baseline = notes / ".lint-baseline"
         if baseline.is_symlink():
-            raise ValueError("unsafe_baseline")
+            raise Refusal("unsafe_baseline")
         if baseline.exists():
             data = json.loads(baseline.read_text(encoding="utf-8"))
             if (not isinstance(data, dict) or data.get("schema") != SCHEMA
                     or not isinstance(data.get("keys"), list)):
-                raise ValueError("invalid_baseline")
+                raise Refusal("invalid_baseline")
             for key in data["keys"]:
                 if (not isinstance(key, list) or len(key) != 3
                         or not isinstance(key[0], str)
                         or not (key[1] is None or isinstance(key[1], str))
                         or not isinstance(key[2], str)):
-                    raise ValueError("invalid_baseline_key")
+                    raise Refusal("invalid_baseline_key")
             keys = set(tuple(key) for key in data["keys"])
             result["findings"] = [f for f in all_findings if baseline_key(f) not in keys]
             result["baseline"] = True
@@ -161,8 +180,13 @@ def main(argv=None):
                 if os.path.exists(temp):
                     os.unlink(temp)
         return 1 if result["findings"] else 0
-    except (OSError, UnicodeError, ValueError, TypeError, KeyError):
-        print(json.dumps(dict(schema=SCHEMA, complete=False, error="lint_input_unreadable_or_invalid")))
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as error:
+        # The reason comes from a fixed set; paths and parser text are never echoed.
+        reason = (str(error) if isinstance(error, Refusal) else
+                  "note_not_utf8" if isinstance(error, UnicodeError) else
+                  "read_error" if isinstance(error, OSError) else "invalid_input")
+        print(json.dumps(dict(schema=SCHEMA, complete=False, error="lint_input_unreadable_or_invalid",
+                              reason=reason)))
         return 2
 
 

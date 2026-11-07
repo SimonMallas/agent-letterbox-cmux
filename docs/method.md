@@ -83,7 +83,7 @@ Every standing note starts with these lines, within its first 20 lines:
 
 ```text
 as-of: <the UTC time this note has read up to, such as 2026-11-01T12:00:00Z>
-threads: <the letter threads this note summarises>
+threads: <the letter threads this note summarises, comma-separated>
 covers: <the mailboxes or sources read, and what was skipped>
 rule: the old letter stays; a later letter says which stands; a note that disagrees gets fixed
 ```

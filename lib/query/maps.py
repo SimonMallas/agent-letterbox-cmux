@@ -3,8 +3,9 @@
 
 Run through letterbox check (one hint line) or letterbox check --maps (one
 line per note). Notes are *.md files in LETTERBOX_NOTES_DIR whose top lines
-carry `as-of: <ISO-8601 UTC>` and `threads: <id>, <id>, ...`. A letter is in a
-thread as check --thread counts it (its id, thread: or re: is the thread id).
+carry `as-of: <ISO-8601 UTC>` and `threads: <id>, <id>, ...` (commas or spaces).
+A letter is in a thread as check --thread counts it (its id, thread: or re: is
+the thread id); a listed thread no letter is in is named, as a mistyped id would be.
 Its time is query's publication rule: the envelope sent:, else unknown, and
 unknown-time letters are counted on their own, never as before or after.
 Read-only; --maps reads every envelope header in the box, plain check none.
@@ -44,7 +45,8 @@ def _head(path):
             key, sep, value = raw.decode("utf-8", "replace").strip().partition(":")
             if sep and key in ("as-of", "threads"):
                 fields.setdefault(key, value.strip())
-    threads = [t.strip() for t in fields.get("threads", "").split(",") if t.strip()]
+    # Thread ids hold no spaces, so a space-separated list reads the same as commas.
+    threads = [t for t in re.split(r"[,\s]+", fields.get("threads", "")) if t]
     return fields.get("as-of"), threads
 
 
@@ -119,12 +121,13 @@ def main(argv=None):
         if not threads:
             print(line, "· no threads listed")
             continue
-        since, unknown, capped = set(), set(), False
+        since, unknown, capped, empty = set(), set(), False, 0
         for thread in threads:
-            found = set()
+            found, matched = set(), False
             for fields in letters:
                 if thread not in (fields.get("id"), fields.get("thread"), fields.get("re")):
                     continue
+                matched = True
                 instant = publication_time(fields)[0]
                 if instant is None:
                     unknown.add(fields.get("id"))
@@ -134,6 +137,7 @@ def main(argv=None):
                 capped = True
                 found = set(sorted(found)[:CAP])
             since |= found
+            empty += not matched
         count = "%d+" % len(since) if capped else str(len(since))
         line += " · %s letter%s since in %s" % (count, "" if count == "1" else "s",
                                                 _plural(len(threads), "thread"))
@@ -141,6 +145,9 @@ def main(argv=None):
             line += " · %d unknown-time" % len(unknown)
         if capped:
             line += " · capped at %d per thread" % CAP
+        # An incomplete scan proves no absence, so it names no empty thread.
+        if empty and scan.complete:
+            line += " · %s with no letters" % _plural(empty, "thread")
         print(line)
     if not scan.complete:
         print("map: letter scan incomplete; counts may be low")

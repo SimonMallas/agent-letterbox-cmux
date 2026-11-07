@@ -22,10 +22,12 @@ class NotesMapTests(MailboxCase):
         self.assertNotIn("BODY-MUST-NOT-APPEAR", result.stdout)
         return [line for line in result.stdout.splitlines() if line.startswith("map")]
 
-    def test_unset_is_silent(self):
+    def test_unset_is_silent_on_plain_check_and_said_on_maps(self):
+        # Notes are optional: plain check stays quiet; asking for maps gets an answer.
         del self.env["LETTERBOX_NOTES_DIR"]
         self.assertEqual(self.check(), [])
-        self.assertEqual(self.check("--maps"), [])
+        self.assertEqual(self.check("--maps"),
+                         ["map: LETTERBOX_NOTES_DIR is not set; set it to your notes folder"])
 
     def test_configured_absence_is_never_silent(self):
         self.env["LETTERBOX_NOTES_DIR"] = str(self.work / "missing")
@@ -56,6 +58,29 @@ class NotesMapTests(MailboxCase):
         [line] = self.check("--maps")
         self.assertRegex(line, r"^map design\.md: as-of 2026-01-10T00:00:00Z \(\d+d\) · "
                                r"3 letters since in 2 threads · 1 unknown-time$")
+
+    def test_threads_may_be_separated_by_spaces(self):
+        self.note("design.md", "as-of: 2026-01-10T00:00:00Z", "threads: t1 t2")
+        self.letter("t1-after", thread="t1", sent="2026-01-11T00:00:00Z")
+        self.letter("t2-after", thread="t2", sent="2026-01-12T00:00:00Z")
+        [line] = self.check("--maps")
+        self.assertTrue(line.endswith("· 2 letters since in 2 threads"), line)
+
+    def test_a_listed_thread_with_no_letters_is_named(self):
+        # A mistyped id would otherwise read as "0 letters since": current.
+        self.note("design.md", "as-of: 2026-01-10T00:00:00Z", "threads: t1, t1-typo")
+        self.letter("t1-before", thread="t1", sent="2026-01-09T00:00:00Z")
+        [line] = self.check("--maps")
+        self.assertTrue(line.endswith("· 0 letters since in 2 threads · 1 thread with no letters"), line)
+
+    def test_a_symlinked_box_is_read_through(self):
+        self.note("design.md", "as-of: 2026-01-10T00:00:00Z", "threads: t1")
+        self.letter("t1-after", thread="t1", sent="2026-01-11T00:00:00Z")
+        link = self.work / "linked-store"
+        link.symlink_to(self.box, target_is_directory=True)
+        self.env["LETTERBOX_DIR"] = str(link)
+        [line] = self.check("--maps")
+        self.assertTrue(line.endswith("· 1 letter since in 1 thread"), line)
 
     def test_cursor_classes(self):
         self.note("a-uncursored.md", "threads: t1")

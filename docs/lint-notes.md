@@ -18,10 +18,11 @@ Citations use full timestamp-prefixed letter IDs, or `YYYY-MM-DDTHHMMSS · token
 Token is exactly the doorbell rule: final lowercase eight-hex ID segment when
 present, otherwise the first eight hex digits of SHA-256 of the full ID.
 Display matching uses both timestamp and token; collisions are never guessed.
-Known legacy non-timestamp IDs are also recognized literally; use code quotes
-for unknown legacy hyphenated IDs, e.g. `missing-letter`. Plain prose words
-cannot mechanically be distinguished from arbitrary unknown legacy IDs, so
-unknown unmarked non-timestamp IDs are not treated as citations.
+Known legacy non-timestamp IDs (letters in scope) are also recognized
+literally, with or without code quotes. Any other word without a timestamp is
+not a citation, quoted or not: code quotes hold flags, commands and field names
+such as `--config`, `lint-notes` and `as-of:`. So an unknown timestamp ID is
+reported as ORPHAN, and an unknown legacy ID is not.
 
 Findings (JSON uses lowercase names):
 
@@ -40,6 +41,13 @@ These checks do not establish entailment, completeness of citations, truth,
 permission, or whether a supersedes relation whose query head is unknown has
 been resolved. Unreadable notes, malformed baselines and incomplete query
 scans fail with exit 2 rather than producing a clean verdict or false orphans.
+The JSON names the cause in `reason`, from a fixed set:
+`LETTERBOX_NOTES_DIR_unset`, `notes_directory_unreadable`, `unsafe_note`,
+`note_not_utf8`, `incomplete_query_scope`, `mail_changed_during_scan`,
+`unsafe_baseline`, `invalid_baseline`, `invalid_baseline_key`, `read_error`
+or `invalid_input`. If letters arrive or are filed during the scan, lint scans
+once more; `mail_changed_during_scan` means they moved during both scans, so
+run it again in a quieter moment.
 Exit 1 means findings; exit 0 means no new findings under these mechanics.
 
 JSON schema: `letterbox.lint.v1`, with `agent`, `findings`, `baseline`,

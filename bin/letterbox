@@ -509,7 +509,9 @@ Use `--now` on a reply only when the original letter priority is `now`.
 
 A letter from Agent Letter Bridge is a person writing from a phone, Slack or
 Discord. `letterbox reply` cannot reach them; answer with
-`alb --reply-to <letter-id> --text "..."`, then `letterbox file <letter-id>`.
+`alb --reply-to <letter-id> --text "..."`. Agent Letter Bridge 0.7 files the
+letter once the reply is accepted; if it says unfiled, or with an older Bridge,
+run `letterbox file <letter-id>`.
 EOF
   printf 'cmux team ready: %s\n' "$BOX"
   printf 'Letterbox launcher linked: %s\n' "$launcher_target"
@@ -987,13 +989,19 @@ check_thread() {
   done
   shopt -u nullglob
 }
-notes_map() { # [--summary]; LETTERBOX_NOTES_DIR unset: nothing to say
-  [[ -n "${LETTERBOX_NOTES_DIR:-}" ]] || return 0
+query_root() { # the box's physical path: the query scanner refuses symlinked components
+  (CDPATH= cd -P -- "$BOX" 2>/dev/null && pwd -P) || printf '%s\n' "$BOX"
+}
+notes_map() { # [--summary]; LETTERBOX_NOTES_DIR unset: plain check says nothing
+  if [[ -z "${LETTERBOX_NOTES_DIR:-}" ]]; then
+    [[ "${1:-}" == --summary ]] || echo 'map: LETTERBOX_NOTES_DIR is not set; set it to your notes folder'
+    return 0
+  fi
   if ! command -v python3 >/dev/null 2>&1; then
     echo 'map: needs Python 3.9 or newer (python3)'
     return 0
   fi
-  python3 -I -B "$SCRIPT_DIR/../lib/query/maps.py" --root "$BOX" --notes "$LETTERBOX_NOTES_DIR" "$@" || true
+  python3 -I -B "$SCRIPT_DIR/../lib/query/maps.py" --root "$(query_root)" --notes "$LETTERBOX_NOTES_DIR" "$@" || true
 }
 header_rows() { # "<key> ..." <file>...: one \037-separated row per letter, file first; closed headers only
   local keys="$1"; shift
@@ -1444,7 +1452,7 @@ cmd_unlock() {
 cmd_lint_notes() {
   need_me
   command -v python3 >/dev/null 2>&1 || die 'lint-notes requires python3'
-  python3 -I -B "$SCRIPT_DIR/../lib/query/lint_notes.py" --root "$BOX" --agent "$ME" "$@"
+  python3 -I -B "$SCRIPT_DIR/../lib/query/lint_notes.py" --root "$(query_root)" --agent "$ME" "$@"
 }
 
 cmd_query() {
@@ -1458,9 +1466,9 @@ cmd_query() {
   done
   if [[ "${1:-}" == --compat-v2 ]]; then
     shift
-    python3 -I -B "$SCRIPT_DIR/../lib/query/query.py" --root "$BOX" "$@"
+    python3 -I -B "$SCRIPT_DIR/../lib/query/query.py" --root "$(query_root)" "$@"
   else
-    python3 -I -B "$SCRIPT_DIR/../lib/query/strict.py" "$BOX" "$@"
+    python3 -I -B "$SCRIPT_DIR/../lib/query/strict.py" "$(query_root)" "$@"
   fi
 }
 

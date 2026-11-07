@@ -127,6 +127,18 @@ class OwedViewTests(MailboxCase):
         self.assertEqual([c["owed"] for c in data["cards"]], ["unknown"])
         self.assertEqual((data["counts"]["owed"], data["counts"]["owed_unknown"]), (0, 1))
 
+    def test_a_symlinked_box_lists_the_same_cards(self):
+        self.letter()
+        expected = self.owed("to=beta")
+        link = self.work / "linked-store"
+        link.symlink_to(self.box, target_is_directory=True)
+        self.env["LETTERBOX_DIR"] = str(link)
+        data = self.owed("to=beta")
+        self.assertTrue(data["complete"])
+        self.assertEqual(data["issues"], [])
+        self.assertEqual(self.ids(data), self.ids(expected))
+        self.assertEqual(data["counts"]["owed"], 1)
+
     def test_refusals(self):
         for args in (("view=owed",), ("view=open", "to=beta"), ("view=owed", "to=beta", "from=alpha"),
                      ("view=owed", "to=beta", "--limit", "-1"), ("view=owed", "to=beta", "--now", "soon"),

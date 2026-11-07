@@ -3,10 +3,12 @@
 `letterbox query` reads envelope headers, not message bodies. It does not send,
 ring, acknowledge, file, archive, update an index, or change letters. It uses the
 same `LETTERBOX_DIR` / configured default directory as other commands. No agent
-identity is required. Use an absolute, non-symlink directory path for queries;
-compatibility mode refuses symlinks in any root path component, reporting
-`root_component_symlink`. A regular file in that position reports
-`root_component_not_directory` instead.
+identity is required. The command resolves the box to its physical path once, so
+a box reached through a symlink (macOS `/tmp`, a linked shared folder) is read as
+its real directory. The scanner then pins every path component: a symlink that
+appears in the root during the scan is refused as `root_component_symlink`, as is
+a symlinked `--root` given to `lib/query/query.py` directly. A regular file in
+that position reports `root_component_not_directory` instead.
 
 Query requires **Python 3.9 or newer**, using only the standard library. Other
 commands have no new Python requirement. Missing or older `python3` exits 1 with
