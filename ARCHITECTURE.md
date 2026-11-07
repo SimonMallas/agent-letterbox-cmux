@@ -78,7 +78,7 @@ in this scope" is an honest, bounded negative.
 
 Vector stores (embeddings, similarity) answer "what resembles this?" — ranked guesses, no bounded negation.
 QEM answers, from the recorded envelopes alone, "what was asked, who owes what, and what is still open?" —
-exact, provenance-carrying, honest about unknowns; it knows the correspondence, not events outside it. They compose: the append-only envelope record is clean ground truth a downstream semantic indexer may
+exact, provenance-carrying, honest about unknowns; it knows the correspondence, not events outside it. They compose: the append-only envelope record is a clean source a downstream semantic indexer may
 consume; nothing semantic feeds back into the record.
 
 ## 6. Contract limits (what this system does not claim)

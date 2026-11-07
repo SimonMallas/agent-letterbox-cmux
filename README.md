@@ -8,7 +8,7 @@
 
 Agent Letterbox is a cross-agent communication system for terminal CLI agents: it gives the coding agents you already run the ability to talk to each other. Agents send each other **durable, queryable, accountable letters** — each a hybrid Markdown file in an envelope with a typed address (flat YAML frontmatter, readable by frontmatter-aware tools such as Obsidian) — that land in a teammate's inbox, and a doorbell rings to wake the recipient. The bell is one contentless line by design, but it is the heartbeat of the team; the letters it points to are the memory.
 
-The letterbox is the team's **episodic memory**: a write-once record of what was asked, answered, and decided — episode by episode, with provenance on every entry. Every letter carries a typed envelope — sender, addressee, type, priority, whether it demands an answer — and every new v0.5.0 send and reply also carries publication UTC in `sent`; letters can carry thread linkage and a `supersedes` reference to an earlier record. Letters are never edited in place; a correction is a new letter that supersedes the old. The sender field is declared by the writer, not authenticated by Letterbox. It is not semantic memory: nothing is summarized, embedded, ranked, or consolidated. The context window is working memory; this is the long-term store it offloads to — and ground truth for whatever memory layer you point at it later.
+The letterbox is the team's **episodic memory**: a write-once record of what was asked, answered, and decided — episode by episode, with provenance on every entry. Every letter carries a typed envelope — sender, addressee, type, priority, whether it demands an answer — and every new v0.5.0 send and reply also carries publication UTC in `sent`; letters can carry thread linkage and a `supersedes` reference to an earlier record. Letters are never edited in place; a correction is a new letter that supersedes the old. The sender field is declared by the writer, not authenticated by Letterbox. It is not semantic memory: nothing is summarized, embedded, ranked, or consolidated. The context window is working memory; this is the long-term store it offloads to — and the source record for whatever memory layer you point at it later.
 
 Until now that record was **Envelope Memory**: everything kept, but to find anything you had to open the letters and read. This release upgrades it to **Queryable Envelope Memory (QEM)** — the reason those letters are more than mail, and the third retrieval lane: dense retrieval finds meaning, lexical retrieval finds strings, and **structured-metadata retrieval finds records**. Exact filters over typed envelope fields, in one read-only command:
 
@@ -118,25 +118,26 @@ the practice behind these tools. Agents get it through the skill.
 
 Letterbox is a thin shared memory layer for an agent team — in the field's terms, the team's **episodic memory**: durable correspondence, handoffs, decisions, ACKs and RESULTs, and recoverable history on disk between separate context windows. It is the place the team writes what happened — not a model that remembers for them.
 
-When one agent types into another's terminal, the message is spent the moment it lands: the pane scrolls, the session compacts, and nothing remains. Between agents there is no phone keeping a copy — an injected handoff is the ONLY copy, and it dies with the scrollback.
+When one agent types into another's terminal, the message is spent the moment it lands: the pane scrolls, the session compacts, and the handoff drops out of sight. A log may keep the text, but terminal text alone gives it no envelope: no sender, thread or id that another agent can find and answer later.
 
 A letter is different. It carries sender, recipient, type, thread linkage and time in its envelope, in plain Markdown, on disk — so the handoff that happened at 9am is still readable at 3am, by the agent that crashed in between, by the teammate who joined later, by whatever memory system you point at the directory. Every memory exists because someone wrote it, on purpose — authored, never inferred.
 
 What that buys, mechanically:
 
-- **A crashed or compacted agent recovers its context from its own inbox** — restore is
-  reading, not reconstruction. The context window is working memory; the letterbox is the
+- **A crashed or compacted agent can rebuild its working context** from the letters it kept,
+  filed ones included, and its own notes. What was written comes back by reading; what was
+  never written down does not. The context window is working memory; the letterbox is the
   long-term store.
 - **"What was actually said" has an answer** — the thread on disk, not competing
-  recollections from two context windows. Memory is nice; a **truth layer** is the actual
-  product: one place where what was said, by whom, and what is still current is
-  answerable, with receipts.
+  recollections from two context windows. Memory is nice; a **shared record** is the actual
+  product: one place where what was written, under whose name, and what still stands
+  until a later letter replaces it is answerable, with receipts.
 - **Context windows stay clean** — the doorbell is one contentless line; the body enters
   an agent's context only when it chooses to read.
 - **Any memory system can eat it** — letters are files with envelopes: searchable,
   addressable, born indexable.
 
-Letterbox is not a memory intelligence system. It does not summarize, embed, rank, promote, or interpret — no consolidation, and nothing is remembered that was not written. A query is a window, not a pump: its results point at letters and are never ingested, ranked, or written back — no amplification loop, no store eating its own output. A separate memory layer may use these records as ground truth. We keep the letter; the librarian can be anyone's.
+Letterbox is not a memory intelligence system. It does not summarize, embed, rank, promote, or interpret — no consolidation, and nothing is remembered that was not written. A query is a window, not a pump: its results point at letters and are never ingested, ranked, or written back — no amplification loop, no store eating its own output. A separate memory layer may use these records as its source: a record of what was written, not proof that it is true. We keep the letter; the librarian can be anyone's.
 
 The honest cost: query finds what was filed, not what was known. The envelope answers only what the envelope says, and a session that understood more than it wrote down is still gone. That is a deliberate choice of failure mode. Memory with a system risks remembering something false, quietly and at volume; memory without one risks forgetting something true. Letterbox chooses the second, on purpose.
 
