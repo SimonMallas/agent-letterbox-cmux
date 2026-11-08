@@ -1,4 +1,4 @@
-## [0.7.0] — 2026-11-07 (cmux edition)
+## [0.7.0] — 2026-11-08 (cmux edition)
 
 - An update by the installer now adds the Agent Letterbox skill link that setup has made since v0.5.3, so a team set up earlier gets it without running setup again. The link is made only where setup would make it, and anything already there is left alone.
 - The README has an Updating section: how to check your version, and how to update an installer, Git or `npx skills` install.
