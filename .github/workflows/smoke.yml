@@ -14,8 +14,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        python: ['3.9', '3.13']
+        include:
+          # 3.9 stays on 24.04: ubuntu-latest is 26.04, whose setup-python has no 3.9.
+          - { os: ubuntu-24.04, python: '3.9' }
+          # ubuntu-latest is 26.04 (uutils coreutils): the lock-race regression leg.
+          - { os: ubuntu-latest, python: '3.13' }
+          - { os: macos-latest, python: '3.9' }
+          - { os: macos-latest, python: '3.13' }
     steps:
       - name: Checkout
         uses: actions/checkout@v4
