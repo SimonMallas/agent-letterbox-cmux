@@ -1,4 +1,5 @@
 ## [0.7.0] — 2026-11-08 (cmux edition)
+- Locks are taken with the mkdir(2) syscall through perl, not the external mkdir binary: uutils coreutils 0.10.0 (Ubuntu 25.10 and later, including GitHub's ubuntu-latest) can report success under a race even when its mkdir(2) failed, so two agents could both hold one lock. Found on an Ubuntu 26.04 laptop; both places a lock is taken are fixed; regression test included (tests/test_lock_exclusivity.sh). Perl becomes a required lock dependency.
 
 - An update by the installer now adds the Agent Letterbox skill link that setup has made since v0.5.3, so a team set up earlier gets it without running setup again. The link is made only where setup would make it, and anything already there is left alone.
 - The README has an Updating section: how to check your version, and how to update an installer, Git or `npx skills` install.

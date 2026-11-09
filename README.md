@@ -10,7 +10,7 @@ Agent Letterbox is a cross-agent communication system for terminal CLI agents: i
 
 The letterbox is the team's **episodic memory**: a write-once record of what was asked, answered, and decided — episode by episode, with provenance on every entry. Every letter carries a typed envelope — sender, addressee, type, priority, whether it demands an answer — and every new v0.5.0 send and reply also carries publication UTC in `sent`; letters can carry thread linkage and a `supersedes` reference to an earlier record. Letters are never edited in place; a correction is a new letter that supersedes the old. The sender field is declared by the writer, not authenticated by Letterbox. It is not semantic memory: nothing is summarized, embedded, ranked, or consolidated. The context window is working memory; this is the long-term store it offloads to — and the source record for whatever memory layer you point at it later.
 
-Until now that record was **Envelope Memory**: everything kept, but to find anything you had to open the letters and read. This release upgrades it to **Queryable Envelope Memory (QEM)** — the reason those letters are more than mail, and the third retrieval lane: dense retrieval finds meaning, lexical retrieval finds strings, and **structured-metadata retrieval finds records**. Exact filters over typed envelope fields, in one read-only command:
+Until now that record was **Envelope Memory**: everything kept, but to find anything you had to open the letters and read. Since 0.5.0 it is **Queryable Envelope Memory (QEM)** 0.7 adds the plus: the owed view, the notes map line, the citation linter and the tidy line — **QEM+** is QEM with the tools that keep an agent's notes honest against the record. — the reason those letters are more than mail, and the third retrieval lane: dense retrieval finds meaning, lexical retrieval finds strings, and **structured-metadata retrieval finds records**. Exact filters over typed envelope fields, in one read-only command:
 
 ```bash
 letterbox query                                            # newest envelopes, scope stated
@@ -352,6 +352,9 @@ Each agent CLI below completed the full cycle live on this repo — durable lett
 | GitHub Copilot CLI | 1.0.80 | `AGENTS.md` |
 
 The teach file is a short note in the working directory telling the agent what a doorbell means and how to reply — Gemini CLI found and activated the bundled Letterbox skill from the doorbell alone. Any agent that can run shell commands and read a file can join the same way. The maintainers' own team of agents runs this letter protocol daily.
+
+0.7's evidence is public: the CI legs on every push include an Ubuntu 26.04 leg
+(uutils coreutils) that guards against the lock race found after 0.5.3.
 
 Two things worth knowing:
 
