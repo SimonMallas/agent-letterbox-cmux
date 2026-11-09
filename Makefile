@@ -28,6 +28,7 @@ test:
 	./tests/test_outbox_sweep_exclusion.sh
 	./tests/test_error_paths.sh
 	./tests/test_small_fixes.sh
+	./tests/test_bell_reaches.sh
 	./tests/test_cli_maintenance.sh
 	./tests/test_cli_maintenance_mutation.sh
 	./tests/test_two_fence_parser.sh

@@ -334,7 +334,9 @@ grep -Fq 'stamp=present' "$bell_log" || fail H1-order
 printf 'accepted\n' | LETTERBOX_DIR="$box" LETTERBOX_AGENT=reviewer LETTERBOX_DOORBELL="$box/bell.sh" \
   LETTERBOX_BELL_LOG="$bell_log" LETTERBOX_BELL_LETTER="$task" \
   "$letterbox" reply "$task_id" ack reply-slug --now >/dev/null
-[[ ! -s "$bell_log" ]] || fail H2-rerun-bell
+# A re-run rings again while the reply is still unread: the first attempt may
+# have died between publishing and its ring, and a lost ring is the worse fault.
+[[ "$(grep -c '^bell ' "$bell_log")" == 1 ]] || fail H2-rerun-bell
 : > "$bell_log"
 if printf 'other\n' | LETTERBOX_DIR="$box" LETTERBOX_AGENT=reviewer LETTERBOX_DOORBELL="$box/bell.sh" \
   LETTERBOX_BELL_LOG="$bell_log" LETTERBOX_BELL_LETTER="$task" \
