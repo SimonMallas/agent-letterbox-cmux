@@ -27,6 +27,7 @@ test:
 	./tests/smoke.sh
 	./tests/test_outbox_sweep_exclusion.sh
 	./tests/test_error_paths.sh
+	./tests/test_small_fixes.sh
 	./tests/test_cli_maintenance.sh
 	./tests/test_cli_maintenance_mutation.sh
 	./tests/test_two_fence_parser.sh
@@ -40,6 +41,7 @@ test:
 	$(call run_lifecycle,tests/test_lifecycle_v03.sh,lifecycle v0.3: PASS)
 	./tests/test_lifecycle_early_abort_mutation.sh
 	./tests/test_cmux_registration.sh
+	./tests/test_cmux_uuid_registration.sh
 	./tests/test_cmux_setup.sh
 	./tests/cmux-doorbell-safety.sh
 	./tests/test_doorbell_docs_drift.sh

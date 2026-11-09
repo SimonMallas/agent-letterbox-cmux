@@ -218,7 +218,8 @@ resolve_action_ref() {
 
 check_stale_secs() {
   local days="${LETTERBOX_CHECK_STALE_DAYS:-14}"
-  printf '%s\n' $((days * 86400))
+  [[ "$days" =~ ^[0-9]{1,5}$ ]] || days=14
+  printf '%s\n' $((10#$days * 86400))
 }
 iso_to_epoch() { # $1=compact YYYY-mm-ddTHHMMSS or ISO Z
   local ts="$1" compact
@@ -356,7 +357,8 @@ cmux_registry_path() { printf '%s' "${LETTERBOX_CMUX_REGISTRY:-$BOX/cmux-agents.
 keep_live_cmux_registrations() {
   local registry="$1" tree tmp line surface
   [[ -f "$registry" ]] || { : > "$registry"; return; }
-  tree="$(cmux tree --all 2>/dev/null || true)"
+  # A lookup that fails or says nothing is not proof that every pane is gone.
+  tree="$(cmux tree --all 2>/dev/null)" && [[ -n "$tree" ]] || return 0
   tmp="$(mktemp "$(dirname "$registry")/.cmux-agents.tmp.XXXXXX")"
   while IFS= read -r line || [[ -n "$line" ]]; do
     surface="$(printf '%s\n' "$line" | cut -f2)"
@@ -383,7 +385,7 @@ cmd_cmux_register() {
     surface="$(cmux identify 2>/dev/null | awk '/"caller" : \{/{f=1} f && /"surface_ref"/{gsub(/[",]/,""); print $3; exit}')"
   fi
   [[ "$surface" =~ ^surface:[0-9]+$ ]] || die 'run registration from inside an agent cmux terminal (no caller surface from cmux identify)'
-  cmux tree --all 2>/dev/null | grep -F "$surface" >/dev/null || die "current surface is not live: $surface"
+  cmux tree --all 2>/dev/null | grep -E "${surface}([^0-9]|$)" >/dev/null || die "current surface is not live: $surface"
   mkdir -p "$BOX/$agent/inbox" "$BOX/$agent/processed" "$BOX/locks"
   registry="$(cmux_registry_path)"
   mkdir -p "$(dirname "$registry")"
@@ -440,7 +442,8 @@ cmd_cmux_setup() {
   IFS=',' read -r -a agent_list <<< "$agents"
   for agent in "${agent_list[@]}"; do need_agent "$agent"; done
 
-  BOX="$setup_dir"
+  mkdir -p "$setup_dir"
+  BOX="$(cd "$setup_dir" && pwd)" || die "cannot use letterbox directory: $setup_dir"
   mkdir -p "$BOX" "$BOX/locks" "$(dirname "$DEFAULT_DIR_FILE")" "$launcher_dir"
   cmd_init "${agent_list[@]}" >/dev/null
   printf '%s\n' "$BOX" > "$DEFAULT_DIR_FILE"
@@ -952,6 +955,8 @@ print_progress_line() {
   local stamp="$1.ack" note age ep
   [[ -f "$stamp" ]] || return 0
   note="$(awk '/^progress:/{sub(/^progress:[[:space:]]*/, ""); print; exit}' "$stamp" 2>/dev/null || true)"
+  # Notes are untrusted text: never pass terminal control sequences through.
+  note="$(printf '%s' "$note" | LC_ALL=C tr -d '[:cntrl:]' | LC_ALL=C sed $'s/\xc2[\x80-\x9f]//g')"
   [[ -n "$note" ]] || return 0
   if ep="$(stamp_epoch "$stamp" progress_at)"; then
     age="$(format_age "$ep")"
@@ -1092,7 +1097,7 @@ cmd_check() {
   stale_secs="$(check_stale_secs)"
   n=0
   for f in "$inbox"/*.md; do
-    [[ -e "$f" ]] || break
+    [[ -e "$f" ]] || continue
     if ! id="$(frontmatter_value "$f" id)"; then
       printf 'letterbox: MALFORMED %s (need opening and closing ---)\n' "$f" >&2
       echo "═══ MALFORMED  ${f##*/}"
@@ -1387,7 +1392,7 @@ cmd_token() {
   shopt -s nullglob
   for f in "$BOX"/*/inbox/*.md "$BOX"/*/processed/*.md; do
     [[ -f "$f" ]] || continue
-    id="$(frontmatter_value "$f" id)"
+    id="$(frontmatter_value "$f" id)" || continue
     if [[ "$(doorbell_token_for_id "$id")" == "$tok" ]]; then
       n=$((n + 1))
       matches+=("$f")
