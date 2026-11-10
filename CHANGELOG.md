@@ -8,7 +8,7 @@
 - A retried reply rings again until the recipient files the reply. Before, a reply that died after it was written and before its ring never rang on any retry.
 - Registry writes take a lock, so agents registering at the same moment no longer overwrite each other's row.
 - Every letter rings. `send`, and `reply` with `ack`, `nack` or `result`, ring the recipient with or without `--now`; `--now` now only marks a letter urgent. Before, a letter without `--now` landed and rang nobody.
-- The doorbell is typed into the agent's pane by default. Before, typing needed `--automatic-doorbells` at setup, and without it the agent was not woken. Setup now always turns typing on and still accepts `--automatic-doorbells`. Enter can also send text already typed in that pane; only `LETTERBOX_CMUX_SUBMIT=0` stops typing, and your own `check` then says `doorbell: typing is off`.
+- The doorbell is typed into the agent's pane by default. Before, typing needed `--automatic-doorbells` at setup, and without it the agent was not woken. Setup now always turns typing on and still accepts `--automatic-doorbells`. Enter can also send text already typed in that pane; only `LETTERBOX_CMUX_SUBMIT=0` stops typing, and your own `check` then says `doorbell: typing is off`. A Letterbox set up earlier without the flag types too once updated, with no setup run, so the installer says so when it updates from an earlier version.
 - The ring-verb and crash-retry tests now run the paths they name, and the UUID registration suite runs in `make test`.
 
 ## [0.7.0] — 2026-11-08 (cmux edition)
