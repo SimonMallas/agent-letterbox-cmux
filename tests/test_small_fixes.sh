@@ -84,5 +84,13 @@ printf "LETTERBOX_DOORBELL='%s/adapters/noop.sh'\n" "$root" > "$tmp/plain/env.sh
 out="$(LETTERBOX_DIR="$tmp/plain" LETTERBOX_AGENT=p1 "$letterbox" check 2>&1)"
 [[ "$out" != *"doorbell: not set up"* ]] && ok "unexported doorbell line is not a false warning" || bad "false 'not set up' for an unexported doorbell line"
 
+# 10. Re-running setup without --automatic-doorbells says that it turns them off.
+"$letterbox" cmux setup --dir "$tmp/auto" --agents a1 --automatic-doorbells >/dev/null 2>&1
+out="$("$letterbox" cmux setup --dir "$tmp/auto" --agents a1 2>&1 >/dev/null)"
+[[ "$out" == *"automatic doorbells were on for this box and are now off"* ]] \
+  && ok "setup warns when a re-run turns automatic doorbells off" || bad "setup dropped automatic doorbells silently: $out"
+out="$("$letterbox" cmux setup --dir "$tmp/auto" --agents a1 --automatic-doorbells 2>&1 >/dev/null)"
+[[ "$out" != *"now off"* ]] && ok "no warning when the flag is given again" || bad "warned although the flag was given"
+
 [[ "$fails" -eq 0 ]] || exit 1
 echo 'small fixes: PASS'
