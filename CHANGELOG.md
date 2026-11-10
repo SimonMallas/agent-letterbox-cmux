@@ -1,17 +1,18 @@
-## Unreleased
+## [0.7.1] — unreleased (cmux edition)
 
 - `check` ignores a `LETTERBOX_CHECK_STALE_DAYS` that is not a whole number (such as `08`, `1.5` or a word) instead of aborting, and a broken link that sorts first in the inbox no longer hides every letter after it.
 - A progress note from another agent is shown without terminal control characters.
 - `letterbox token` no longer prints nothing when any mailbox holds one malformed file.
 - `cmux register` refuses a surface whose ref is only a prefix of a live one. `cmux setup` keeps the registrations when the cmux lookup fails, and stores `--dir` as an absolute path, ignoring `CDPATH`.
-- Every ring now uses the box's generated `env.sh` when the caller has no doorbell set, so `send --now`, `reply --now` and `nudge` from an agent that was not started by `letterbox cmux run` ring too. Before, they reported `adapter_unavailable` and rang nobody. An explicit doorbell setting still takes precedence. Your own `check` prints `doorbell: not set up` when neither the environment nor `env.sh` names a doorbell.
-- A retried `--now` reply rings again until the recipient files the reply. Before, a reply that died after it was written and before its ring never rang on any retry.
+- Every ring now uses the box's generated `env.sh` when the caller has no doorbell set, so `send`, `reply` and `nudge` from an agent that was not started by `letterbox cmux run` ring too. Before, they reported `adapter_unavailable` and rang nobody. An explicit doorbell setting still takes precedence. Your own `check` prints `doorbell: not set up` when neither the environment nor `env.sh` names a doorbell.
+- A retried reply rings again until the recipient files the reply. Before, a reply that died after it was written and before its ring never rang on any retry.
 - Registry writes take a lock, so agents registering at the same moment no longer overwrite each other's row.
 - Every letter rings. `send`, and `reply` with `ack`, `nack` or `result`, ring the recipient with or without `--now`; `--now` now only marks a letter urgent. Before, a letter without `--now` landed and rang nobody.
 - The doorbell is typed into the agent's pane by default. Before, typing needed `--automatic-doorbells` at setup, and without it the agent was not woken. Setup now always turns typing on and still accepts `--automatic-doorbells`. Enter can also send text already typed in that pane; only `LETTERBOX_CMUX_SUBMIT=0` stops typing, and your own `check` then says `doorbell: typing is off`.
 - The ring-verb and crash-retry tests now run the paths they name, and the UUID registration suite runs in `make test`.
 
 ## [0.7.0] — 2026-11-08 (cmux edition)
+
 - Locks are taken with the mkdir(2) syscall through perl, not the external mkdir binary: uutils coreutils 0.10.0 (Ubuntu 25.10 and later, including GitHub's ubuntu-latest) can report success under a race even when its mkdir(2) failed, so two agents could both hold one lock. Found on an Ubuntu 26.04 laptop; both places a lock is taken are fixed; regression test included (tests/test_lock_exclusivity.sh). Perl becomes a required lock dependency.
 
 - An update by the installer now adds the Agent Letterbox skill link that setup has made since v0.5.3, so a team set up earlier gets it without running setup again. The link is made only where setup would make it, and anything already there is left alone.
