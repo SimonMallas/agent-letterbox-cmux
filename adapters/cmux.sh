@@ -133,9 +133,11 @@ notify_body="$type"
 # never hold the adapter (and the outcome line) hostage.
 bounded_cmd "$bound_s" cmux notify --title "letterbox → $to" --body "$notify_body" >/dev/null 2>&1 || true
 
-# Sending terminal input is explicit opt-in: Enter can submit unrelated text
-# already typed in the target pane.
-if [[ "${LETTERBOX_CMUX_SUBMIT:-0}" == 1 ]]; then
+# Typing the line and pressing Enter is the doorbell: without it the agent does
+# not wake. Enter can also submit text already typed in that pane; that risk is
+# accepted. Only an explicit LETTERBOX_CMUX_SUBMIT=0 stops typing, and the
+# agent's own check then warns.
+if [[ "${LETTERBOX_CMUX_SUBMIT:-1}" != 0 ]]; then
   send_ec=0
   bounded_cmd "$bound_s" cmux send --surface "$surface" "$line" || send_ec=$?
   if [[ "$send_ec" -ne 0 ]]; then

@@ -241,9 +241,10 @@ SH
 chmod +x "$shim_dir/ln"
 export LETTERBOX_LN_STATE="$box/ln-state"
 set +e
-PATH="$shim_dir:$PATH" printf 'accepted\n' | LETTERBOX_DIR="$box" LETTERBOX_AGENT=reviewer "$letterbox" reply "$task_id" ack reply-slug >/dev/null 2>&1
+printf 'accepted\n' | PATH="$shim_dir:$PATH" LETTERBOX_DIR="$box" LETTERBOX_AGENT=reviewer "$letterbox" reply "$task_id" ack reply-slug >/dev/null 2>&1
 set -e
-PATH="$shim_dir:$PATH" printf 'accepted\n' | LETTERBOX_DIR="$box" LETTERBOX_AGENT=reviewer "$letterbox" reply "$task_id" ack reply-slug >/dev/null
+printf 'accepted\n' | PATH="$shim_dir:$PATH" LETTERBOX_DIR="$box" LETTERBOX_AGENT=reviewer "$letterbox" reply "$task_id" ack reply-slug >/dev/null
+[[ -e "$LETTERBOX_LN_STATE" ]] || fail E1-shim-never-ran
 [[ "$(find "$box/planner/inbox" -name '*--reviewer--ack.md' | wc -l | tr -d ' ')" == 1 ]] || fail E1-acks
 [[ -f "$task.ack" ]] || fail E1-stamp
 pass E1-ln-shim-retry
@@ -333,7 +334,9 @@ grep -Fq 'stamp=present' "$bell_log" || fail H1-order
 printf 'accepted\n' | LETTERBOX_DIR="$box" LETTERBOX_AGENT=reviewer LETTERBOX_DOORBELL="$box/bell.sh" \
   LETTERBOX_BELL_LOG="$bell_log" LETTERBOX_BELL_LETTER="$task" \
   "$letterbox" reply "$task_id" ack reply-slug --now >/dev/null
-[[ ! -s "$bell_log" ]] || fail H2-rerun-bell
+# A re-run rings again while the reply is still unread: the first attempt may
+# have died between publishing and its ring, and a lost ring is the worse fault.
+[[ "$(grep -c '^bell ' "$bell_log")" == 1 ]] || fail H2-rerun-bell
 : > "$bell_log"
 if printf 'other\n' | LETTERBOX_DIR="$box" LETTERBOX_AGENT=reviewer LETTERBOX_DOORBELL="$box/bell.sh" \
   LETTERBOX_BELL_LOG="$bell_log" LETTERBOX_BELL_LETTER="$task" \

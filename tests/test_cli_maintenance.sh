@@ -173,6 +173,7 @@ shopt -u nullglob
 wreq_id="$(awk -F': ' '$1 == "id" { print $2; exit }' "${wreq[0]}")"
 src_copy="$(mktemp "$box/srccopy.XXXXXX")"
 cp "${wreq[0]}" "$src_copy"
+: > "$ringlog" # the request above rang, as every letter does; only the refused reply is under test
 set +e
 wrout="$(printf ' \t \n' | lb alpha reply "$wreq_id" ack ws-ack 2>&1)"
 wrrc=$?

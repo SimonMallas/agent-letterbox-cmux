@@ -13,7 +13,7 @@ printf -- '---\nid: %s\nfrom: chat-bridge\nto: agent\ntype: info\n---\nhello\n' 
 cat > "$ROOT/lb" <<SH
 #!/usr/bin/env bash
 export LETTERBOX_DIR="$ROOT/box"
-[[ "${NO_DOORBELL:-}" == 1 ]] || export LETTERBOX_DOORBELL="$EDITION/adapters/noop.sh"
+[[ "\${NO_DOORBELL:-}" == 1 ]] || export LETTERBOX_DOORBELL="$EDITION/adapters/noop.sh"
 exec "$EDITION/bin/letterbox" "\$@"
 SH
 chmod +x "$ROOT/lb"

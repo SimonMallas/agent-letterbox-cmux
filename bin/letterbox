@@ -218,7 +218,8 @@ resolve_action_ref() {
 
 check_stale_secs() {
   local days="${LETTERBOX_CHECK_STALE_DAYS:-14}"
-  printf '%s\n' $((days * 86400))
+  [[ "$days" =~ ^[0-9]{1,5}$ ]] || days=14
+  printf '%s\n' $((10#$days * 86400))
 }
 iso_to_epoch() { # $1=compact YYYY-mm-ddTHHMMSS or ISO Z
   local ts="$1" compact
@@ -356,7 +357,9 @@ cmux_registry_path() { printf '%s' "${LETTERBOX_CMUX_REGISTRY:-$BOX/cmux-agents.
 keep_live_cmux_registrations() {
   local registry="$1" tree tmp line surface
   [[ -f "$registry" ]] || { : > "$registry"; return; }
-  tree="$(cmux tree --all 2>/dev/null || true)"
+  # A lookup that fails or says nothing is not proof that every pane is gone.
+  tree="$(cmux tree --all 2>/dev/null)" && [[ -n "$tree" ]] || return 0
+  acquire_lifecycle_lock "$registry"
   tmp="$(mktemp "$(dirname "$registry")/.cmux-agents.tmp.XXXXXX")"
   while IFS= read -r line || [[ -n "$line" ]]; do
     surface="$(printf '%s\n' "$line" | cut -f2)"
@@ -365,6 +368,7 @@ keep_live_cmux_registrations() {
     printf '%s\n' "$line" >> "$tmp"
   done < "$registry"
   mv "$tmp" "$registry"
+  release_lifecycle_lock
 }
 
 cmd_cmux_register() {
@@ -383,18 +387,21 @@ cmd_cmux_register() {
     surface="$(cmux identify 2>/dev/null | awk '/"caller" : \{/{f=1} f && /"surface_ref"/{gsub(/[",]/,""); print $3; exit}')"
   fi
   [[ "$surface" =~ ^surface:[0-9]+$ ]] || die 'run registration from inside an agent cmux terminal (no caller surface from cmux identify)'
-  cmux tree --all 2>/dev/null | grep -F "$surface" >/dev/null || die "current surface is not live: $surface"
+  cmux tree --all 2>/dev/null | grep -E "${surface}([^0-9]|$)" >/dev/null || die "current surface is not live: $surface"
   mkdir -p "$BOX/$agent/inbox" "$BOX/$agent/processed" "$BOX/locks"
   registry="$(cmux_registry_path)"
   mkdir -p "$(dirname "$registry")"
+  # One writer at a time: registration and cleanup both read-modify-write this file.
+  acquire_lifecycle_lock "$registry"
   if [[ -f "$registry" ]]; then
     owner="$(awk -F '\t' -v surface="$surface" '$2 == surface { print $1; exit }' "$registry")"
-    [[ -z "$owner" || "$owner" == "$agent" ]] || die "surface $surface is already registered to $owner"
+    [[ -z "$owner" || "$owner" == "$agent" ]] || { release_lifecycle_lock; die "surface $surface is already registered to $owner"; }
   fi
   tmp="$(mktemp "$(dirname "$registry")/.cmux-agents.tmp.XXXXXX")"
   [[ -f "$registry" ]] && awk -F '\t' -v agent="$agent" '$1 != agent { print }' "$registry" > "$tmp"
   printf '%s\t%s\t%s\n' "$agent" "$surface" "$(now)" >> "$tmp"
   mv "$tmp" "$registry"
+  release_lifecycle_lock
   printf 'registered: %s → %s\n' "$agent" "$surface"
   # The registry names the pane for the doorbell. The agent's own commands
   # (check, file, reply) still need its name; `cmux run` exports it.
@@ -413,14 +420,16 @@ cmd_cmux_unregister() {
   need_agent "$agent"
   registry="$(cmux_registry_path)"
   [[ -f "$registry" ]] || { printf 'no cmux registration for %s\n' "$agent"; return; }
+  acquire_lifecycle_lock "$registry"
   tmp="$(mktemp "$(dirname "$registry")/.cmux-agents.tmp.XXXXXX")"
   awk -F '\t' -v agent="$agent" '$1 != agent { print }' "$registry" > "$tmp"
   mv "$tmp" "$registry"
+  release_lifecycle_lock
   printf 'unregistered: %s\n' "$agent"
 }
 
 cmd_cmux_setup() {
-  local agents='' setup_dir="$HOME/.agent-letterbox" submit=false
+  local agents='' setup_dir="$HOME/.agent-letterbox"
   local skill_source="$SCRIPT_DIR/../skills/agent-letterbox"
   local skills_dir="${LETTERBOX_SKILLS_DIR:-$HOME/.agents/skills}" skill_target
   local launcher_dir="${LETTERBOX_BIN_DIR:-$HOME/.local/bin}" launcher_target
@@ -428,7 +437,7 @@ cmd_cmux_setup() {
     case "$1" in
       --agents) agents="${2:?missing comma-separated agent list}"; shift;;
       --dir) setup_dir="${2:?missing directory}"; shift;;
-      --submit|--automatic-doorbells) submit=true;;
+      --submit|--automatic-doorbells) ;; # typing is always on; kept so old commands still work
       *) die "usage: letterbox cmux setup --agents planner,reviewer [--dir <path>] [--automatic-doorbells]";;
     esac
     shift
@@ -440,7 +449,8 @@ cmd_cmux_setup() {
   IFS=',' read -r -a agent_list <<< "$agents"
   for agent in "${agent_list[@]}"; do need_agent "$agent"; done
 
-  BOX="$setup_dir"
+  mkdir -p "$setup_dir"
+  BOX="$(CDPATH= cd -- "$setup_dir" && pwd)" || die "cannot use letterbox directory: $setup_dir"
   mkdir -p "$BOX" "$BOX/locks" "$(dirname "$DEFAULT_DIR_FILE")" "$launcher_dir"
   cmd_init "${agent_list[@]}" >/dev/null
   printf '%s\n' "$BOX" > "$DEFAULT_DIR_FILE"
@@ -488,8 +498,8 @@ export LETTERBOX_DIR='$BOX'
 export LETTERBOX_DOORBELL='$SCRIPT_DIR/../adapters/cmux.sh'
 export LETTERBOX_CMUX_REGISTRY='$BOX/cmux-agents.tsv'
 export AGENT_LETTERBOX_SKILL='$skill_target'
+export LETTERBOX_CMUX_SUBMIT=1
 EOF
-  [[ "$submit" == true ]] && printf 'export LETTERBOX_CMUX_SUBMIT=1\n' >> "$BOX/env.sh"
   cat > "$BOX/AGENT-LETTERBOX.md" <<'EOF'
 # Agent Letterbox startup rule
 
@@ -505,7 +515,7 @@ letterbox check
 ```
 
 For actionable letters, use `letterbox reply` with body text piped on stdin.
-Use `--now` on a reply only when the original letter priority is `now`.
+Every letter and reply rings the recipient; `--now` only marks it urgent.
 
 A letter from Agent Letter Bridge is a person writing from a phone, Slack or
 Discord. `letterbox reply` cannot reach them; answer with
@@ -519,7 +529,6 @@ EOF
   [[ -z "$claude_skill" ]] || printf 'Agent Letterbox skill also linked: %s\n' "$claude_skill"
   printf 'Launch each agent inside any cmux pane/workspace with:\n'
   printf '  letterbox cmux run <agent-id> -- <agent-command>\n'
-  [[ "$submit" == true ]] || printf 'Automatic input is off. Re-run with --automatic-doorbells to enable it.\n'
 }
 
 cmd_cmux_run() {
@@ -563,11 +572,40 @@ cmd_init() {
   printf 'initialized letterbox: %s\n' "$BOX"
 }
 
+# An agent that was not started by `cmux run` has none of the box's doorbell
+# settings, and its rings reached nobody. Use the box's own generated settings
+# when the caller supplied none; an explicit setting stays authoritative.
+load_box_doorbell() {
+  [[ -z "${LETTERBOX_DOORBELL:-}" && -f "$BOX/env.sh" ]] || return 0
+  local box="$BOX" submit_set="${LETTERBOX_CMUX_SUBMIT+set}" submit="${LETTERBOX_CMUX_SUBMIT:-}"
+  # shellcheck disable=SC1090
+  source "$BOX/env.sh"
+  export LETTERBOX_DIR="$box"
+  # A typing setting the caller made wins over the file, as check reports it.
+  [[ -z "$submit_set" ]] || export LETTERBOX_CMUX_SUBMIT="$submit"
+}
+
+# One line on the agent's own check when no doorbell can ring from here.
+doorbell_line() {
+  local submit="${LETTERBOX_CMUX_SUBMIT:-}"
+  if [[ -z "${LETTERBOX_DOORBELL:-}" ]]; then
+    if [[ -f "$BOX/env.sh" ]] && grep -Eq '^[[:space:]]*(export[[:space:]]+)?LETTERBOX_DOORBELL=' "$BOX/env.sh"; then
+      [[ -n "$submit" ]] || submit="$(sed -nE "s/^[[:space:]]*(export[[:space:]]+)?LETTERBOX_CMUX_SUBMIT=['\"]?([^'\"[:space:]]*).*/\\2/p" "$BOX/env.sh" | tail -1)"
+    else
+      printf 'doorbell: not set up — your letters ring nobody. Run: letterbox cmux setup\n'
+      return 0
+    fi
+  fi
+  [[ "$submit" != 0 ]] || printf 'doorbell: typing is off (LETTERBOX_CMUX_SUBMIT=0) — your letters wake nobody\n'
+  return 0
+}
+
 ring_doorbell() {
   local to="$1" type="$2" id_or_slug="$3" token
   # The wrapper is the SOLE stdout owner for doorbell-outcome v=1: the
   # adapter's stdout is a private pipe (captured, never forwarded raw), and
   # exactly one contract line is emitted here.
+  load_box_doorbell
   if [[ -z "${LETTERBOX_DOORBELL:-}" ]]; then
     emit_outcome no_live_surface adapter_unavailable -
     return 0
@@ -944,7 +982,8 @@ cmd_send() {
   [[ -n "${body//[[:space:]]/}" ]] || die 'empty message body; pipe the body via stdin (letterbox send <to> <type> <slug> [--now])'
   local final; final="$(publish_message "$to" "$type" "$slug" "$priority" "$requires_ack" "$re" "$deadline" "$body" "$thread" "$supersedes")"
   printf 'sent: %s\n' "$final"
-  [[ "$priority" == now ]] && ring_doorbell "$to" "$type" "$(frontmatter_value "$final" id)"
+  # Every letter rings: priority is a label for the reader, not a switch for the bell.
+  ring_doorbell "$to" "$type" "$(frontmatter_value "$final" id)"
   return 0
 }
 
@@ -952,6 +991,8 @@ print_progress_line() {
   local stamp="$1.ack" note age ep
   [[ -f "$stamp" ]] || return 0
   note="$(awk '/^progress:/{sub(/^progress:[[:space:]]*/, ""); print; exit}' "$stamp" 2>/dev/null || true)"
+  # Notes are untrusted text: never pass terminal control sequences through.
+  note="$(printf '%s' "$note" | LC_ALL=C tr -d '[:cntrl:]' | LC_ALL=C sed $'s/\xc2[\x80-\x9f]//g')"
   [[ -n "$note" ]] || return 0
   if ep="$(stamp_epoch "$stamp" progress_at)"; then
     age="$(format_age "$ep")"
@@ -1092,7 +1133,7 @@ cmd_check() {
   stale_secs="$(check_stale_secs)"
   n=0
   for f in "$inbox"/*.md; do
-    [[ -e "$f" ]] || break
+    [[ -e "$f" ]] || continue
     if ! id="$(frontmatter_value "$f" id)"; then
       printf 'letterbox: MALFORMED %s (need opening and closing ---)\n' "$f" >&2
       echo "═══ MALFORMED  ${f##*/}"
@@ -1134,6 +1175,7 @@ cmd_check() {
   done
   # Filing and notes are this seat's own: neither line when checking another inbox.
   if [[ "$who" == "$ME" ]]; then
+    doorbell_line
     tidy_line
     notes_map --summary
   fi
@@ -1204,6 +1246,9 @@ cmd_reply() {
       parent_from="$(frontmatter_value "$msg" from)"
       expected_reply="$(inbox_path "$parent_from")/$(reply_file_for "$parent_id" "$type" "$ME")"
       if [[ -f "$expected_reply" || -f "$(processed_path "$parent_from")/$(basename "$expected_reply")" ]]; then
+        # The first attempt may have died between filing and its ring: ring
+        # again while the reply is still unread in the sender's inbox.
+        [[ -f "$expected_reply" ]] && ring_doorbell "$parent_from" "$type" "$(frontmatter_value "$expected_reply" id)"
         printf 'already closed: %s (your %s reply is published)\n' "$(confirm_label "$msg")" "$type"
         return 0
       fi
@@ -1245,7 +1290,7 @@ cmd_reply() {
     create_ack_stamp "$msg" "$REPLY_FILE"
     release_lifecycle_lock
     trap - EXIT
-    [[ "$priority" == now && "$REPLY_ALREADY" == false ]] && ring_doorbell "$doorbell_to" "$type" "$(frontmatter_value "$REPLY_FILE" id)"
+    [[ "$REPLY_FILE" == "$(inbox_path "$doorbell_to")"/* ]] && ring_doorbell "$doorbell_to" "$type" "$(frontmatter_value "$REPLY_FILE" id)"
     printf 'acked: %s (in progress; reply: %s)\n' "$(confirm_label "$msg")" "$(confirm_label "$REPLY_FILE")"
     return 0
   fi
@@ -1253,7 +1298,7 @@ cmd_reply() {
   rm -f "$msg.ack"
   release_lifecycle_lock
   trap - EXIT
-  [[ "$priority" == now && "$REPLY_ALREADY" == false ]] && ring_doorbell "$doorbell_to" "$type" "$(frontmatter_value "$REPLY_FILE" id)"
+  [[ "$REPLY_FILE" == "$(inbox_path "$doorbell_to")"/* ]] && ring_doorbell "$doorbell_to" "$type" "$(frontmatter_value "$REPLY_FILE" id)"
   printf 'closed: %s → %s/processed/ (reply: %s)\n' "$(confirm_label "$msg")" "$ME" "$(confirm_label "$REPLY_FILE")"
 }
 
@@ -1345,14 +1390,9 @@ cmd_ring() {
     emit_outcome no_live_surface surface_not_found -
     return 0
   fi
-  # Bridge services do not inherit a pane's setup environment. Use this
-  # mailbox's generated adapter configuration only when the caller supplied
-  # none; explicit service configuration remains authoritative.
-  if [[ -z "${LETTERBOX_DOORBELL:-}" && -f "$BOX/env.sh" ]]; then
-    # shellcheck disable=SC1090
-    source "$BOX/env.sh"
-    BOX="${LETTERBOX_DIR:-$BOX}"
-  fi
+  # Bridge services do not inherit a pane's setup environment: ring_doorbell
+  # reads this mailbox's generated env.sh when the caller supplied no doorbell,
+  # with the same rule as send and reply (the caller's box stays the box).
   need_agent "$to"
   case "$typ" in request|delegate|status|blocker|result|ack|nack|info) ;; *) die "invalid message type: $typ";; esac
   [[ "$id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid letter id"
@@ -1387,7 +1427,7 @@ cmd_token() {
   shopt -s nullglob
   for f in "$BOX"/*/inbox/*.md "$BOX"/*/processed/*.md; do
     [[ -f "$f" ]] || continue
-    id="$(frontmatter_value "$f" id)"
+    id="$(frontmatter_value "$f" id)" || continue
     if [[ "$(doorbell_token_for_id "$id")" == "$tok" ]]; then
       n=$((n + 1))
       matches+=("$f")

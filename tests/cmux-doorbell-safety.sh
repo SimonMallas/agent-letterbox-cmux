@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Mock-backed proof that adapters/cmux.sh never injects keystrokes into a
-# live pane unless the caller explicitly opts in via LETTERBOX_CMUX_SUBMIT=1.
+# Mock-backed proof that adapters/cmux.sh types the doorbell into the resolved
+# pane by default, and that only LETTERBOX_CMUX_SUBMIT=0 stops it.
 set -euo pipefail
+unset LETTERBOX_CMUX_SUBMIT # each case below sets it on purpose; an inherited value must not decide one
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 adapter="$root/adapters/cmux.sh"
@@ -40,29 +41,29 @@ run_adapter() {
     "$adapter" reviewer delegate smoke-test
 }
 
-# --- Default (LETTERBOX_CMUX_SUBMIT unset): must never call send/send-key ---
+# --- Default (LETTERBOX_CMUX_SUBMIT unset): the doorbell is typed and submitted ---
 unset LETTERBOX_CMUX_SUBMIT || true
 run_adapter
-if grep -qE '^(send|send-key) ' "$work/cmux-calls.log"; then
-  echo 'FAIL: cmux send/send-key called without LETTERBOX_CMUX_SUBMIT=1' >&2
+grep -qE '^send --surface ' "$work/cmux-calls.log" && grep -qE '^send-key --surface .* Enter$' "$work/cmux-calls.log" || {
+  echo 'FAIL: the default did not type and submit the doorbell' >&2
   cat "$work/cmux-calls.log" >&2
   exit 1
-fi
+}
 grep -q '^notify ' "$work/cmux-calls.log" || {
-  echo 'FAIL: expected the safe OS notification to still fire' >&2
+  echo 'FAIL: expected the OS notification to fire as well' >&2
   exit 1
 }
-echo 'PASS: no keystroke injection without opt-in'
+echo 'PASS: the doorbell is typed by default'
 
-# --- LETTERBOX_CMUX_SUBMIT=0: same as unset, must still refuse ---
+# --- LETTERBOX_CMUX_SUBMIT=0: the only way to stop typing ---
 LETTERBOX_CMUX_SUBMIT=0 run_adapter
 if grep -qE '^(send|send-key) ' "$work/cmux-calls.log"; then
   echo 'FAIL: cmux send/send-key called with LETTERBOX_CMUX_SUBMIT=0' >&2
   exit 1
 fi
-echo 'PASS: explicit 0 also refuses'
+echo 'PASS: explicit 0 stops typing'
 
-# --- LETTERBOX_CMUX_SUBMIT=1: opt-in must actually submit ---
+# --- LETTERBOX_CMUX_SUBMIT=1: still submits ---
 LETTERBOX_CMUX_SUBMIT=1 run_adapter
 grep -qE '^send --surface ' "$work/cmux-calls.log" || {
   echo 'FAIL: expected cmux send with LETTERBOX_CMUX_SUBMIT=1' >&2
@@ -74,6 +75,6 @@ grep -qE '^send-key --surface .* Enter$' "$work/cmux-calls.log" || {
   cat "$work/cmux-calls.log" >&2
   exit 1
 }
-echo 'PASS: explicit opt-in submits the doorbell'
+echo 'PASS: explicit 1 submits the doorbell'
 
 printf 'cmux-doorbell-safety test: PASS\n'
