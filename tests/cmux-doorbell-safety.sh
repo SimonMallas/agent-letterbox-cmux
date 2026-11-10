@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Mock-backed proof that adapters/cmux.sh never injects keystrokes into a
-# live pane unless the caller explicitly opts in via LETTERBOX_CMUX_SUBMIT=1.
+# Mock-backed proof that adapters/cmux.sh types the doorbell into the resolved
+# pane by default, and that only LETTERBOX_CMUX_SUBMIT=0 stops it.
 set -euo pipefail
+unset LETTERBOX_CMUX_SUBMIT # each case below sets it on purpose; an inherited value must not decide one
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 adapter="$root/adapters/cmux.sh"

@@ -577,10 +577,12 @@ cmd_init() {
 # when the caller supplied none; an explicit setting stays authoritative.
 load_box_doorbell() {
   [[ -z "${LETTERBOX_DOORBELL:-}" && -f "$BOX/env.sh" ]] || return 0
-  local box="$BOX"
+  local box="$BOX" submit_set="${LETTERBOX_CMUX_SUBMIT+set}" submit="${LETTERBOX_CMUX_SUBMIT:-}"
   # shellcheck disable=SC1090
   source "$BOX/env.sh"
   export LETTERBOX_DIR="$box"
+  # A typing setting the caller made wins over the file, as check reports it.
+  [[ -z "$submit_set" ]] || export LETTERBOX_CMUX_SUBMIT="$submit"
 }
 
 # One line on the agent's own check when no doorbell can ring from here.
@@ -1388,14 +1390,9 @@ cmd_ring() {
     emit_outcome no_live_surface surface_not_found -
     return 0
   fi
-  # Bridge services do not inherit a pane's setup environment. Use this
-  # mailbox's generated adapter configuration only when the caller supplied
-  # none; explicit service configuration remains authoritative.
-  if [[ -z "${LETTERBOX_DOORBELL:-}" && -f "$BOX/env.sh" ]]; then
-    # shellcheck disable=SC1090
-    source "$BOX/env.sh"
-    BOX="${LETTERBOX_DIR:-$BOX}"
-  fi
+  # Bridge services do not inherit a pane's setup environment: ring_doorbell
+  # reads this mailbox's generated env.sh when the caller supplied no doorbell,
+  # with the same rule as send and reply (the caller's box stays the box).
   need_agent "$to"
   case "$typ" in request|delegate|status|blocker|result|ack|nack|info) ;; *) die "invalid message type: $typ";; esac
   [[ "$id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "invalid letter id"
