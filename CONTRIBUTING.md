@@ -49,7 +49,7 @@ This includes smoke, error-path, private-data and release-text gates, lifecycle 
 3. **Fail open for doorbells** — missing adapter config must not block durable delivery.
 4. **Reply-first** — archival helpers must not archive without a delivered reply when the protocol requires one. ACK is non-terminal; use `file` for non-task disposal.
 5. **Do not put task content in doorbells** — generic “please check inbox” only.
-6. **Document unsafe opt-ins** (e.g. terminal keystroke submit) with defaults **off**.
+6. **Document unsafe behaviour** (e.g. terminal keystroke submit) and the one setting that turns it off.
 
 ## Pull requests
 

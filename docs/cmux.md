@@ -50,7 +50,7 @@ export LETTERBOX_CMUX_PATTERNS="$PWD/.letterbox/cmux-patterns.tsv"
 
 Use one row per known title marker. Patterns are local configuration, not protocol data. Title matching is a legacy fallback only — never proof of identity.
 
-## Safety: terminal input is opt-in
+## Safety: terminal input is on by default
 
 Every letter rings. By default the adapter types the standardized doorbell line and Enter into the target terminal (setup writes `LETTERBOX_CMUX_SUBMIT=1` for you). Typing can submit unsent text already present in the target terminal input buffer, so it is meant for dedicated agent terminals. To refuse typing, set `LETTERBOX_CMUX_SUBMIT=0`; the adapter then sends a cmux/macOS notification only, and `check` warns `doorbell: typing is off`.
 

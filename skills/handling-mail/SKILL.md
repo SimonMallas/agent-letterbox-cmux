@@ -50,7 +50,7 @@ none of what it would have.
 
 ## Sending
 
-`letterbox send <to> <type> <slug> [--now]`, body from stdin. Every letter rings; `--now` is accepted for compatibility.
+`letterbox send <to> <type> <slug> [--now]`, body from stdin. Every letter rings; `--now` only marks it urgent.
 
 **Ring when you send.** The bell is how the recipient learns the letter
 exists; without it a letter sits in a mailbox nobody knows about. Durability

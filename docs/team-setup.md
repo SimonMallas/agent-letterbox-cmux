@@ -9,7 +9,7 @@ This is the standard Agent Letterbox setup for a live terminal-agent team.
 Run once from the Agent Letterbox checkout:
 
 ```bash
-letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells
+letterbox cmux setup --agents planner,reviewer,builder,researcher
 ```
 
 This creates `~/.agent-letterbox/` by default, including:
@@ -24,12 +24,12 @@ AGENT-LETTERBOX.md       # startup/resume instruction snippet
 
 It also symlinks the bundled `agent-letterbox` skill into `~/.agents/skills/agent-letterbox` (override with `LETTERBOX_SKILLS_DIR`). Agents that support global Agent Skills can then load the same doorbell/reply behavior automatically.
 
-`--automatic-doorbells` (alias `--submit`) enables automatic terminal input doorbells. Leave it out if you want visibility notifications only.
+Setup writes `LETTERBOX_CMUX_SUBMIT=1`, so doorbells are typed into the live agent terminal. If you want visibility notifications only, set `LETTERBOX_CMUX_SUBMIT=0`; `check` then warns `doorbell: typing is off`. The old `--automatic-doorbells` flag (alias `--submit`) is still accepted and changes nothing.
 
 Use another shared location when needed:
 
 ```bash
-letterbox cmux setup --agents planner,reviewer --dir /shared/letterbox --automatic-doorbells
+letterbox cmux setup --agents planner,reviewer --dir /shared/letterbox
 ```
 
 ## Launch agents in any cmux layout

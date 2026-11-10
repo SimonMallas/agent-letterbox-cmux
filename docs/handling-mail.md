@@ -135,7 +135,7 @@ receipt and nothing treats it as one.
 letterbox send <to> <type> <slug> [--now]
 ```
 
-Body from stdin. Every letter rings the recipient's doorbell; `--now` is accepted for compatibility and changes nothing.
+Body from stdin. Every letter rings the recipient's doorbell; `--now` only marks it urgent (`priority: now`).
 
 **Ring when you send.** The bell is how anyone learns the letter exists. A
 letter nobody is told about sits in a mailbox unread — durability keeps it
@@ -156,10 +156,10 @@ prints and check your edition's setup documentation for how targets are
 registered and resolved on that platform. The letter itself has already landed
 and is not affected.
 
-**Submission is opt-in on every edition**, enabled by
+**Submission is on by default on every edition**: `setup` writes
 `LETTERBOX_<PLATFORM>_SUBMIT=1` — `LETTERBOX_CMUX_SUBMIT`,
 `LETTERBOX_TMUX_SUBMIT`, `LETTERBOX_HERDR_SUBMIT`, `LETTERBOX_ZELLIJ_SUBMIT` —
-which `setup` writes for you if you choose it. With it on, the doorbell line is
+and only `0` turns it off. With it on, the doorbell line is
 injected into the pane and submitted.
 
 With it off, what reaches the recipient differs by platform, and the difference

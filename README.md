@@ -228,7 +228,7 @@ git clone https://github.com/SimonMallas/agent-letterbox-cmux.git \
 cd ~/src/agent-letterbox-cmux
 chmod +x bin/letterbox adapters/*.sh tests/*.sh
 export PATH="$PWD/bin:$PATH"
-letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells
+letterbox cmux setup --agents planner,reviewer,builder,researcher
 source "$HOME/.agent-letterbox/env.sh"
 ```
 
@@ -239,7 +239,7 @@ If you have reviewed the repository and are comfortable with the installer, this
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
-letterbox cmux setup --agents planner,reviewer,builder,researcher --automatic-doorbells
+letterbox cmux setup --agents planner,reviewer,builder,researcher
 source "$HOME/.agent-letterbox/env.sh"
 ```
 
@@ -249,11 +249,11 @@ To update an installer-based setup later, run the same installer again (more in 
 curl -fsSL https://raw.githubusercontent.com/SimonMallas/agent-letterbox-cmux/main/install.sh | bash
 ```
 
-To add an agent later, run setup again with just its name, for example `letterbox cmux setup --agents tester --automatic-doorbells`. Agents that are already running keep their doorbells; only registrations whose pane has closed are cleared.
+To add an agent later, run setup again with just its name, for example `letterbox cmux setup --agents tester`. Agents that are already running keep their doorbells; only registrations whose pane has closed are cleared.
 
 Both options create one shared Letterbox, agent inboxes, the global `letterbox` launcher, the shared Agent Letterbox skill (also linked into `~/.claude/skills` when `~/.claude` exists), and the live-surface registration registry.
 
-> `--automatic-doorbells` lets Letterbox type the generic doorbell into a live agent terminal. Use it only for dedicated agent terminals: like any terminal-input tool, it can submit text already typed in a target terminal.
+> The doorbell types into a live agent terminal by default (`LETTERBOX_CMUX_SUBMIT=1`, written by setup). Like any terminal-input tool, it can submit text already typed in a target terminal, so it is meant for dedicated agent terminals. `LETTERBOX_CMUX_SUBMIT=0` turns typing off; `check` then warns `doorbell: typing is off`. Setup still accepts `--automatic-doorbells` for older runbooks.
 
 > Before pressing Enter, Letterbox waits `LETTERBOX_DOORBELL_ENTER_DELAY` seconds (default 2, whole seconds 0–5), because some agent apps treat an Enter sent together with the text as part of a paste and never submit it. If your agent's doorbell sits typed but unsent, raise it; if your agent never needs the pause, set it to 0.
 
