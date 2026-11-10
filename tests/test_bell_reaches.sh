@@ -87,5 +87,38 @@ for round in 1 2 3; do
 done
 [[ "$rows" == 8 ]] && ok "8 simultaneous registrations all kept (3 rounds)"
 
+# 6. Every letter rings: a send or reply without --now rings too.
+printf "export LETTERBOX_DIR='%s'\nexport LETTERBOX_DOORBELL='%s'\n" "$tmp/box" "$tmp/bell.sh" > "$tmp/box/env.sh"
+before="$(rings)"
+sent="$(printf 'plain\n' | LETTERBOX_AGENT=alpha "$letterbox" send beta request plain --ack 2>&1)"
+[[ "$sent" == *"outcome=submitted"* && "$(rings)" == $((before + 1)) ]] && ok "a send without --now rings" || bad "a send without --now did not ring: $sent"
+pid="$(basename "$(printf '%s\n' "$sent" | grep -m1 '\.md$' | sed 's/^sent: //')" .md)"
+out="$(printf 'taking it\n' | LETTERBOX_AGENT=beta "$letterbox" reply "$pid" ack plain-ack 2>&1)"
+[[ "$out" == *"outcome=submitted"* && "$(rings)" == $((before + 2)) ]] && ok "a reply without --now rings" || bad "a reply without --now did not ring: $out"
+out="$(printf 'done\n' | LETTERBOX_AGENT=beta "$letterbox" reply "$pid" result plain-done 2>&1)"
+[[ "$out" == *"outcome=submitted"* && "$(rings)" == $((before + 3)) ]] && ok "a result without --now rings" || bad "a result without --now did not ring: $out"
+
+# 5. The cmux adapter types the doorbell when nothing says otherwise: an
+#    env.sh written before typing became the default has no SUBMIT line.
+cat > "$tmp/bin/cmux" <<'MOCK2'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$CMUX_CALLS"
+case "$1" in
+  tree) echo 'surface:3 [terminal] "agent"' ;;
+esac
+MOCK2
+chmod +x "$tmp/bin/cmux"
+export CMUX_CALLS="$tmp/cmux-calls.log"
+printf 'beta\tsurface:3\t2026-01-01T00:00:00Z\n' > "$LETTERBOX_CMUX_REGISTRY"
+printf "export LETTERBOX_DIR='%s'\nexport LETTERBOX_DOORBELL='%s/adapters/cmux.sh'\nexport LETTERBOX_CMUX_REGISTRY='%s'\n" "$tmp/box" "$root" "$LETTERBOX_CMUX_REGISTRY" > "$tmp/box/env.sh"
+: > "$CMUX_CALLS"
+out="$(printf 'wake up\n' | LETTERBOX_AGENT=alpha LETTERBOX_DOORBELL_ENTER_DELAY=0 "$letterbox" send beta info wake --now 2>&1)"
+[[ "$out" == *"outcome=submitted"* ]] && grep -q '^send-key --surface surface:3 Enter' "$CMUX_CALLS" \
+  && ok "an old env.sh with no SUBMIT line types the doorbell" || bad "no typing by default: $out"
+: > "$CMUX_CALLS"
+out="$(printf 'quiet\n' | LETTERBOX_AGENT=alpha LETTERBOX_DOORBELL_ENTER_DELAY=0 LETTERBOX_CMUX_SUBMIT=0 "$letterbox" send beta info quiet --now 2>&1)"
+[[ "$out" == *"notify_only"* ]] && ! grep -q '^send' "$CMUX_CALLS" \
+  && ok "LETTERBOX_CMUX_SUBMIT=0 still stops typing" || bad "SUBMIT=0 did not stop typing: $out"
+
 [[ "$fails" -eq 0 ]] || exit 1
 echo 'bell reaches: PASS'

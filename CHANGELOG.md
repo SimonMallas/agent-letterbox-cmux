@@ -7,7 +7,8 @@
 - Every ring now uses the box's generated `env.sh` when the caller has no doorbell set, so `send --now`, `reply --now` and `nudge` from an agent that was not started by `letterbox cmux run` ring too. Before, they reported `adapter_unavailable` and rang nobody. An explicit doorbell setting still takes precedence. Your own `check` prints `doorbell: not set up` when neither the environment nor `env.sh` names a doorbell.
 - A retried `--now` reply rings again until the recipient files the reply. Before, a reply that died after it was written and before its ring never rang on any retry.
 - Registry writes take a lock, so agents registering at the same moment no longer overwrite each other's row.
-- Running `letterbox cmux setup` again without `--automatic-doorbells` now warns that it turns automatic doorbells off for the box.
+- Every letter rings. `send`, and `reply` with `ack`, `nack` or `result`, ring the recipient with or without `--now`; `--now` now only marks a letter urgent. Before, a letter without `--now` landed and rang nobody.
+- The doorbell is typed into the agent's pane by default. Before, typing needed `--automatic-doorbells` at setup, and without it the agent was not woken. Setup now always turns typing on and still accepts `--automatic-doorbells`. Enter can also send text already typed in that pane; only `LETTERBOX_CMUX_SUBMIT=0` stops typing, and your own `check` then says `doorbell: typing is off`.
 - The ring-verb and crash-retry tests now run the paths they name, and the UUID registration suite runs in `make test`.
 
 ## [0.7.0] — 2026-11-08 (cmux edition)

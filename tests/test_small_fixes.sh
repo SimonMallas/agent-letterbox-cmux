@@ -25,7 +25,7 @@ bad() { printf 'FAIL: %s\n' "$1" >&2; fails=$((fails + 1)); }
 
 "$letterbox" init alpha beta >/dev/null
 sent="$(printf 'please\n' | LETTERBOX_AGENT=alpha "$letterbox" send beta request job --ack)"
-id="$(basename "${sent##* }" .md)"
+id="$(basename "$(printf '%s\n' "$sent" | sed -n 's/^sent: //p')" .md)"
 tok="${id##*-}"
 [[ -n "$id" && -n "$tok" ]] || { echo "FAIL: setup (id=$id tok=$tok)" >&2; exit 1; }
 
@@ -84,13 +84,21 @@ printf "LETTERBOX_DOORBELL='%s/adapters/noop.sh'\n" "$root" > "$tmp/plain/env.sh
 out="$(LETTERBOX_DIR="$tmp/plain" LETTERBOX_AGENT=p1 "$letterbox" check 2>&1)"
 [[ "$out" != *"doorbell: not set up"* ]] && ok "unexported doorbell line is not a false warning" || bad "false 'not set up' for an unexported doorbell line"
 
-# 10. Re-running setup without --automatic-doorbells says that it turns them off.
-"$letterbox" cmux setup --dir "$tmp/auto" --agents a1 --automatic-doorbells >/dev/null 2>&1
-out="$("$letterbox" cmux setup --dir "$tmp/auto" --agents a1 2>&1 >/dev/null)"
-[[ "$out" == *"automatic doorbells were on for this box and are now off"* ]] \
-  && ok "setup warns when a re-run turns automatic doorbells off" || bad "setup dropped automatic doorbells silently: $out"
-out="$("$letterbox" cmux setup --dir "$tmp/auto" --agents a1 --automatic-doorbells 2>&1 >/dev/null)"
-[[ "$out" != *"now off"* ]] && ok "no warning when the flag is given again" || bad "warned although the flag was given"
+# 10. Typing the doorbell is the default: setup writes it on, with or without
+#     the old --automatic-doorbells flag, and says nothing about turning it off.
+out="$("$letterbox" cmux setup --dir "$tmp/auto" --agents a1 2>&1)"
+grep -q "^export LETTERBOX_CMUX_SUBMIT=1$" "$tmp/auto/env.sh" && [[ "$out" != *"Automatic input is off"* ]] \
+  && ok "setup turns typing on by default" || bad "setup left typing off by default: $out"
+"$letterbox" cmux setup --dir "$tmp/auto" --agents a1 --automatic-doorbells >/dev/null 2>&1 \
+  && grep -q "^export LETTERBOX_CMUX_SUBMIT=1$" "$tmp/auto/env.sh" \
+  && ok "the old --automatic-doorbells flag is still accepted" || bad "the old flag is refused"
+
+# 11. check says so loudly when typing has been switched off.
+printf 'export LETTERBOX_CMUX_SUBMIT=0\n' >> "$tmp/auto/env.sh"
+out="$(LETTERBOX_DIR="$tmp/auto" LETTERBOX_AGENT=a1 "$letterbox" check 2>&1)"
+[[ "$out" == *"doorbell: typing is off"* ]] && ok "check warns when typing is off in env.sh" || bad "no warning for typing off in env.sh: $out"
+out="$(LETTERBOX_DIR="$tmp/plain" LETTERBOX_AGENT=p1 LETTERBOX_CMUX_SUBMIT=0 "$letterbox" check 2>&1)"
+[[ "$out" == *"doorbell: typing is off"* ]] && ok "check warns when typing is off in the environment" || bad "no warning for typing off in the environment"
 
 [[ "$fails" -eq 0 ]] || exit 1
 echo 'small fixes: PASS'
