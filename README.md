@@ -85,7 +85,7 @@ One shared letter store and protocol — four native doorbell adapters, one edit
 - **[cmux](https://github.com/SimonMallas/agent-letterbox-cmux)** — primary entry point
 - [tmux](https://github.com/SimonMallas/agent-letterbox-tmux)
 - [Herdr](https://github.com/SimonMallas/agent-letterbox-herdr)
-- [Zellij](https://github.com/SimonMallas/agent-letterbox-zellij) — terminal ring requires `LETTERBOX_ZELLIJ_SUBMIT=1`
+- [Zellij](https://github.com/SimonMallas/agent-letterbox-zellij) — the ring types by default; `LETTERBOX_ZELLIJ_SUBMIT=0` turns it off
 
 You are reading the **cmux** edition.
 

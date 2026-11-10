@@ -10,4 +10,4 @@ letterbox cmux register <agent-id>
 
 The adapter uses the registered exact surface first, then falls back to configured title patterns. It discovers surfaces across workspaces with `cmux tree --all`.
 
-Automatic input requires `LETTERBOX_CMUX_SUBMIT=1`. It may submit unsent terminal text, so it is intended only for dedicated agent terminals.
+Automatic input is on by default (`LETTERBOX_CMUX_SUBMIT=1`, written by setup). It may submit unsent terminal text, so it is intended only for dedicated agent terminals. `LETTERBOX_CMUX_SUBMIT=0` turns typing off; `check` then warns `doorbell: typing is off`.

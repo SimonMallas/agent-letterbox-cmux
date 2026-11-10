@@ -115,7 +115,7 @@ See [lifecycle.md](lifecycle.md) for the full state machine.
 
 ## Safety
 
-Automatic terminal input is powerful and intentionally opt-in. `--automatic-doorbells` / `--submit` may submit text already waiting in a target terminal input buffer. Use it only for dedicated agent terminals.
+Automatic terminal input is powerful, and it is the default: every letter rings, and setup writes the submit setting for you. It may submit text already waiting in a target terminal input buffer, so it is meant for dedicated agent terminals. Setup still accepts `--automatic-doorbells` for older runbooks.
 
 The doorbell contains no task content. The durable letter remains the real message and fallback if an agent is offline.
 

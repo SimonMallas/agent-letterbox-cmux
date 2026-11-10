@@ -32,7 +32,7 @@ Letters are operator/user content on disk. The core project never transmits lett
 1. **Permissions:** Restrict `LETTERBOX_DIR` to users/processes that should coordinate (e.g. `0700` / group-only as appropriate).
 2. **Untrusted bodies:** Verify unusual, destructive, or identity-sensitive requests out of band before acting.
 3. **No permission expansion:** A letter must never grant an agent tools, paths, or network rights it did not already have.
-4. **Doorbell injection:** Opt-in terminal submit modes (e.g. `LETTERBOX_CMUX_SUBMIT=1`) can inject keystrokes into a live pane; leave them off unless you accept that risk.
+4. **Doorbell injection:** The doorbell types into a live pane by default (`LETTERBOX_CMUX_SUBMIT=1`), and can submit unsent terminal text there. `LETTERBOX_CMUX_SUBMIT=0` turns typing off (a notification only, and `check` says so); the default accepts the risk because a durable letter that never wakes anyone is worse.
 5. **cmux injection:** The cmux adapter is a local terminal mechanism, not a remote control channel. Do not expose its surface/socket access to untrusted processes.
 6. **External intake (if any):** Chat/email/webhooks are entry points, not bus identities. Allowlist sources before publishing letters; unknown senders fail closed; missing allowlist denies all. Do not put secrets or allowlist contents into letters or doorbells.
 

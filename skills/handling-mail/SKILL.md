@@ -50,7 +50,7 @@ none of what it would have.
 
 ## Sending
 
-`letterbox send <to> <type> <slug> [--now]`, body from stdin. `--now` rings.
+`letterbox send <to> <type> <slug> [--now]`, body from stdin. Every letter rings; `--now` is accepted for compatibility.
 
 **Ring when you send.** The bell is how the recipient learns the letter
 exists; without it a letter sits in a mailbox nobody knows about. Durability
@@ -63,9 +63,10 @@ where you are — not that the recipient has stopped. Read the reason given and
 your edition's setup documentation; do not relaunch anything on the strength of
 it. The letter has landed regardless.
 
-Submission is opt-in on every edition via `LETTERBOX_<PLATFORM>_SUBMIT=1`. With
-it off the behaviour differs by platform — a notification on cmux and Herdr, a
-status-line message on tmux, and on Zellij no ring at all.
+Submission is on by default on every edition (`LETTERBOX_<PLATFORM>_SUBMIT=1`,
+written by setup). Setting it to 0 turns typing off per platform — a
+notification on cmux and Herdr, a status-line message on tmux, no ring on
+Zellij — and `check` warns `doorbell: typing is off`.
 
 ## Scope and honesty
 

@@ -52,13 +52,7 @@ Use one row per known title marker. Patterns are local configuration, not protoc
 
 ## Safety: terminal input is opt-in
 
-By default, the adapter sends a cmux/macOS notification only. To inject the standardized doorbell line and Enter into the target terminal, explicitly opt in:
-
-```bash
-export LETTERBOX_CMUX_SUBMIT=1
-```
-
-This can submit unsent text already present in the target terminal input buffer. Use it only for dedicated agent terminals where that risk is acceptable.
+Every letter rings. By default the adapter types the standardized doorbell line and Enter into the target terminal (setup writes `LETTERBOX_CMUX_SUBMIT=1` for you). Typing can submit unsent text already present in the target terminal input buffer, so it is meant for dedicated agent terminals. To refuse typing, set `LETTERBOX_CMUX_SUBMIT=0`; the adapter then sends a cmux/macOS notification only, and `check` warns `doorbell: typing is off`.
 
 Doorbell delivery means a wake-up was submitted to a verified live surface, not that the agent read or accepted the letter. If a safe live surface cannot be verified, Letterbox prefers silent durable delivery over risky pane injection.
 

@@ -135,7 +135,7 @@ receipt and nothing treats it as one.
 letterbox send <to> <type> <slug> [--now]
 ```
 
-Body from stdin. `--now` rings the recipient's doorbell.
+Body from stdin. Every letter rings the recipient's doorbell; `--now` is accepted for compatibility and changes nothing.
 
 **Ring when you send.** The bell is how anyone learns the letter exists. A
 letter nobody is told about sits in a mailbox unread — durability keeps it
