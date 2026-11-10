@@ -72,5 +72,17 @@ want="$tmp/relbox"
   && grep -qF "export LETTERBOX_DIR='$want'" "$tmp/relbox/env.sh" \
   && ok "relative --dir stored absolute" || bad "relative --dir stored as typed"
 
+# 8. CDPATH must not redirect a bare relative --dir to some other directory.
+mkdir -p "$tmp/decoy/team" "$tmp/work"
+(cd "$tmp/work" && CDPATH="$tmp/decoy" env -u LETTERBOX_DIR -u LETTERBOX_CMUX_REGISTRY "$letterbox" cmux setup --dir team --agents c1 >/dev/null 2>&1)
+[[ "$(cat "$XDG_CONFIG_HOME/agent-letterbox/default-dir" 2>/dev/null)" == "$tmp/work/team" && -d "$tmp/work/team/c1/inbox" ]] \
+  && ok "CDPATH does not redirect --dir" || bad "CDPATH redirected --dir: $(cat "$XDG_CONFIG_HOME/agent-letterbox/default-dir" 2>/dev/null | tr '\n' '|')"
+
+# 9. A doorbell assigned without 'export' in env.sh still counts as set up.
+mkdir -p "$tmp/plain/p1/inbox" "$tmp/plain/p1/processed"
+printf "LETTERBOX_DOORBELL='%s/adapters/noop.sh'\n" "$root" > "$tmp/plain/env.sh"
+out="$(LETTERBOX_DIR="$tmp/plain" LETTERBOX_AGENT=p1 "$letterbox" check 2>&1)"
+[[ "$out" != *"doorbell: not set up"* ]] && ok "unexported doorbell line is not a false warning" || bad "false 'not set up' for an unexported doorbell line"
+
 [[ "$fails" -eq 0 ]] || exit 1
 echo 'small fixes: PASS'

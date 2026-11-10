@@ -450,7 +450,7 @@ cmd_cmux_setup() {
   for agent in "${agent_list[@]}"; do need_agent "$agent"; done
 
   mkdir -p "$setup_dir"
-  BOX="$(cd "$setup_dir" && pwd)" || die "cannot use letterbox directory: $setup_dir"
+  BOX="$(CDPATH= cd -- "$setup_dir" && pwd)" || die "cannot use letterbox directory: $setup_dir"
   mkdir -p "$BOX" "$BOX/locks" "$(dirname "$DEFAULT_DIR_FILE")" "$launcher_dir"
   cmd_init "${agent_list[@]}" >/dev/null
   printf '%s\n' "$BOX" > "$DEFAULT_DIR_FILE"
@@ -587,7 +587,7 @@ load_box_doorbell() {
 # One line on the agent's own check when no doorbell can ring from here.
 doorbell_line() {
   [[ -n "${LETTERBOX_DOORBELL:-}" ]] && return 0
-  [[ -f "$BOX/env.sh" ]] && grep -q '^export LETTERBOX_DOORBELL=' "$BOX/env.sh" && return 0
+  [[ -f "$BOX/env.sh" ]] && grep -Eq '^[[:space:]]*(export[[:space:]]+)?LETTERBOX_DOORBELL=' "$BOX/env.sh" && return 0
   printf 'doorbell: not set up — your --now letters ring nobody. Run: letterbox cmux setup\n'
 }
 
