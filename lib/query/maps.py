@@ -142,7 +142,7 @@ def main(argv=None):
         line += " · %s letter%s since in %s" % (count, "" if count == "1" else "s",
                                                 _plural(len(threads), "thread"))
         if unknown:
-            line += " · %d unknown-time" % len(unknown)
+            line += " · %d unknown-time, not counted" % len(unknown)
         if capped:
             line += " · capped at %d per thread" % CAP
         # An incomplete scan proves no absence, so it names no empty thread.

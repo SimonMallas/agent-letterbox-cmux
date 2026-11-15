@@ -70,6 +70,28 @@ class LintTests(MailboxCase):
         self.note(f"as-of: now\nClaim {old}\n")
         self.assertEqual(self.lint(code=1)["findings"][0]["kind"], "stale")
 
+    def test_header_fields_are_metadata_not_citations(self):
+        old = "2026-10-28T010203-old-0123abcd"
+        self.letter(old)
+        self.letter("2026-10-28T010204-new-0123abce", supersedes=old)
+        self.note(f"as-of: now\nthreads: {old}\n  covers: {old}\nrule: {old}\n")
+        self.assertEqual(self.lint()["findings"], [])
+
+    def test_header_looking_lines_after_the_window_are_linted(self):
+        old = "2026-10-28T010203-old-0123abcd"
+        self.letter(old)
+        self.letter("2026-10-28T010204-new-0123abce", supersedes=old)
+        self.note("as-of: now\n" + "\n" * 19 + f"threads: {old}\n")
+        finding = self.lint(code=1)["findings"][0]
+        self.assertEqual((finding["kind"], finding["line"]), ("stale", 21))
+
+    def test_a_cited_heading_is_still_linted(self):
+        old = "2026-10-28T010203-old-0123abcd"
+        self.letter(old)
+        self.letter("2026-10-28T010204-new-0123abce", supersedes=old)
+        self.note(f"as-of: now\n# Decision {old}\n")
+        self.assertEqual(self.lint(code=1)["findings"][0]["kind"], "stale")
+
     def test_dangling(self):
         ident = "2026-10-28T010203-new-0123abcd"
         self.letter(ident, supersedes="missing-ancestor")

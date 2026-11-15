@@ -66,6 +66,9 @@ def main(argv=None):
             result = collect(args.root, args.participant, max_names=args.max_names)
         except ValueError:
             raise UsageError("invalid_scope") from None
+        if views and rules[0].value not in result.participants:
+            # An agent with no mailbox here owes nothing we can see: say so, never a clean zero.
+            raise UsageError("no_mailbox_for_agent")
         if views:
             payload = owed_document(evaluate(result), args.root, rules[0].value,
                                     limit=20 if args.limit is None else args.limit, now=now)

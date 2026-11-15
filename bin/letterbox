@@ -1528,6 +1528,29 @@ cmd_status() {
   mkdir -p "$BOX/$ME"
   printf 'state: %s\nsince: %s\nnotes: %s\n' "$state" "$(now)" "$note" > "$BOX/$ME/status.md"
 }
+cmd_help() {
+  case "${1:-}" in
+    send) echo 'usage: letterbox send <to> <type> <slug> [--now] [--ack] [--re <id>] [--thread <id>] [--supersedes <id>] [--deadline <UTC>]   (body on stdin)';;
+    check) echo 'usage: letterbox check [agent] [--recent|--thread <id>|--maps]';;
+    reply) echo 'usage: letterbox reply <id-or-file> <ack|nack|result> <slug> [--now]   (body on stdin)';;
+    file) echo 'usage: letterbox file <id-or-file> [--read]';;
+    read) echo 'usage: letterbox read <id|display-id|token>';;
+    progress) echo 'usage: letterbox progress <id> <one-line note>';;
+    nudge) echo 'usage: letterbox nudge <id|display-id|token>';;
+    ring) echo 'usage: letterbox ring <to> <type> <id>';;
+    query) printf '%s\n' 'usage: letterbox query [--compat-v2] [key=value ...]' \
+      'filters: from to type thread state answered superseded since until slug~' \
+      'views:   view=owed to=<agent> [--limit N]' 'See docs/query.md.';;
+    lint-notes) printf '%s\n' 'usage: letterbox lint-notes [--notes-dir PATH] [--json] [--baseline]' \
+      'Needs LETTERBOX_AGENT, and LETTERBOX_NOTES_DIR or --notes-dir. See docs/lint-notes.md.';;
+    cmux) echo 'usage: letterbox cmux {setup|run|register|unregister|status}';;
+    *) printf '%s\n' 'usage: letterbox <command> ...' \
+      'commands: init send check query lint-notes read progress nudge ring token reply file done lock unlock status cmux --version' \
+      'For one command: letterbox <command> --help';;
+  esac
+}
+case "${1:-}" in help|--help|-h) cmd_help; exit 0;; esac
+case "${2:-}" in --help|-h) cmd_help "$1"; exit 0;; esac
 case "${1:-}" in
   --version|-V|version) cmd_version;;
   init) shift; cmd_init "$@";; send) shift; cmd_send "$@";; check) shift; cmd_check "$@";;

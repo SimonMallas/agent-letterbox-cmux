@@ -81,17 +81,20 @@ def owed_document(graph, root, agent, *, limit, now):
             continue
         reply = None
         tier = None
+        # OPEN only when the letter says it asks for no acknowledgement; a missing
+        # or unreadable requires_ack keeps the cautious UNACKED.
+        unanswered = "OPEN" if fields.get("requires_ack") == "false" else "UNACKED"
         if fact.answered == "yes":
             owed = "yes"
             tier = "ANSWERED"
         elif relay and graph.complete and fact.occurrence.structural_identity:
             reply = _relay_reply(root, agent, fact.occurrence.identity)
             owed = "yes"
-            tier = "ANSWERED-UNPROVEN" if reply == "composed" else "UNACKED"
+            tier = "ANSWERED-UNPROVEN" if reply == "composed" else unanswered
         elif fact.answered == "no" and not relay:
             owed = "yes"
             ack = (fact.occurrence.identity, fields["to"], fields["from"])
-            tier = "ACCEPTED-OPEN" if ack in acks else "UNACKED"
+            tier = "ACCEPTED-OPEN" if ack in acks else unanswered
         else:
             owed = "unknown"
         instant = publication_time(fields)[0]
@@ -129,6 +132,7 @@ def owed_document(graph, root, agent, *, limit, now):
         "time_semantics": "explicit_header_sent_not_transport_delivery",
         "counts": {
             "owed": count("owed", "yes"), "owed_unknown": count("owed", "unknown"),
+            "open": count("tier", "OPEN"),
             "unacked": count("tier", "UNACKED"), "accepted_open": count("tier", "ACCEPTED-OPEN"),
             "answered": count("tier", "ANSWERED"),
             "answered_unproven": count("tier", "ANSWERED-UNPROVEN"),

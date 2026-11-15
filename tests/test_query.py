@@ -139,11 +139,20 @@ class QueryTests(MailboxCase):
 
     def test_alias_is_explicit_compatibility_only(self):
         self.letter(filename="request-a-deadbeef.md")
-        self.assertIn("invalid_envelope", self.query(code=2))
+        out = self.query(code=2)
+        self.assertIn("invalid_envelope", out)
+        # One bad file fails strict mode; the error names it so it can be found.
+        self.assertIn("in beta/inbox/request-a-deadbeef.md", out)
         card = self.query(compat=True)["cards"][0]
         self.assertEqual(card["storage_class"], "alias")
         self.assertFalse(card["canonical"])
         self.assertIn("filename_alias", card["legacy_reasons"])
+
+    def test_an_unreadable_letter_is_named_too(self):
+        (self.box / "beta/inbox/bad.md").write_bytes(b"---\nid: \xff\xfe\n---\n")
+        out = self.query(code=2)
+        self.assertIn("unsafe_or_unreadable", out)
+        self.assertIn("in beta/inbox/bad.md", out)
 
     def test_duplicate_identity_never_silently_collapses(self):
         self.letter()

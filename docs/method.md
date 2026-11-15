@@ -88,6 +88,10 @@ covers: <the mailboxes or sources read, and what was skipped>
 rule: the old letter stays; a later letter says which stands; a note that disagrees gets fixed
 ```
 
+The header fields are metadata, not claim lines. A `threads:` id names a
+stable thread, and it still names that thread after its first letter is
+superseded.
+
 `check --maps` reads `as-of:` and `threads:`. `as-of:` must be an ISO-8601 UTC
 time ending in `Z` or `+00:00`; anything else, a letter id included, is
 reported as not a time. No tool reads `covers:` or `rule:`;

@@ -31,6 +31,9 @@ class Refusal(ValueError):
         self.issues = sorted(set(issues))
 
 
+HEADER_FIELDS = ("as-of:", "threads:", "covers:", "rule:")
+
+
 def token(ident):
     # Exact doorbell_token_for_id rule: lowercase 8-hex tail, otherwise SHA256.
     tail = ident.rsplit("-", 1)[-1]
@@ -87,6 +90,10 @@ def lint(notes, graph, agent):
         if not any(line.strip().startswith("as-of:") for line in lines[:20]):
             add(path, 1, "uncursored", None, "no as-of: header in first 20 lines")
         for number, line in enumerate(lines, 1):
+            # The Method header is metadata, not claim lines: a threads: id still
+            # names its thread after that thread's first letter is superseded.
+            if number <= 20 and line.strip().startswith(HEADER_FIELDS):
+                continue
             matches = citations(line, ids)
             for start, end, cite, mode in matches:
                 candidates = displays.get(cite, set()) if mode == "display" else {cite} if cite in ids else set()

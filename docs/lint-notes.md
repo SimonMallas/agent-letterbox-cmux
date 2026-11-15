@@ -24,6 +24,11 @@ not a citation, quoted or not: code quotes hold flags, commands and field names
 such as `--config`, `lint-notes` and `as-of:`. So an unknown timestamp ID is
 reported as ORPHAN, and an unknown legacy ID is not.
 
+Within a note's first 20 lines, a line that starts `as-of:`, `threads:`,
+`covers:` or `rule:` is header metadata and is not read for citations. A
+mistyped thread id is named by `check --maps` instead. The same words on a
+later line, and a citation in a heading, are linted like any other line.
+
 Findings (JSON uses lowercase names):
 
 - ORPHAN: no envelope matches a recognized citation in scope.

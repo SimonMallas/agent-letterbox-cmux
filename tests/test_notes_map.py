@@ -57,7 +57,7 @@ class NotesMapTests(MailboxCase):
         self.letter("t3-after", thread="t3", sent="2026-01-13T00:00:00Z")
         [line] = self.check("--maps")
         self.assertRegex(line, r"^map design\.md: as-of 2026-01-10T00:00:00Z \(\d+d\) · "
-                               r"3 letters since in 2 threads · 1 unknown-time$")
+                               r"3 letters since in 2 threads · 1 unknown-time, not counted$")
 
     def test_threads_may_be_separated_by_spaces(self):
         self.note("design.md", "as-of: 2026-01-10T00:00:00Z", "threads: t1 t2")

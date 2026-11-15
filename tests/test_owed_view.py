@@ -80,7 +80,7 @@ class OwedViewTests(MailboxCase):
         self.reply_file("phone-c", re="something-else")
         cards = {c["identity"]: c for c in self.owed("to=beta")["cards"]}
         self.assertEqual(set(cards), {"phone-a", "phone-b", "phone-c"})
-        self.assertEqual((cards["phone-a"]["relay_reply"], cards["phone-a"]["tier"]), ("none", "UNACKED"))
+        self.assertEqual((cards["phone-a"]["relay_reply"], cards["phone-a"]["tier"]), ("none", "OPEN"))
         self.assertEqual((cards["phone-b"]["relay_reply"], cards["phone-b"]["tier"]),
                          ("composed", "ANSWERED-UNPROVEN"))
         self.assertEqual(cards["phone-b"]["note"], "answered (delivery unproven)")
@@ -147,6 +147,30 @@ class OwedViewTests(MailboxCase):
             result = self.command("query", *args)
             self.assertEqual(result.returncode, 2, args)
             self.assertFalse(json.loads(result.stdout)["complete"], args)
+
+    def test_a_request_needing_no_ack_is_open_not_unacked(self):
+        self.letter("no-ack", requires_ack="false")
+        self.letter("needs-ack")
+        data = self.owed("to=beta")
+        self.assertEqual({c["identity"]: c["tier"] for c in data["cards"]},
+                         {"no-ack": "OPEN", "needs-ack": "UNACKED"})
+        self.assertEqual((data["counts"]["open"], data["counts"]["unacked"]), (1, 1))
+        self.letter("ack-it", agent="alpha", **{"from": "beta", "to": "alpha", "type": "ack", "re": "no-ack"})
+        tiers = {c["identity"]: c["tier"] for c in self.owed("to=beta")["cards"]}
+        self.assertEqual(tiers["no-ack"], "ACCEPTED-OPEN")
+
+    def test_only_an_explicit_false_is_open(self):
+        absent = self.letter("absent")
+        absent.write_text(absent.read_text(encoding="utf-8").replace("requires_ack: true\n", ""), encoding="utf-8")
+        self.letter("odd", requires_ack="maybe")
+        self.letter("empty", requires_ack="")
+        tiers = {c["identity"]: c["tier"] for c in self.owed("to=beta")["cards"]}
+        self.assertEqual(tiers, {"absent": "UNACKED", "odd": "UNACKED", "empty": "UNACKED"})
+
+    def test_an_agent_with_no_mailbox_is_refused_not_called_clear(self):
+        self.letter()
+        data = self.owed("to=nobody", code=2)
+        self.assertEqual((data["complete"], data["error"]), (False, "no_mailbox_for_agent"))
 
     def test_read_only_and_scope_stated(self):
         self.letter()

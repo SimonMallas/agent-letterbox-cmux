@@ -1,3 +1,12 @@
+## Unreleased (cmux edition)
+
+- `letterbox --help` and `letterbox <command> --help` (or `-h`) print usage and exit 0, with no agent name or Letterbox set. Before, `check`, `query` and `lint-notes` each answered with a different error.
+- `query view=owed to=<agent>` refuses an agent that has no mailbox in the Letterbox, with `no_mailbox_for_agent` and exit 2. Before, it reported a complete answer with nothing owed.
+- **Changed output:** the owed view has a new tier, `OPEN`, for a request or phone letter that says `requires_ack: false` and has no answer yet, with `counts.open`. `UNACKED` and `counts.unacked` now cover the rest: `requires_ack: true`, or the field missing or unreadable. Before, both kinds were `UNACKED`. Anything that reads the owed JSON and treats `UNACKED` as "every unanswered request" needs to add `OPEN`.
+- The map line says `N unknown-time, not counted`, so a zero next to it is not read as "nothing new".
+- A strict query that stops on one invalid or unreadable letter now names it, such as `in reviewer/inbox/old-name.md`.
+- `lint-notes` no longer reads a note's header lines (`as-of:`, `threads:`, `covers:`, `rule:`, in the first 20 lines) as citations. Before, a thread whose first letter had been superseded was reported as STALE on the `threads:` line. A mistyped thread id is still named by `check --maps`.
+
 ## [0.7.1] — 2026-11-10 (cmux edition)
 
 - `check` ignores a `LETTERBOX_CHECK_STALE_DAYS` that is not a whole number (such as `08`, `1.5` or a word) instead of aborting, and a broken link that sorts first in the inbox no longer hides every letter after it.

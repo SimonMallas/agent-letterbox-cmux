@@ -23,7 +23,7 @@ authored map over them. Nothing here decides what is true.
 - Session start: `letterbox check`. Read what is open before acting.
 - What you still owe: `letterbox query view=owed to=<you>`. The list shows
   requests and acknowledgement letters still in your inbox, with their
-  recorded state (UNACKED, ACCEPTED-OPEN, ANSWERED, ANSWERED-UNPROVEN). A
+  recorded state (UNACKED, OPEN, ACCEPTED-OPEN, ANSWERED, ANSWERED-UNPROVEN). A
   letter leaves it when filed. It shows 20 by default (`--limit`); the counts
   cover the rest.
 - After handling: `letterbox file <id>`. When your own `check` ends with
@@ -48,7 +48,8 @@ rule: the old letter stays; a later letter says which stands; a note that disagr
 
 Tools read `as-of:` and `threads:`. `as-of:` must be an ISO-8601 UTC time
 ending in `Z` or `+00:00`; a letter id there is reported as not a time. No tool reads `covers:` or `rule:`; they are
-for whoever reads the note.
+for whoever reads the note. The header fields are metadata, not claim lines: a `threads:` id still
+names its thread after that thread's first letter is superseded.
 
 - Every factual claim cites a letter id on the same line as the claim.
 - Your own `check` ends with a map line. `letterbox check --maps` shows, per

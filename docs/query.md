@@ -92,8 +92,11 @@ nack from the agent to its sender carries `re:` equal to its id. A reply of any
 other type, or anyone else's, does not answer it. `to=` names the agent and is
 the only filter the view takes; the scan is always box-wide.
 
-- **Tiers:** `UNACKED` means no `ack` letter from the agent to the sender with
-  `re:` equal to the id; `ACCEPTED-OPEN` means acknowledged but no result or
+- **Tiers:** `UNACKED` means the letter does not say `requires_ack: false`
+  (it says `true`, or the field is missing or unreadable) and there is no `ack` letter from the agent to the
+  sender with `re:` equal to the id; `OPEN` means a request or phone letter that says
+  `requires_ack: false` and has no answer yet: it needs a result, a nack or filing,
+  and `counts.open` counts these; `ACCEPTED-OPEN` means acknowledged but no result or
   nack yet; `ANSWERED` means a result or nack answers it and it waits only to
   be filed. Tiers come from letters, never from `.ack` sidecars. Until a dispute
   verb exists, `UNACKED` is also the signal for work that may be contested.
@@ -113,6 +116,8 @@ the only filter the view takes; the scan is always box-wide.
   A cut list says `truncated: true`; `counts` always covers every owed letter.
 - An incomplete scan lists candidates as `owed: unknown`, never as owed or
   settled, and exits 2. An empty list is scoped to the folders read.
+- An agent with no mailbox in the box is refused with `no_mailbox_for_agent`
+  and exit 2, not shown as owing nothing. Check `LETTERBOX_DIR` and the name.
 
 ## Shared boundaries
 

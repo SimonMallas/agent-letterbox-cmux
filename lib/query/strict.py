@@ -120,7 +120,14 @@ def scan(root):
                         for name in names:
                             if not name.endswith(".md"):
                                 continue
-                            fields = envelope(folder_fd, name)
+                            try:
+                                fields = envelope(folder_fd, name)
+                            except QueryError as exc:
+                                # Name the letter, so one bad file can be found and fixed.
+                                fail(exc.code, "%s in %s/%s/%s" % (exc.detail, participant, folder, name))
+                            except (OSError, UnicodeError) as exc:
+                                fail("unsafe_or_unreadable",
+                                     "%s in %s/%s/%s" % (type(exc).__name__, participant, folder, name))
                             ident = fields["id"]
                             if ident in records:
                                 fail("duplicate_id", "multiple locations claim id " + ident)
