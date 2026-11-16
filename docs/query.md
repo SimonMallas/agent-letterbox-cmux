@@ -133,9 +133,13 @@ the only filter the view takes; the scan is always box-wide.
   `locks`, outbox drafts, and ordinary sidecars are not inbound letters.
 - **Archive traversal and an archive verb are not supported.** A participant's
   `archive` entry makes either mode incomplete; its contents are not read.
-- Header reads are bounded and stop at the closing delimiter. Compatibility mode
-  additionally reports observed directory/leaf changes. Neither mode is an atomic
-  snapshot, a global-absence proof, or a transport-delivery receipt.
+- Header reads are bounded and stop at the closing delimiter. Both modes make
+  best-effort checks for observed directory and leaf changes, including a second
+  header read. Neither mode is an atomic snapshot, a global-absence proof, or a
+  transport-delivery receipt. A rewrite after the second header read can escape
+  if metadata collides; a create-then-delete between listings, a byte-for-byte
+  reverted rewrite, or a body-only change can also escape. A guarantee requires
+  coordinating writers with readers; query does not provide that writer barrier.
 - Query itself never writes. The v0.5.0 writer separately adds `sent` and
   `send --supersedes <id>` with bounded reference validation. See the
   [publication timestamp and supersession rules](../SPEC.md#publication-timestamps-and-supersession-v050).

@@ -1,5 +1,7 @@
 ## Unreleased (cmux edition)
 
+- Both query modes recheck each letter’s identity and read its header a second time before reporting complete. These checks are best-effort and do not make a snapshot; queries on large mailboxes take roughly 1.7 to 2 times as long.
+
 - `letterbox --help` and `letterbox <command> --help` (or `-h`) print usage and exit 0, with no agent name or Letterbox set. Before, `check`, `query` and `lint-notes` each answered with a different error.
 - `query view=owed to=<agent>` refuses an agent that has no mailbox in the Letterbox, with `no_mailbox_for_agent` and exit 2. Before, it reported a complete answer with nothing owed.
 - **Changed output:** the owed view has a new tier, `OPEN`, for a request or phone letter that says `requires_ack: false` and has no answer yet, with `counts.open`. `UNACKED` and `counts.unacked` now cover the rest: `requires_ack: true`, or the field missing or unreadable. Before, both kinds were `UNACKED`. Anything that reads the owed JSON and treats `UNACKED` as "every unanswered request" needs to add `OPEN`.

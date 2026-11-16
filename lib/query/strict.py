@@ -33,6 +33,12 @@ def quoted(value):
     return json.dumps(value, ensure_ascii=True, separators=(",", ":"))
 
 
+def _signature(info):
+    # Same directory mutation signature used by the compatibility scanner.
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_size,
+            info.st_mtime_ns, info.st_ctime_ns)
+
+
 def scope(complete):
     print("query-scope v=1 folders=inbox,processed participants=" + quoted(participants)
           + " completeness=" + complete + " consistency=non-atomic")
@@ -54,14 +60,17 @@ def directory(name, parent=None):
 def envelope(folder_fd, filename):
     fd = os.open(filename, FILE_FLAGS, dir_fd=folder_fd)
     try:
-        if not stat.S_ISREG(os.fstat(fd).st_mode):
+        before = os.fstat(fd)
+        if not stat.S_ISREG(before.st_mode):
             fail("unsafe_leaf", "letter is not a regular file")
         # Unbuffered readline stops at the closing delimiter: never read body.
         with os.fdopen(fd, "rb", buffering=0, closefd=False) as stream:
             total = 0
+            digest = hashlib.sha256()
             def line():
                 nonlocal total
                 raw = stream.readline(MAX_LINE + 1)
+                digest.update(raw)
                 total += len(raw)
                 if len(raw) > MAX_LINE or total > MAX_HEADER:
                     fail("header_limit", "frontmatter exceeds bounded read limit")
@@ -94,7 +103,9 @@ def envelope(folder_fd, filename):
         for key in ("re", "thread", "supersedes"):
             if fields.get(key) and not LETTER_ID.fullmatch(fields[key]):
                 fail("invalid_envelope", "invalid relation identifier")
-        return fields
+        if _signature(before) != _signature(os.fstat(fd)):
+            fail("scope_changed", "mailbox leaf changed during scan")
+        return fields, _signature(before), digest.digest()
     finally:
         os.close(fd)
 
@@ -116,26 +127,48 @@ def scan(root):
                     fail("unsupported_archive_layout", "archive query is not supported")
                 for folder in ("inbox", "processed"):
                     with directory(folder, participant_fd) as folder_fd:
+                        before = os.fstat(folder_fd)
                         names = sorted(os.listdir(folder_fd))
+                        leaf_signatures = {}
                         for name in names:
                             if not name.endswith(".md"):
                                 continue
                             try:
-                                fields = envelope(folder_fd, name)
+                                fields, signature, digest = envelope(folder_fd, name)
                             except QueryError as exc:
                                 # Name the letter, so one bad file can be found and fixed.
                                 fail(exc.code, "%s in %s/%s/%s" % (exc.detail, participant, folder, name))
                             except (OSError, UnicodeError) as exc:
                                 fail("unsafe_or_unreadable",
                                      "%s in %s/%s/%s" % (type(exc).__name__, participant, folder, name))
+                            leaf_signatures[name] = (signature, digest)
                             ident = fields["id"]
                             if ident in records:
                                 fail("duplicate_id", "multiple locations claim id " + ident)
                             fields["_location"] = participant + "/" + folder
                             fields["_folder"] = folder
                             records[ident] = fields
-                        if names != sorted(os.listdir(folder_fd)):
+                        # Test-only hook: injected in-process, never from CLI input.
+                        hook = globals().get("_test_listing_boundary")
+                        if hook is not None:
+                            hook(folder_fd, participant + "/" + folder)
+                        if (names != sorted(os.listdir(folder_fd)) or
+                                _signature(before) != _signature(os.fstat(folder_fd))):
                             fail("scope_changed", "mailbox entries changed during scan")
+                        # Best effort only: a rewrite after a header re-read can
+                        # evade the final metadata check if its signature collides.
+                        for name, (signature, digest) in leaf_signatures.items():
+                            try:
+                                current = os.stat(name, dir_fd=folder_fd, follow_symlinks=False)
+                                if _signature(current) != signature:
+                                    fail("scope_changed", "mailbox leaf changed during scan")
+                                _, reread_signature, reread_digest = envelope(folder_fd, name)
+                                current = os.stat(name, dir_fd=folder_fd, follow_symlinks=False)
+                            except (OSError, UnicodeError, QueryError):
+                                fail("scope_changed", "mailbox leaf changed during scan")
+                            if (_signature(current) != signature or reread_signature != signature
+                                    or reread_digest != digest):
+                                fail("scope_changed", "mailbox leaf changed during scan")
         if initial_names != sorted(os.listdir(root_fd)):
             fail("scope_changed", "root entries changed during scan")
     return records

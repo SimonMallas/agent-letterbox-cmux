@@ -8,6 +8,7 @@ Observed stability is NOT an atomic snapshot.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import os
 import re
 import stat
@@ -68,6 +69,18 @@ def _safe_name(name):
                    for c in name)
 
 
+class _DigestReader:
+    """Hash only bytes requested by the bounded header parser."""
+    def __init__(self, stream):
+        self.stream = stream
+        self.digest = hashlib.sha256()
+
+    def readline(self, size):
+        raw = self.stream.readline(size)
+        self.digest.update(raw)
+        return raw
+
+
 class _Scanner:
     def __init__(self, max_names):
         self.max_names = max_names
@@ -115,9 +128,39 @@ class _Scanner:
                 self.issue(ref, "directory_changed")
                 return
             names = self.names(fd, ref)
-            visit(fd, ref, names)
+            leaf_signatures = visit(fd, ref, names)
+            # Test-only hook: no CLI or environment switch enables it.
+            hook = globals().get("_test_listing_boundary")
+            if hook is not None:
+                hook(fd, ref)
             if names != self.names(fd, ref) or _signature(pinned) != _signature(os.fstat(fd)):
                 self.issue(ref, "directory_changed")
+            # Best effort only: a rewrite after a header re-read can evade
+            # the final metadata check if its signature collides.
+            for leaf_name, (signature, digest) in (leaf_signatures or {}).items():
+                reread_fd = None
+                try:
+                    current_leaf = os.stat(leaf_name, dir_fd=fd, follow_symlinks=False)
+                    if _signature(current_leaf) != signature:
+                        self.issue(ref + "/" + leaf_name, "leaf_changed")
+                        continue
+                    reread_fd = os.open(leaf_name, FILE_FLAGS, dir_fd=fd)
+                    if _signature(os.fstat(reread_fd)) != signature:
+                        self.issue(ref + "/" + leaf_name, "leaf_changed")
+                        continue
+                    with os.fdopen(reread_fd, "rb", buffering=0, closefd=False) as stream:
+                        reader = _DigestReader(stream)
+                        read_header(reader)
+                    current_leaf = os.stat(leaf_name, dir_fd=fd, follow_symlinks=False)
+                    if (_signature(os.fstat(reread_fd)) != signature or
+                            _signature(current_leaf) != signature or
+                            reader.digest.digest() != digest):
+                        self.issue(ref + "/" + leaf_name, "leaf_changed")
+                except (OSError, HeaderError):
+                    self.issue(ref + "/" + leaf_name, "leaf_unreadable_or_changed")
+                finally:
+                    if reread_fd is not None:
+                        os.close(reread_fd)
             current = os.stat(name, dir_fd=parent, follow_symlinks=False)
             if not stat.S_ISDIR(current.st_mode) or _identity(current) != _identity(pinned):
                 self.issue(ref, "directory_changed")
@@ -149,7 +192,8 @@ class _Scanner:
                         issue = "leaf_changed"
                     else:
                         with os.fdopen(fd, "rb", buffering=0, closefd=False) as stream:
-                            parsed = read_header(stream)
+                            reader = _DigestReader(stream)
+                            parsed = read_header(reader)
                         after = os.fstat(fd)
                         current = os.stat(name, dir_fd=parent, follow_symlinks=False)
                         if (_signature(before) != _signature(after)
@@ -165,11 +209,15 @@ class _Scanner:
             if fd is not None:
                 os.close(fd)
         self.entries.append(Entry(ref, name, location, fields, issue))
+        return (_signature(before), reader.digest.digest()) if issue is None else None
 
     def leaves(self, fd, ref, names):
+        leaf_signatures = {}
         for name in names:
             if name.endswith(".md"):
-                self.leaf(fd, ref, name)
+                signature = self.leaf(fd, ref, name)
+                if signature is not None:
+                    leaf_signatures[name] = signature
             else:
                 # Non-letter regular sidecars are out of scope; nested trees are not.
                 try:
@@ -178,6 +226,7 @@ class _Scanner:
                         self.issue(ref + "/" + name, "unexpected_nested_entry")
                 except OSError:
                     self.issue(ref + "/" + name, "entry_unreadable_or_changed")
+        return leaf_signatures
 
     def participant(self, fd, ref, names):
         for name in ("inbox", "processed"):
