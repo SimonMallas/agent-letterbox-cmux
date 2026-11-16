@@ -2,6 +2,8 @@
 
 - `check`, and `nudge`, `read` and `file` by exact id or token, read an ordinary inbox in one pass instead of starting several programs per letter. Output is unchanged and large ordinary inboxes are much faster. An inbox with an unstamped id, non-ASCII filename, control character in a progress note, symlink, or non-stamp sidecar uses the previous slower path for the whole check. If the inbox changes during the fast pass, check restarts once on the previous path and may show a letter that arrived in that moment.
 
+## [0.7.2] — 2026-11-16 (cmux edition)
+
 - Both query modes recheck each letter’s identity and read its header a second time before reporting complete. These checks are best-effort and do not make a snapshot; queries on large mailboxes take roughly 1.7 to 2 times as long.
 
 - `letterbox --help` and `letterbox <command> --help` (or `-h`) print usage and exit 0, with no agent name or Letterbox set. Before, `check`, `query` and `lint-notes` each answered with a different error.
