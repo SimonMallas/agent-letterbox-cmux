@@ -176,6 +176,16 @@ resolve_action_ref() {
   case "$arg" in
     /*|./*|../*|*/*) die "use a letter id, display id, or unique token, not a path";;
   esac
+  # A unique exact ID can be resolved in a single header-only pass; any
+  # ambiguity, missing interpreter, or unsafe/unusual input uses the old path.
+  if [[ -f "$SCRIPT_DIR/../lib/fast/fastpath.py" ]] && command -v python3 >/dev/null 2>&1; then
+    local fast_path
+    if fast_path="$(python3 -I -B "$SCRIPT_DIR/../lib/fast/fastpath.py" resolve "$BOX" "$arg" "$scope" "$ME")"; then
+      parent="$(cd "$(dirname "$fast_path")" && pwd -P)" || return 1
+      printf '%s/%s\n' "$parent" "$(basename "$fast_path")"
+      return 0
+    fi
+  fi
   case "$scope" in
     owned-inbox) dirs=("$(inbox_path "$ME")");;
     owned) dirs=("$(inbox_path "$ME")" "$(processed_path "$ME")");;
@@ -1131,6 +1141,18 @@ cmd_check() {
   local -a live_rows=() stale_rows=()
   now="$(date -u +%s)"
   stale_secs="$(check_stale_secs)"
+  # Batch only ordinary inboxes; complex/unsafe inputs retain the shell path.
+  local fast_output days="${LETTERBOX_CHECK_STALE_DAYS:-14}"
+  if [[ -f "$SCRIPT_DIR/../lib/fast/fastpath.py" ]] && command -v python3 >/dev/null 2>&1 &&
+      fast_output="$(python3 -I -B "$SCRIPT_DIR/../lib/fast/fastpath.py" check "$inbox" "$who" "$now" "$stale_secs" "$days" "$recent")"; then
+    printf '%s\n' "$fast_output"
+    if [[ "$who" == "$ME" ]]; then
+      doorbell_line
+      tidy_line
+      notes_map --summary
+    fi
+    return 0
+  fi
   n=0
   for f in "$inbox"/*.md; do
     [[ -e "$f" ]] || continue
