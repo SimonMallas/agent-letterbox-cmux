@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # LETTERBOX_DOORBELL_TIMEOUT bounds each mux call: whole seconds 1-999, default
-# 1. The bounded runner used to start the mux command before it read the bound,
+# 2. The bounded runner used to start the mux command before it read the bound,
 # so a value such as "x" crashed it with the command already running and no
 # limit. A bad value is now refused before any mux command.
 set -euo pipefail

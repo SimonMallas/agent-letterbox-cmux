@@ -27,6 +27,10 @@ test:
 	python3 -B tests/test_notes_map.py
 	python3 -B tests/test_tidy_line.py
 	./tests/smoke.sh
+	./tests/test_format_gate.sh
+	./tests/test_format_gate_mutation.sh
+	python3 -B tests/test_format_gate_readers.py
+	python3 -B tests/test_format_gate_parity.py
 	./tests/test_outbox_sweep_exclusion.sh
 	./tests/test_error_paths.sh
 	./tests/test_help.sh
@@ -51,6 +55,8 @@ test:
 	./tests/test_doorbell_docs_drift.sh
 	./tests/test_doorbell_docs_drift_mutation.sh
 	./tests/test_doorbell_outcome_v1.sh
+	./tests/test_ring_lookup_retry.sh
+	./tests/test_ring_mixed_version.sh
 	./tests/test_ring_verb.sh
 	./tests/test_bridge_reply.sh
 	./tests/test_claude_skill_link.sh

@@ -9,6 +9,11 @@ import subprocess
 import sys
 import time
 
+# -I does not put this file's directory on sys.path, and it does not add the
+# sibling query directory. The helper lives in lib/query.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "query"))
+import format_gate
+
 SAFE = re.compile(rb'^[A-Za-z0-9._:-]+$')
 STAMP = re.compile(rb'^(\d{4}-\d\d-\d\dT\d{6})')
 TAIL = re.compile(rb'^[0-9a-f]{8}$')
@@ -43,7 +48,15 @@ def fields(path):
     return None
 
 
+def owning_box(path):
+    """The mark lives at the box, two levels above an inbox path."""
+    cleaned = path.rstrip("/")
+    return os.path.dirname(os.path.dirname(cleaned))
+
+
 def resolve(box, ref, scope="nudge", agent="", filename_alias="false"):
+    # A bad mark exits 1. Returning 3 here would let the shell print letters.
+    format_gate.check(box)
     target = os.fsencode(ref)
     if not SAFE.fullmatch(target):
         return 3
@@ -63,7 +76,13 @@ def resolve(box, ref, scope="nudge", agent="", filename_alias="false"):
                     for entry in entries:
                         if entry.name.startswith(b'.') or not entry.name.endswith(b'.md'):
                             continue
-                        if not entry.is_file(follow_symlinks=True):
+                        # Any symlink defers to the shell. A header id can match
+                        # a filename that does not, and a marked box cannot be
+                        # excluded without reading that header. The shell gates
+                        # the physical box, then counts. Do not open it here.
+                        if entry.is_symlink():
+                            return 3
+                        if not entry.is_file(follow_symlinks=False):
                             continue
                         data = fields(entry.path)
                         if data is None:
@@ -123,6 +142,8 @@ def sidecar(path):
 
 def check(inbox, who, now, stale_secs, days, recent, malformed_style="path"):
     """Fast path for ordinary closed headers and simple ACK sidecars."""
+    # Inbox is <box>/<seat>/inbox. Gate the box before locale or scandir.
+    format_gate.check(owning_box(inbox))
     # Shell output preserves header bytes; avoid recoding under other locales.
     if any((stream.encoding or '').lower().replace('-', '') != 'utf8' for stream in (sys.stdout, sys.stderr)):
         return 3

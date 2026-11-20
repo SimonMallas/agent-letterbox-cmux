@@ -1,0 +1,34 @@
+Frozen pre-change baseline
+===========================
+
+These files are the parity baseline for the format-mark tests.
+They are the preview commit below, not the candidate working tree.
+A later commit of the candidate does not move them.
+
+Source commit: 9a583f2fba8773791743115e4953d2cbda119992
+Subject: Include 0.7.3 fast path
+
+tests/fixtures/letterbox-before-ring-retry
+  bin/letterbox at that commit, and nothing else.
+  Left out: lib, VERSION, adapters, docs, skills, tests, and plugin.
+  SHA256: 4609f4e1ba667ce0be7000ce5812098ec9019f813a90f545500d31c04ed4277e
+
+tests/fixtures/pre-gate/
+  lib and VERSION at that commit.
+  Left out: bin (the script is the fixture above), adapters, docs,
+  skills, tests, and plugin. lib/query/format_gate.py is absent
+  because that file does not exist at the commit.
+  SHA256 of each file:
+  VERSION 9c788a838dc1f6bfd80fa39757a95f94260071c35011c9a05301da1c73507657
+  lib/fast/fastpath.py 04df6e0326fa8b1a499da940389af01bdfe42781ba1ca6b717be2fb2cb0ba52c
+  lib/query/envelopes.py bcf8a48f3116e883cafe0c34e8ab39f7b84c35fc512eebd2aa77b282514730a1
+  lib/query/graph.py fbe4a6ecb90e1ac891fd33531348e0179ecdc128509e42723b161e21b63af4e4
+  lib/query/lint_notes.py 6079810fabab6f100cb0c6b54da89331ae485e55605fd20a6dfaf1f633921cd6
+  lib/query/maps.py b37f7b77b2907017c40ea1c9d98bda6a9e50aae78b7d0c2c3021350859c2e3da
+  lib/query/owed.py 0dc60bdc7e2282458e05d34a6bbd57db4e473a2060102d83fd5392ed3836abbb
+  lib/query/presentation.py e6b08587822b7597ae8169fe5cb9ad89a9a2cf9ee6bef2b1606bf1e4e629980b
+  lib/query/query.py ef08b001293be3ae8bed6ec1f0ccf3ada6f308a5cf72be948f3dd9353b309d95
+  lib/query/scanner.py 59135ec8e1ab8880c53b95abd5f3574ae395dcc34ef24a9bf40d70f23798a04a
+  lib/query/scope.py 826d6a3aa72471de083412b0924915541dba28f606c7a9c8fe858181d61ba57c
+  lib/query/selection.py 9512b0fae6f920c4c0dd418e6b94e74f487ecbf877a1c6f181b9e2ad59267407
+  lib/query/strict.py d3150d6da790ca763c5f3add22486ba2fcce3ee33aaed2bcd6fc5a790ed5b733

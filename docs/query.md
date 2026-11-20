@@ -9,6 +9,7 @@ its real directory. The scanner then pins every path component: a symlink that
 appears in the root during the scan is refused as `root_component_symlink`, as is
 a symlinked `--root` given to `lib/query/query.py` directly. A regular file in
 that position reports `root_component_not_directory` instead.
+Format gate G reads `format.mark` once before any listing; a mark replaced after that read is still served, which is barrier-class non-atomicity and is not closed by G.
 
 Query requires **Python 3.9 or newer**, using only the standard library. Other
 commands have no new Python requirement. Missing or older `python3` exits 1 with

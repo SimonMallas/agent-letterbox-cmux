@@ -215,19 +215,30 @@ printf 'reviewer\treviewer\n' > "$box/cmux-patterns.tsv"
 emit_real() {
   local tok="${1:-}" log="$box/cmux-send.log"
   : > "$log"
-  MOCK_LOG="$log" PATH="$mockbin:$PATH" \
-    LETTERBOX_DIR="$box" \
-    LETTERBOX_CMUX_PATTERNS="$box/cmux-patterns.tsv" \
-    LETTERBOX_CMUX_SUBMIT=1 \
-    "$adpt" reviewer info ${tok:+"$tok"} >/dev/null 2>&1 || true
-  sed -n 's/^send --surface surface:[0-9][0-9]* //p' "$log" | head -1
+  local outcome="$box/adapter.out" error="$box/adapter.err" rc=0 line
+  env -i PATH="$mockbin:$PATH" HOME="$box" TMPDIR="$box" LC_ALL=C \
+    MOCK_LOG="$log" LETTERBOX_DIR="$box" \
+    LETTERBOX_CMUX_PATTERNS="$box/cmux-patterns.tsv" LETTERBOX_CMUX_SUBMIT=1 \
+    LETTERBOX_DOORBELL_TIMEOUT=10 LETTERBOX_DOORBELL_ENTER_DELAY=0 \
+    "$adpt" reviewer info ${tok:+"$tok"} >"$outcome" 2>"$error" || rc=$?
+  line="$(sed -n 's/^send --surface surface:[0-9][0-9]* //p' "$log" | head -1)"
+  if [[ "$rc" -ne 0 || -z "$line" ]] || ! grep -q '^doorbell-outcome v=1 outcome=submitted ' "$outcome"; then
+    printf 'FAIL: mock adapter capture failed (exit %s)\nadapter outcome:\n' "$rc" >&2
+    cat "$outcome" >&2
+    printf 'adapter stderr:\n' >&2
+    cat "$error" >&2
+    printf 'mock log:\n' >&2
+    cat "$log" >&2
+    return 0
+  fi
+  printf '%s\n' "$line"
 }
 real_v02="$(emit_real)"
 real_v03="$(emit_real a1b2c3d4)"
 if [[ -n "$real_v02" ]]; then
   pass "real adapter emits a doorbell line (fixture wired to adapters/cmux.sh)"
 else
-  fail "adapter produced no line — fixture would be vacuous"
+  fail "mock adapter capture failed — see diagnostics above"
 fi
 if [[ -n "$real_v02" && "$real_v03" == "$real_v02"* && "$real_v03" != "$real_v02" ]]; then
   pass "real v0.2 line is a byte-prefix of the real v0.3 line"

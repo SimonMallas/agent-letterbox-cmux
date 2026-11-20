@@ -8,6 +8,7 @@ letterbox: doorbell submitted to agent on surface:1		0	unparseable	no	legacy pub
 doorbell-outcome v=1 outcome=submitted reason=- target=surface:1		1	unconfirmed	no	valid submitted line then nonzero exit
 doorbell-outcome v=1 outcome=submitted reason=- target=surface:1		timeout	unconfirmed	no	valid submitted line then caller timeout
 doorbell-outcome v=1 outcome=no_live_surface reason=helper_timeout target=-		0	helper_timeout	yes	pre-inject timeout; retryable
+doorbell-outcome v=1 outcome=no_live_surface reason=lookup_spent target=-		0	lookup_spent	no	wrapper spent its lookup retries; do not nest
 doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-		timeout	unconfirmed	no	timeout after inject started
 doorbell-outcome v=1 outcome=no_live_surface reason=future_token target=-		0	future_token	no	unknown charset-legal reason; record, no retry
 		timeout	unconfirmed	no	empty stdout, caller timeout

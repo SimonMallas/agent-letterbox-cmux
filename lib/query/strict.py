@@ -8,6 +8,10 @@ import stat
 import sys
 from contextlib import contextmanager
 
+# -I does not put the script directory on sys.path. The helper sits beside this file.
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import format_gate
+
 PARTICIPANT = re.compile(r"[a-z][a-z0-9-]*")
 # ASCII bytes; 255-byte filenames minus .<id>.tmp.XXXXXX overhead.
 LETTER_ID = re.compile(r"[A-Za-z0-9_.:-]{1,243}")
@@ -111,6 +115,7 @@ def envelope(folder_fd, filename):
 
 
 def scan(root):
+    format_gate.check(root)
     records = {}
     with directory(root) as root_fd:
         initial_names = sorted(os.listdir(root_fd))

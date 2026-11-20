@@ -148,8 +148,8 @@ check() { # $1=name $2=env-string $3=expected
 
 check "submitted (two-step ok)"        "CMUX_FAKE_TREE=ok CMUX_FAKE_SEND=ok CMUX_FAKE_ENTER=ok" \
   'doorbell-outcome v=1 outcome=submitted reason=- target=surface:7'
-check "lookup timeout → helper_timeout" "CMUX_FAKE_TREE=sleep CMUX_FAKE_SLEEP=5" \
-  'doorbell-outcome v=1 outcome=no_live_surface reason=helper_timeout target=-'
+check "lookup timeout → lookup_spent" "CMUX_FAKE_TREE=sleep CMUX_FAKE_SLEEP=5" \
+  'doorbell-outcome v=1 outcome=no_live_surface reason=lookup_spent target=-'
 check "send reported fail → send_failed" "CMUX_FAKE_SEND=fail" \
   'doorbell-outcome v=1 outcome=no_live_surface reason=send_failed target=-'
 check "send timeout → unconfirmed"      "CMUX_FAKE_SEND=sleep CMUX_FAKE_SLEEP=5" \
@@ -191,8 +191,8 @@ check "wrapper: valid line + nonzero exit → unconfirmed" "LETTERBOX_DOORBELL=$
   'doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-'
 check "wrapper: pasted + nonzero exit → unconfirmed" "LETTERBOX_DOORBELL=$ROOT/valid-pasted-exit1.sh" \
   'doorbell-outcome v=1 outcome=no_live_surface reason=unconfirmed target=-'
-check "wrapper: helper_timeout + nonzero exit still forwards (retryable)" "LETTERBOX_DOORBELL=$ROOT/valid-ht-exit1.sh" \
-  'doorbell-outcome v=1 outcome=no_live_surface reason=helper_timeout target=-'
+check "wrapper: helper_timeout is spent, not forwarded" "LETTERBOX_DOORBELL=$ROOT/valid-ht-exit1.sh" \
+  'doorbell-outcome v=1 outcome=no_live_surface reason=lookup_spent target=-'
 check "wrapper: send_failed + nonzero exit still forwards (named reason)" "LETTERBOX_DOORBELL=$ROOT/valid-sf-exit1.sh" \
   'doorbell-outcome v=1 outcome=no_live_surface reason=send_failed target=-'
 # Runner-owned sentinel: a child exiting 124 on its own is NOT a timeout.

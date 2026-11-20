@@ -80,9 +80,10 @@ command -v python3 >/dev/null 2>&1 || { emit_outcome no_live_surface adapter_una
 enter_delay="${LETTERBOX_DOORBELL_ENTER_DELAY:-2}"
 [[ "$enter_delay" =~ ^[0-5]$ ]] || { emit_outcome no_live_surface invalid_enter_delay -; exit 0; }
 # Each mux call is bounded at LETTERBOX_DOORBELL_TIMEOUT: whole seconds 1..999,
-# default 1. Checked before any command runs, like the delay: any other value
-# used to leave a mux command running with no limit.
-bound_s="${LETTERBOX_DOORBELL_TIMEOUT:-1}"
+# default 2. Checked before any command runs, like the delay: any other value
+# used to leave a mux command running with no limit. The ring wrapper, not
+# this adapter, retries a lookup timeout.
+bound_s="${LETTERBOX_DOORBELL_TIMEOUT:-2}"
 [[ "$bound_s" =~ ^[1-9][0-9]{0,2}$ ]] || { emit_outcome no_live_surface invalid_timeout -; exit 0; }
 
 # Ruling 5 middle insert: name the durable letter's sender, but only when the

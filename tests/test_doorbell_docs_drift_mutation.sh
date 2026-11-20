@@ -82,6 +82,9 @@ then
   if [[ "$LAST_RC" -eq 0 ]]; then
     echo "FAIL: [mut] gate passed after moving the token ahead of the tail" >&2
     fails=$((fails + 1))
+  elif ! printf '%s\n' "$LAST_OUT" | grep -q 'runtime v0.3 does not match'; then
+    echo "FAIL: [mut] token-ahead failed without the intended grammar diagnostic" >&2
+    fails=$((fails + 1))
   else
     echo "PASS: [mut] token-ahead adapter fails the gate"
   fi
@@ -114,6 +117,9 @@ then
   if [[ "$LAST_RC" -eq 0 ]]; then
     echo "FAIL: [mut] gate passed with a from-dash sender emitted" >&2
     fails=$((fails + 1))
+  elif ! printf '%s\n' "$LAST_OUT" | grep -q 'runtime v0.4 does not match'; then
+    echo "FAIL: [mut] from-dash failed without the intended grammar diagnostic" >&2
+    fails=$((fails + 1))
   else
     echo "PASS: [mut] from-dash sender fails the gate"
   fi
@@ -140,6 +146,27 @@ plant() {
   fi
   cp "$root/$rel" "$file"
 }
+
+# An adapter failure must expose the actual outcome, stderr and mock log.
+echo "[mut] --- adapter capture diagnostics ---"
+cat > "$tmp/repo/$adpt" <<'MOCK'
+#!/usr/bin/env bash
+printf 'doorbell-outcome v=1 outcome=no_live_surface reason=helper_timeout target=-\n'
+printf 'synthetic adapter stderr\n' >&2
+exit 7
+MOCK
+chmod +x "$tmp/repo/$adpt"
+run_gate
+if [[ "$LAST_RC" -eq 0 ]] ||
+   ! printf '%s\n' "$LAST_OUT" | grep -q 'reason=helper_timeout' ||
+   ! printf '%s\n' "$LAST_OUT" | grep -q 'synthetic adapter stderr' ||
+   ! printf '%s\n' "$LAST_OUT" | grep -q 'mock log:'; then
+  echo "FAIL: [mut] adapter capture diagnostics incomplete" >&2
+  fails=$((fails + 1))
+else
+  echo "PASS: [mut] adapter failure reports outcome, stderr and mock log"
+fi
+cp "$root/$adpt" "$tmp/repo/$adpt"
 
 plant README.md
 plant SPEC.md

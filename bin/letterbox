@@ -42,6 +42,164 @@ refuse_outbox() {
   fi
 }
 
+# Format gate G. One regular no-follow text mark at the box root.
+# Absent, or the exact bytes flat-v1 / flat-v1\n, keeps today's behaviour.
+# Anything else refuses before a letter is read or any state is written.
+# SHOWN rule, same as lib/query/format_gate.py: after at most one trailing
+# newline is removed, name the bytes only when they are 1..64 of printable
+# ASCII (0x20-0x7E) with no single quote and no backslash. Anything else,
+# including a longer mark, is unreadable. 64 is the read cap and the naming
+# cap. od starred identical lines, so 32 or more equal bytes looked unreadable;
+# -v keeps those bytes. A shorter cap would hide a value already read safely.
+# The action sentence matches the Python helper. The dot in the name keeps
+# the mark out of the seat pattern [a-z][a-z0-9-]*.
+FORMAT_MARK=format.mark
+FORMAT_MAX=64
+FORMAT_ACTION='this release reads flat-v1 only, use a release that supports the box format'
+
+format_mark_size() {
+  local out
+  out="$(stat -f %z "$1" 2>/dev/null)" || out="$(stat -c %s "$1" 2>/dev/null)" || return 1
+  [[ "$out" =~ ^[0-9]+$ ]] || return 1
+  printf '%s\n' "$out"
+}
+
+format_refuse() { # $1 = 'value' or unreadable
+  die "format refusal: box format is $1; $FORMAT_ACTION"
+}
+
+# SHOWN rule, same as format_gate.py: 1..64 printable ASCII bytes after at
+# most one trailing newline, no quote and no backslash. od -v so a repeated
+# line is not replaced by "*".
+format_shown() {
+  local path="$1" size="$2" b i last
+  local -a bytes=()
+  if (( size == 0 || size > FORMAT_MAX )); then
+    printf 'unreadable'
+    return
+  fi
+  while read -r b; do
+    bytes+=("$b")
+  done < <(od -An -v -tu1 -N "$size" "$path" 2>/dev/null | tr -s ' ' '\n' | sed '/^$/d')
+  [[ ${#bytes[@]} -eq $size ]] || { printf 'unreadable'; return; }
+  last=$((size - 1))
+  if [[ "${bytes[$last]}" -eq 10 ]]; then
+    for ((i = 0; i < last; i++)); do
+      if [[ "${bytes[$i]}" -eq 10 ]]; then
+        printf 'unreadable'
+        return
+      fi
+    done
+    unset "bytes[$last]"
+  fi
+  [[ ${#bytes[@]} -gt 0 ]] || { printf 'unreadable'; return; }
+  local out="" piece
+  for b in "${bytes[@]}"; do
+    if (( b < 32 || b > 126 || b == 39 || b == 92 )); then
+      printf 'unreadable'
+      return
+    fi
+    piece="$(printf "\\$(printf '%03o' "$b")")"
+    out="${out}${piece}"
+  done
+  printf "'%s'" "$out"
+}
+
+format_gate_dir() { # $1 = box directory, followed if it is a symlink
+  local root="$1" phys mark size shown
+  [[ -n "$root" && -d "$root" ]] || return 0
+  phys="$(CDPATH= cd -P -- "$root" 2>/dev/null && pwd -P)" || return 0
+  mark="$phys/$FORMAT_MARK"
+  if [[ -L "$mark" ]]; then
+    format_refuse unreadable
+  fi
+  [[ -e "$mark" ]] || return 0
+  [[ -f "$mark" ]] || format_refuse unreadable
+  [[ -r "$mark" ]] || format_refuse unreadable
+  size="$(format_mark_size "$mark")" || format_refuse unreadable
+  if (( size > FORMAT_MAX )); then
+    format_refuse unreadable
+  fi
+  # cmp sees the exact bytes, including a single trailing newline.
+  if printf 'flat-v1' | cmp -s - "$mark" 2>/dev/null; then
+    return 0
+  fi
+  if printf 'flat-v1\n' | cmp -s - "$mark" 2>/dev/null; then
+    return 0
+  fi
+  shown="$(format_shown "$mark" "$size")"
+  format_refuse "$shown"
+}
+
+physical_file() { # follow links; print the physical path; do not read bytes
+  local p="$1" i=0 target dir
+  [[ -n "$p" ]] || return 1
+  while [[ -L "$p" && $i -lt 32 ]]; do
+    target="$(readlink "$p")" || return 1
+    if [[ "$target" != /* ]]; then
+      dir="$(CDPATH= cd -P -- "$(dirname "$p")" 2>/dev/null && pwd -P)" || return 1
+      p="$dir/$target"
+    else
+      p="$target"
+    fi
+    i=$((i + 1))
+  done
+  [[ -e "$p" ]] || return 1
+  dir="$(CDPATH= cd -P -- "$(dirname "$p")" 2>/dev/null && pwd -P)" || return 1
+  printf '%s/%s\n' "$dir" "$(basename "$p")"
+}
+
+owning_box_of_file() {
+  local dir folder
+  dir="$(dirname "$1")"
+  folder="$(basename "$dir")"
+  case "$folder" in
+    inbox|processed) dirname "$(dirname "$dir")" ;;
+    *) return 1 ;;
+  esac
+}
+
+gate_path_arg() {
+  local phys box
+  phys="$(physical_file "$1")" || return 0
+  box="$(owning_box_of_file "$phys")" || return 0
+  format_gate_dir "$box"
+}
+
+# A resolved letter that is a symlink: gate the physical file's box before
+# any byte of that letter is read. Regular files return here. The -L test is
+# the whole cost on the ordinary path. Status 91 means the refusal line is
+# already on stderr; a caller inside $(...) exits 1 and does not add another.
+gate_resolved_leaf() {
+  [[ -L "$1" ]] || return 0
+  (gate_path_arg "$1") || return 91
+}
+
+format_preflight() {
+  local root="$1" phys seat base link target nullglob_on=0
+  format_gate_dir "$root"
+  [[ -d "$root" ]] || return 0
+  phys="$(CDPATH= cd -P -- "$root" 2>/dev/null && pwd -P)" || return 0
+  shopt -q nullglob && nullglob_on=1
+  shopt -s nullglob
+  for seat in "$phys"/*; do
+    base="$(basename "$seat")"
+    case "$base" in
+      "$FORMAT_MARK"|locks|env.sh|.*) continue ;;
+    esac
+    if [[ -L "$seat" ]]; then
+      target="$(CDPATH= cd -P -- "$seat" 2>/dev/null && pwd -P)" || continue
+      format_gate_dir "$(dirname "$target")"
+    fi
+    for link in "$seat/inbox" "$seat/processed"; do
+      [[ -L "$link" ]] || continue
+      target="$(CDPATH= cd -P -- "$link" 2>/dev/null && pwd -P)" || continue
+      format_gate_dir "$(dirname "$(dirname "$target")")"
+    done
+  done
+  (( nullglob_on == 1 )) || shopt -u nullglob
+}
+
 # --- v0.3 core: safe ids, resolver, activity ---
 bounded_cmd() { # $1=seconds, rest=argv; 124 timeout (runner-owned: a child
                 # exiting 124 itself is remapped to 123), 127 missing (needs python3)
@@ -163,11 +321,27 @@ parse_doorbell_line() { # $1=line → v02 | v03 <token> | v04 <sender> [token] |
 }
 message_arg_is_path() { [[ -f "$1" ]]; }
 
+# Status 91 is format gate G. The refusal line is already on stderr.
+# Exit this process with 1. Status 1 is still "not found".
+finish_resolve() {
+  local __var="$1" __fail="$2" __status=0 __out
+  shift 2
+  __out="$("$@")" || __status=$?
+  if [[ "$__status" -eq 91 ]]; then
+    exit 1
+  fi
+  [[ "$__status" -eq 0 ]] || die "$__fail"
+  printf -v "$__var" '%s' "$__out"
+}
+
 resolve_action_ref() {
   local arg="$1" scope="$2" allow_path="${3:-0}" parent f id disp tok
   local -a hits=() dirs=()
   [[ -n "$arg" ]] || return 1
   if [[ "$allow_path" == 1 ]] && message_arg_is_path "$arg"; then
+    # die() in this substitution is status 1, which the caller reports
+    # as not-found. 91 keeps the refusal line alone.
+    (gate_path_arg "$arg") || return 91
     parent="$(cd "$(dirname "$arg")" && pwd -P)" || return 1
     refuse_outbox "$parent/$(basename "$arg")"
     printf '%s/%s\n' "$parent" "$(basename "$arg")"
@@ -179,12 +353,16 @@ resolve_action_ref() {
   # A unique exact ID can be resolved in a single header-only pass; any
   # ambiguity, missing interpreter, or unsafe/unusual input uses the old path.
   if [[ -f "$SCRIPT_DIR/../lib/fast/fastpath.py" ]] && command -v python3 >/dev/null 2>&1; then
-    local fast_path
-    if fast_path="$(python3 -I -B "$SCRIPT_DIR/../lib/fast/fastpath.py" resolve "$BOX" "$arg" "$scope" "$ME")"; then
+    local fast_path fast_status=0
+    fast_path="$(python3 -I -B "$SCRIPT_DIR/../lib/fast/fastpath.py" resolve "$BOX" "$arg" "$scope" "$ME")" || fast_status=$?
+    if [[ "$fast_status" -eq 0 ]]; then
       parent="$(cd "$(dirname "$fast_path")" && pwd -P)" || return 1
       printf '%s/%s\n' "$parent" "$(basename "$fast_path")"
       return 0
     fi
+    # 91 is the format gate. Callers exit 1. Status 1 is "not found", and
+    # falling through would print the slow listing.
+    [[ "$fast_status" -eq 1 ]] && return 91
   fi
   case "$scope" in
     owned-inbox) dirs=("$(inbox_path "$ME")");;
@@ -200,6 +378,8 @@ resolve_action_ref() {
   for dir in "${dirs[@]}"; do
     [[ -d "$dir" ]] || continue
     for f in "$dir"/*.md; do
+      [[ -e "$f" || -L "$f" ]] || continue
+      gate_resolved_leaf "$f" || return $?
       [[ -f "$f" ]] || continue
       id="$(frontmatter_value "$f" id)" || continue
       disp="$(display_id "$id")"
@@ -610,6 +790,70 @@ doorbell_line() {
   return 0
 }
 
+# 0 when the child proved a pre-injection lookup timeout: exactly one valid
+# helper_timeout line. Nonzero exit still counts; report_doorbell_outcome
+# forwards that line. Anything else, including unconfirmed after send or
+# Enter, is not tried again.
+child_is_lookup_timeout() { # $1=stdout $2=exit
+  local out="$1" line n=0 first_valid="" o r
+  while IFS= read -r line; do
+    if [[ "$line" == doorbell-outcome\ * ]]; then
+      n=$((n + 1))
+      if [[ -z "$first_valid" ]] && valid_contract_line "$line"; then
+        first_valid="$line"
+      fi
+    fi
+  done <<< "$out"
+  [[ "$n" -eq 1 && -n "$first_valid" ]] || return 1
+  o="$(printf '%s' "$first_valid" | sed -E 's/.*outcome=([^ ]+).*/\1/')"
+  r="$(printf '%s' "$first_valid" | sed -E 's/.*reason=([^ ]+).*/\1/')"
+  [[ "$o" == no_live_surface && "$r" == helper_timeout ]]
+}
+
+# Durable record outside the mailboxes. A name query would treat as an agent
+# would make the next query refuse the box, and a sidecar in the inbox would
+# send check down the slow path.
+ring_record_path() { # $1=recipient $2=letter id
+  local to="$1" id="$2"
+  [[ "$to" =~ ^[a-z][a-z0-9-]*$ ]] || return 1
+  [[ "$id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,200}$ ]] || return 1
+  printf '%s/.unresolved-rings/%s/%s\n' "$BOX" "$to" "$id"
+}
+
+write_unresolved_ring() { # $1=recipient $2=letter id $3=attempts
+  # 0 only when the record is a regular file. Diagnostics stay off stderr:
+  # mkdir would print the absolute path.
+  local path dir tmp
+  path="$(ring_record_path "$1" "$2")" || return 1
+  dir="$(dirname "$path")"
+  if [[ -e "$dir" && ! -d "$dir" ]]; then
+    return 1
+  fi
+  if [[ -L "$path" ]]; then
+    return 1
+  fi
+  mkdir -p "$dir" 2>/dev/null || return 1
+  tmp="$(mktemp "$dir/.ring.XXXXXX" 2>/dev/null)" || return 1
+  if ! printf 'letter: %s\nto: %s\nreason: helper_timeout\nattempts: %s\n' \
+      "$2" "$1" "$3" > "$tmp"; then
+    rm -f "$tmp"
+    return 1
+  fi
+  if ! mv -f "$tmp" "$path" 2>/dev/null; then
+    rm -f "$tmp"
+    return 1
+  fi
+  [[ -f "$path" && ! -L "$path" ]] || return 1
+  return 0
+}
+
+clear_unresolved_ring() {
+  local path
+  path="$(ring_record_path "$1" "$2")" || return 0
+  rm -f "$path"
+  return 0
+}
+
 ring_doorbell() {
   local to="$1" type="$2" id_or_slug="$3" token
   # The wrapper is the SOLE stdout owner for doorbell-outcome v=1: the
@@ -628,12 +872,16 @@ ring_doorbell() {
   local from
   from="$(doorbell_from_for_id "$to" "$id_or_slug")"
   local child_out child_rc=0
-  # Best-effort: the letter is already durable. The adapter self-bounds each
-  # step at LETTERBOX_DOORBELL_TIMEOUT (default 1s — see SPEC bounds budget);
-  # the wrapper bound is only a backstop for a wedged adapter, so it covers a
-  # whole run (lookup + notify + two inject steps + the pause before Enter +
-  # startup slack), never a single step.
-  local t="${LETTERBOX_DOORBELL_TIMEOUT:-1}"
+  # The adapter self-bounds each step at LETTERBOX_DOORBELL_TIMEOUT (default
+  # 2s). The per-attempt backstop covers one whole run. The call itself
+  # returns within 12s, so a 15s caller cannot turn a lookup retry into
+  # unconfirmed. Only a pre-injection helper_timeout is tried again: 3
+  # lookups, 100ms then 400ms apart. No queue. helper_timeout on the
+  # contract line means this process did not spend a lookup retry, so a
+  # caller that retries only that reason may try again. After this loop
+  # the line is lookup_spent. A released caller then stops, instead of
+  # running the three lookups again.
+  local t="${LETTERBOX_DOORBELL_TIMEOUT:-2}"
   # At most three digits, read as base 10: "08" is not octal, and a long value
   # cannot overflow the budget. The adapter itself refuses anything outside 1-999.
   [[ "$t" =~ ^[0-9]{1,3}$ ]] || t=1
@@ -648,8 +896,59 @@ ring_doorbell() {
     emit_outcome no_live_surface adapter_unavailable -
     return 0
   fi
-  child_out="$(bounded_cmd "$((4 * t + 5 + d))" env LETTERBOX_DOORBELL_FROM="$from" "$LETTERBOX_DOORBELL" "$to" "$type" "$token")" || child_rc=$?
-  report_doorbell_outcome "$child_out" "$child_rc"
+  local start elapsed remain bound attempt=0
+  start="$(date +%s)"
+  while [[ "$attempt" -lt 3 ]]; do
+    elapsed=$(( $(date +%s) - start ))
+    remain=$((12 - elapsed))
+    if [[ "$attempt" -gt 0 ]]; then
+      # Leave enough time for this lookup to report its own timeout.
+      # Killing it here would look like unconfirmed.
+      if [[ "$remain" -lt $((t + 1)) ]]; then
+        break
+      fi
+      if [[ "$attempt" -eq 1 ]]; then
+        sleep 0.1
+      else
+        sleep 0.4
+      fi
+      elapsed=$(( $(date +%s) - start ))
+      remain=$((12 - elapsed))
+      if [[ "$remain" -lt $((t + 1)) ]]; then
+        break
+      fi
+    fi
+    bound=$((4 * t + 5 + d))
+    if [[ "$bound" -gt "$remain" ]]; then
+      bound=$remain
+    fi
+    if [[ "$bound" -lt 1 ]]; then
+      break
+    fi
+    child_rc=0
+    child_out="$(bounded_cmd "$bound" env LETTERBOX_DOORBELL_FROM="$from" "$LETTERBOX_DOORBELL" "$to" "$type" "$token")" || child_rc=$?
+    if child_is_lookup_timeout "$child_out" "$child_rc"; then
+      attempt=$((attempt + 1))
+      continue
+    fi
+    clear_unresolved_ring "$to" "$id_or_slug"
+    report_doorbell_outcome "$child_out" "$child_rc"
+    return 0
+  done
+  if [[ "$attempt" -lt 1 ]]; then
+    emit_outcome no_live_surface unconfirmed -
+    return 0
+  fi
+  if write_unresolved_ring "$to" "$id_or_slug" "$attempt"; then
+    printf 'letterbox: ring unresolved: %s to %s: lookup timed out before any text; the letter is durable; nudge to retry\n' \
+      "$(display_id "$id_or_slug")" "$to" >&2
+  else
+    printf 'letterbox: ring unresolved record was not written for %s to %s; the letter is durable; lookup timed out before any text\n' \
+      "$(display_id "$id_or_slug")" "$to" >&2
+  fi
+  # Not helper_timeout. That reason is the handshake with every
+  # caller that retries it, including a Bridge this wrapper has not met.
+  emit_outcome no_live_surface lookup_spent -
   return 0
 }
 
@@ -1011,6 +1310,28 @@ print_progress_line() {
     printf '    progress: %s\n' "$note"
   fi
 }
+print_unresolved_rings() { # $1=recipient whose inbox is being checked
+  local who="$1" dir="$BOX/.unresolved-rings/$who" f id letter ng=0
+  [[ "$who" =~ ^[a-z][a-z0-9-]*$ ]] || return 0
+  [[ -d "$dir" ]] || return 0
+  shopt -q nullglob && ng=1
+  shopt -s nullglob
+  for f in "$dir"/*; do
+    [[ -f "$f" && ! -L "$f" ]] || continue
+    id="${f##*/}"
+    [[ "$id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,200}$ ]] || continue
+    # A letter that has left the inbox cannot be nudged. Drop the record.
+    letter="$BOX/$who/inbox/$id.md"
+    if [[ ! -f "$letter" || -L "$letter" ]]; then
+      rm -f "$f" || true
+      continue
+    fi
+    printf 'ring unresolved: %s: lookup timed out before any text; nudge to retry\n' \
+      "$(display_id "$id")"
+  done
+  [[ "$ng" -eq 1 ]] || shopt -u nullglob
+}
+
 print_letter_card() {
   local f="$1" stale="$2" age="$3" extra=""
   extra="$(letter_ack_state "$f")"
@@ -1022,8 +1343,14 @@ print_letter_card() {
 }
 check_thread() {
   local want="$1" f agent folder id tid rid typ state extra
-  echo "── thread $(display_id "$want")"
   shopt -s nullglob
+  for folder in inbox processed; do
+    for f in "$BOX"/*/"$folder"/*.md; do
+      [[ -e "$f" || -L "$f" ]] || continue
+      gate_resolved_leaf "$f" || exit 1
+    done
+  done
+  echo "── thread $(display_id "$want")"
   for folder in inbox processed; do
     for f in "$BOX"/*/"$folder"/*.md; do
       [[ -f "$f" ]] || continue
@@ -1142,18 +1469,27 @@ cmd_check() {
   now="$(date -u +%s)"
   stale_secs="$(check_stale_secs)"
   # Batch only ordinary inboxes; complex/unsafe inputs retain the shell path.
-  local fast_output days="${LETTERBOX_CHECK_STALE_DAYS:-14}"
-  if [[ -f "$SCRIPT_DIR/../lib/fast/fastpath.py" ]] && command -v python3 >/dev/null 2>&1 &&
-      fast_output="$(python3 -I -B "$SCRIPT_DIR/../lib/fast/fastpath.py" check "$inbox" "$who" "$now" "$stale_secs" "$days" "$recent")"; then
-    printf '%s\n' "$fast_output"
-    if [[ "$who" == "$ME" ]]; then
-      doorbell_line
-      tidy_line
-      notes_map --summary
+  local fast_output fast_status=0 days="${LETTERBOX_CHECK_STALE_DAYS:-14}"
+  if [[ -f "$SCRIPT_DIR/../lib/fast/fastpath.py" ]] && command -v python3 >/dev/null 2>&1; then
+    fast_output="$(python3 -I -B "$SCRIPT_DIR/../lib/fast/fastpath.py" check "$inbox" "$who" "$now" "$stale_secs" "$days" "$recent")" || fast_status=$?
+    if [[ "$fast_status" -eq 0 ]]; then
+      printf '%s\n' "$fast_output"
+      print_unresolved_rings "$who"
+      if [[ "$who" == "$ME" ]]; then
+        doorbell_line
+        tidy_line
+        notes_map --summary
+      fi
+      return 0
     fi
-    return 0
+    # Exit 1 is the format gate. Falling through would print the slow listing.
+    [[ "$fast_status" -eq 1 ]] && exit 1
   fi
   n=0
+  for f in "$inbox"/*.md; do
+    [[ -e "$f" || -L "$f" ]] || continue
+    gate_resolved_leaf "$f" || exit 1
+  done
   for f in "$inbox"/*.md; do
     [[ -e "$f" ]] || continue
     if ! id="$(frontmatter_value "$f" id)"; then
@@ -1195,6 +1531,7 @@ cmd_check() {
       echo "letterbox: warning: orphan ACK sidecar $(safe_id_out "$oid")" >&2
     }
   done
+  print_unresolved_rings "$who"
   # Filing and notes are this seat's own: neither line when checking another inbox.
   if [[ "$who" == "$ME" ]]; then
     doorbell_line
@@ -1207,6 +1544,13 @@ cmd_check() {
 resolve_owned_message() {
   local arg="$1" parent candidate
   if [[ -f "$arg" ]]; then
+    if [[ -L "$arg" ]]; then
+      gate_resolved_leaf "$arg" || return $?
+    else
+      # Same as the symlink arm: a refusal inside this substitution
+      # must be 91, or the caller adds a not-found line.
+      (gate_path_arg "$arg") || return 91
+    fi
     parent="$(cd "$(dirname "$arg")" && pwd -P)" || die "message not found: $arg"
     refuse_outbox "$parent/$(basename "$arg")"
     printf '%s/%s\n' "$parent" "$(basename "$arg")"
@@ -1219,6 +1563,9 @@ resolve_owned_message() {
     "$(processed_path "$ME")/${arg%.md}.md"
   do
     if [[ -f "$candidate" ]]; then
+      if [[ -L "$candidate" ]]; then
+        gate_resolved_leaf "$candidate" || return $?
+      fi
       parent="$(cd "$(dirname "$candidate")" && pwd -P)" || die "message not found: $arg"
       printf '%s/%s\n' "$parent" "$(basename "$candidate")"
       return 0
@@ -1227,9 +1574,29 @@ resolve_owned_message() {
   die "message not found: $arg"
 }
 
+# done names a file. Another symlink in this inbox is not a second hit.
+# Gate it anyway: its box cannot be excluded without reading the header.
+# Status 91 stops here. Any other miss falls through, as the base does,
+# so the not-found line stays in front of the inbox line.
+gate_own_inbox_symlinks() {
+  local f nullglob_on=0
+  shopt -q nullglob && nullglob_on=1
+  shopt -s nullglob
+  for f in "$(inbox_path "$ME")"/*.md; do
+    [[ -L "$f" ]] || continue
+    if ! gate_resolved_leaf "$f"; then
+      (( nullglob_on == 1 )) || shopt -u nullglob
+      return 91
+    fi
+  done
+  (( nullglob_on == 1 )) || shopt -u nullglob
+}
+
 resolve_own_inbox_message() {
-  local message canon inbox_canon
-  message="$(resolve_owned_message "$1")"
+  local message canon inbox_canon resolve_status=0
+  gate_own_inbox_symlinks || return $?
+  message="$(resolve_owned_message "$1")" || resolve_status=$?
+  [[ "$resolve_status" -eq 91 ]] && return 91
   inbox_canon="$(canonical_dir "$(inbox_path "$ME")")"
   case "$message" in
     "$inbox_canon"/*) printf '%s\n' "$message";;
@@ -1258,7 +1625,7 @@ cmd_reply() {
   [[ -n "$slug" ]] || die 'slug became empty'
 
   local msg parent_id parent_from expected_reply doorbell_to inbox_canon processed_canon req parent_thread
-  msg="$(resolve_action_ref "$message" owned 1)" || die "message not found: $(safe_id_out "$message")"
+  finish_resolve msg "message not found: $(safe_id_out "$message")" resolve_action_ref "$message" owned 1
   inbox_canon="$(canonical_dir "$(inbox_path "$ME")")"
   processed_canon="$(canonical_dir "$(processed_path "$ME")")"
   case "$msg" in
@@ -1335,9 +1702,12 @@ cmd_file() {
   local msg typ arg_is_path=false inbox_canon processed_canon
   message_arg_is_path "$msg_arg" && arg_is_path=true
   if [[ "$arg_is_path" == true ]]; then
-    msg="$(resolve_owned_message "$msg_arg")" || die "message not found: $(safe_id_out "$msg_arg")"
+    local resolve_status=0
+    msg="$(resolve_owned_message "$msg_arg")" || resolve_status=$?
+    [[ "$resolve_status" -eq 91 ]] && exit 1
+    [[ "$resolve_status" -eq 0 ]] || die "message not found: $(safe_id_out "$msg_arg")"
   else
-    msg="$(resolve_action_ref "$msg_arg" owned 0)" || die "message not found: $(safe_id_out "$msg_arg")"
+    finish_resolve msg "message not found: $(safe_id_out "$msg_arg")" resolve_action_ref "$msg_arg" owned 0
   fi
   inbox_canon="$(canonical_dir "$(inbox_path "$ME")")"
   processed_canon="$(canonical_dir "$(processed_path "$ME")")"
@@ -1355,14 +1725,17 @@ cmd_file() {
       fi
       ;;
   esac
+  local filed_id
+  filed_id="$(frontmatter_value "$msg" id)"
   mv "$msg" "$BOX/$ME/processed/"
+  clear_unresolved_ring "$ME" "$filed_id"
   printf 'filed: %s → %s/processed/\n' "$(confirm_label "$msg")" "$ME"
 }
 
 cmd_read() {
   need_me
   local arg="${1:?usage: letterbox read <id|display-id|token>}" msg
-  msg="$(resolve_action_ref "$arg" owned-inbox 0)" || die "message not found in your inbox: $(safe_id_out "$arg")"
+  finish_resolve msg "message not found in your inbox: $(safe_id_out "$arg")" resolve_action_ref "$arg" owned-inbox 0
   cat "$msg"
 }
 
@@ -1373,7 +1746,7 @@ cmd_progress() {
   [[ -n "$note" ]] || die "usage: letterbox progress <id> <one-line note>"
   [[ "$note" != *$'\n'* ]] || die "progress note must be one line"
   local msg stamp tmp lid
-  msg="$(resolve_action_ref "$id" owned 0)" || die "message not found: $(safe_id_out "$id")"
+  finish_resolve msg "message not found: $(safe_id_out "$id")" resolve_action_ref "$id" owned 0
   case "$msg" in
     "$(canonical_dir "$(inbox_path "$ME")")"/*) ;;
     "$(canonical_dir "$(processed_path "$ME")")"/*) die "cannot progress a filed/terminal letter: $(safe_id_out "$id")";;
@@ -1392,7 +1765,7 @@ cmd_progress() {
 cmd_nudge() {
   need_me
   local ref="${1:?usage: letterbox nudge <id|display-id|token>}" path folder to typ id
-  path="$(resolve_action_ref "$ref" nudge 0)" || die "message not found: $(safe_id_out "$ref")"
+  finish_resolve path "message not found: $(safe_id_out "$ref")" resolve_action_ref "$ref" nudge 0
   folder="$(basename "$(dirname "$path")")"
   [[ "$folder" != "processed" ]] || die "cannot nudge a filed/terminal letter: $(safe_id_out "$ref")"
   id="$(frontmatter_value "$path" id)"
@@ -1448,6 +1821,8 @@ cmd_token() {
   local -a matches=()
   shopt -s nullglob
   for f in "$BOX"/*/inbox/*.md "$BOX"/*/processed/*.md; do
+    [[ -e "$f" || -L "$f" ]] || continue
+    gate_resolved_leaf "$f" || exit 1
     [[ -f "$f" ]] || continue
     id="$(frontmatter_value "$f" id)" || continue
     if [[ "$(doorbell_token_for_id "$id")" == "$tok" ]]; then
@@ -1480,7 +1855,11 @@ cmd_done() {
   [[ "${1:-}" == --reply ]] || die 'use letterbox reply for normal replies, or pass --reply <delivered-reply-file>'
   local reply="${2:?missing reply file}"
   [[ -f "$reply" ]] || die "reply file not found: $reply"
-  message="$(resolve_own_inbox_message "$message")"
+  gate_path_arg "$reply"
+  local resolve_status=0
+  message="$(resolve_own_inbox_message "$message")" || resolve_status=$?
+  [[ "$resolve_status" -eq 91 ]] && exit 1
+  [[ "$resolve_status" -eq 0 ]] || return "$resolve_status"
   local id from expected_dir actual_dir
   id="$(frontmatter_value "$message" id)"; from="$(frontmatter_value "$message" from)"
   [[ -n "$id" && -n "$from" ]] || die 'invalid inbound frontmatter'
@@ -1573,6 +1952,11 @@ cmd_help() {
 }
 case "${1:-}" in help|--help|-h) cmd_help; exit 0;; esac
 case "${2:-}" in --help|-h) cmd_help "$1"; exit 0;; esac
+case "${1:-}" in
+  init|send|check|reply|file|done|read|progress|ring|query|lint-notes|nudge|token|doorbell-line|lock|unlock|status|cmux)
+    format_preflight "$BOX"
+    ;;
+esac
 case "${1:-}" in
   --version|-V|version) cmd_version;;
   init) shift; cmd_init "$@";; send) shift; cmd_send "$@";; check) shift; cmd_check "$@";;

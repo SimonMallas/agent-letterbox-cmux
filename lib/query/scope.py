@@ -9,6 +9,7 @@ from dataclasses import replace
 import os
 import stat
 
+import format_gate
 from scanner import DIR_FLAGS, PARTICIPANT, Scan, ScopeIssue, _Scanner, _identity, _signature, scan
 
 
@@ -25,6 +26,7 @@ def collect(root, participants=None, *, max_names=100000):
         participants = tuple(participants)
         if not participants or any(not isinstance(p, str) or not PARTICIPANT.fullmatch(p) or p == "locks" for p in participants):
             raise ValueError("invalid_participants")
+    format_gate.check(root)
     declared = tuple(sorted(set(participants or ())))
     result = Scan(declared, (), ())
     observer = _Scanner(max_names)

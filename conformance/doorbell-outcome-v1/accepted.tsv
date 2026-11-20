@@ -14,6 +14,7 @@ doorbell-outcome v=1 outcome=no_live_surface reason=surface_not_found target=-	n
 doorbell-outcome v=1 outcome=no_live_surface reason=identity_mismatch target=-	no_live_surface	identity_mismatch	-
 doorbell-outcome v=1 outcome=no_live_surface reason=send_failed target=-	no_live_surface	send_failed	-
 doorbell-outcome v=1 outcome=no_live_surface reason=helper_timeout target=-	no_live_surface	helper_timeout	-
+doorbell-outcome v=1 outcome=no_live_surface reason=lookup_spent target=-	no_live_surface	lookup_spent	-
 doorbell-outcome v=1 outcome=no_live_surface reason=restore_window target=-	no_live_surface	restore_window	-
 doorbell-outcome v=1 outcome=no_live_surface reason=pid_dead target=-	no_live_surface	pid_dead	-
 doorbell-outcome v=1 outcome=no_live_surface reason=notify_only target=-	no_live_surface	notify_only	-

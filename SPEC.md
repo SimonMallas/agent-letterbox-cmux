@@ -275,23 +275,36 @@ Rules:
 - At-most-once notification over a durable at-least-once record.
 - Offline, busy, or unregistered agents still receive the letter in `inbox/`.
 
-Bounds budget (ring path). `LETTERBOX_DOORBELL_TIMEOUT` (default **1s**) bounds
+Bounds budget (ring path). `LETTERBOX_DOORBELL_TIMEOUT` (default **2s**) bounds
 each mux call (lookup, liveness, notify, text, Enter). The longest legitimate
 run is 4 steps (lookup + notify/resolve + text + Enter) = 4 × step, plus the
 pause before Enter: `LETTERBOX_DOORBELL_ENTER_DELAY` (default **2s**, whole
 seconds 0–5, 0 for no pause; any other value is refused as
 `invalid_enter_delay` before a mux call). The pause exists because an agent
 terminal app that detects pastes treats an Enter sent with the text as part of
-the paste, and the line is never submitted. The wrapper's whole-run backstop
-is 4 × step + 5s spawn margin + the pause = **11s** at the defaults. A healthy
-ring takes about the pause plus one second. Agent Letter Bridge 0.5.2 and
-earlier allow the whole ring 10s, so there a ring that is already wedged reads
-as unconfirmed slightly early. Configuration limit: keep
-`LETTERBOX_DOORBELL_TIMEOUT` at 1s (integer seconds); raising it outruns the
-caller deadline unless this budget is re-derived. Unset or empty means the
+the paste, and the line is never submitted. One attempt's backstop is 4 × step
++ 5s spawn margin + the pause. The wrapper returns within **12s**, so a caller
+that allows 15s cannot turn a lookup retry into `unconfirmed`. A proven
+pre-injection lookup timeout (`no_live_surface` / `helper_timeout`, no text
+and no Enter) is tried again: 3 lookups, with 100 ms then 400 ms between
+them. Any other outcome is final, including `unconfirmed` after send or Enter
+starts. If the lookups are exhausted, the wrapper writes
+`.unresolved-rings/<recipient>/<letter-id>` (the record reason stays
+`helper_timeout`) and tells the sender to nudge. The contract line is
+`lookup_spent`, not `helper_timeout`. `helper_timeout` means this process
+did not spend a lookup retry, so a caller that retries only that reason
+may try again. `lookup_spent` means the wrapper already did. If that record
+cannot be written, it does not say to nudge, the diagnostic has no path,
+and the contract line is still `lookup_spent`.
+There is no queue. The record is live only while that letter is still a
+regular file in the recipient's inbox. Filing it removes the record, and so
+does a later ring that is not another exhausted lookup. `check` names the
+ring only while the letter is still there, and removes a record whose letter
+has left. `nudge` is the recovery. Unset or empty means the
 default. Any other value must be whole seconds from 1 to 999 with no leading
 zero, or it is refused as `invalid_timeout` before any mux call, through
-`letterbox ring` as well.
+`letterbox ring` as well. A step timeout long enough that one lookup cannot
+finish inside the time still left in the 12s is not started.
 
 The cmux adapter implements this contract for live terminal agents. The shared filesystem remains the universal transport.
 
