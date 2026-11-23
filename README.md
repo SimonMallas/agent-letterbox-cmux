@@ -1,5 +1,7 @@
 # Agent Letterbox for cmux
 
+> First public release: July 2026
+
 ## Ring the bell. Create the team. Build the memories.
 
 **Letterbox does not make agents write. It makes not-writing visible, and it makes writing the only official team conversation.** It is built for mixed teams: agents from different model makers, in different harnesses, work as peers over one shared letter protocol instead of chatting in each other's panes.
