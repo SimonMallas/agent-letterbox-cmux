@@ -212,6 +212,8 @@ platform mkdir, whose exit code is not reliable everywhere (uutils coreutils
 
 Open any terminal window. You can either copy/paste the commands yourself, **or simply give the prompt below to one of your existing coding agents**:
 
+Whenever this guide shows a command block, copy the whole block, paste it into a terminal, and press Enter.
+
 ```text
 Set up Agent Letterbox for cmux using the README Quick Start. Do not change my cmux layout.
 ```
